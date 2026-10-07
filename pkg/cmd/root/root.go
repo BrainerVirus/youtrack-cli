@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
+	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/api"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue"
@@ -94,7 +95,7 @@ func printError(f *cmdutil.Factory, cmd *cobra.Command, err error) {
 		fmt.Fprintln(w, "cancelled")
 		return
 	}
-	fmt.Fprintf(w, "ytrack: %s\n", err)
+	fmt.Fprintf(w, "ytrack: %s\n", output.SanitizeText(err.Error()))
 	if _, ok := errors.AsType[*clierr.FlagError](err); ok && cmd != nil {
 		fmt.Fprintf(w, "Run '%s --help' for usage.\n", cmd.CommandPath())
 	}

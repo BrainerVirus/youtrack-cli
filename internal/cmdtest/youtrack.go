@@ -30,7 +30,16 @@ type Request struct {
 //	GET  /api/users/me          the token's user
 //	GET  /api/issues                Issues, paged with $skip/$top (default $top 42)
 //	                                and restricted by customFields= when given
-//	POST /api/issues                echoes the JSON body back
+//	POST /api/issues                creates an issue (see SeedSampleProjects); echoes
+//	                                the JSON body back when no projects are seeded
+//	POST /api/issues/{id}           updates summary, description and customFields
+//	POST|DELETE /api/issues/{id}/tags[/{tag}]  tags and untags an issue
+//	GET  /api/admin/projects        Projects, paged
+//	GET  /api/admin/projects/{id}/customFields  ProjectFields[project id], paged
+//	GET  /api/admin/projects/{id}/customFields/{field}  one of them
+//	GET  /api/tags                  Tags, paged
+//	POST /api/commands[/assist]     applies or previews a small subset of the
+//	                                YouTrack command language (see command)
 //	GET  /api/issues/{id}           the issue in Issues with that idReadable or id,
 //	                                with commentsCount; 404 with a YouTrack body if none
 //	GET  /api/issues/{id}/comments  Comments[idReadable], paged with $skip/$top
@@ -62,6 +71,10 @@ type FakeYouTrack struct {
 	WorkItems map[string][]map[string]any
 	// TimeTracking holds project time tracking settings by project ID.
 	TimeTracking map[string]map[string]any
+	// Projects, ProjectFields (by project ID) and Tags back issue writes.
+	Projects      []map[string]any
+	ProjectFields map[string][]map[string]any
+	Tags          []map[string]any
 	// MaxTop caps $top like a server limit would (0 means no cap).
 	MaxTop int
 	// HubTokenPage makes the instance's token page 404, as on a Server
@@ -86,10 +99,6 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			items = append(items, onlyCustomFields(is, r.URL.Query()["customFields"]))
 		}
 		writeProjected(w, r, 200, items)
-	})
-	mux.HandleFunc("POST /api/issues", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.Copy(w, r.Body)
 	})
 	mux.HandleFunc("GET /api/issues/{id}", func(w http.ResponseWriter, r *http.Request) {
 		is, ok := yt.issue(r.PathValue("id"))
@@ -139,6 +148,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		writeProjected(w, r, 200, c)
 	})
 	yt.workItemRoutes(mux)
+	yt.issueWriteRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = io.WriteString(w, "plain text")

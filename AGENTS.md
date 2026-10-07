@@ -13,7 +13,8 @@ Spec: `docs/YT_CLI_SPEC.md` (its Decisions section wins over the body).
 - `pkg/cmdutil` Factory (DI), arg validators, `--json/--jq/--template` flags
 - `internal/youtrack/transport` HTTP, auth header, redacted debug log, `APIError`
 - `internal/youtrack/adapter` typed API calls; commands never parse raw wire JSON
-- `internal/youtrack/adapter/customfields` the only decoder of custom field `$type`s
+- `internal/youtrack/adapter/customfields` the only decoder and encoder of custom field `$type`s
+  (writes go through the REST API, except period fields, which use a YouTrack command)
 - `internal/youtrack/transport.Paginate` the shared `$skip/$top` pager
 - `api/contract/youtrack-contract.json` hand-written list of the endpoints, query params and
   `fields=` attributes ytrack uses; `adapter/contract_test.go` checks requests against it and the

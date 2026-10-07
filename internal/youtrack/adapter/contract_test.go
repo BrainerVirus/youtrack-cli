@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter/customfields"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	workitem "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/shared"
 )
@@ -29,6 +30,8 @@ type contract struct {
 	Endpoints []endpoint `json:"endpoints"`
 	// Types maps an entity to its attributes and the entities each may hold.
 	Types map[string]map[string][]string `json:"types"`
+	// Subtypes lists, by entity, the $type values ytrack writes for it.
+	Subtypes map[string][]string `json:"subtypes"`
 }
 
 func loadContract(t *testing.T) *contract {
@@ -116,20 +119,81 @@ func (c *contract) checkBody(e endpoint, body string) []string {
 	if !ok || e.Response == "" {
 		return []string{"unexpected body"}
 	}
-	return c.checkProjection([]string{e.Response}, bodyProjection(m), "")
+	return append(c.checkProjection([]string{e.Response}, bodyProjection(m), ""), c.checkTypes([]string{e.Response}, m, "")...)
 }
 
-// bodyProjection turns a JSON object into the projection of its attributes.
+// checkTypes reports $type values in a request body that the contract does
+// not list as a subtype of the entity at that position.
+func (c *contract) checkTypes(types []string, v any, path string) []string {
+	var problems []string
+	switch t := v.(type) {
+	case []any:
+		for _, e := range t {
+			problems = append(problems, c.checkTypes(types, e, path)...)
+		}
+	case map[string]any:
+		if wt, ok := t["$type"].(string); ok && !slices.ContainsFunc(types, func(ty string) bool {
+			return ty == wt || slices.Contains(c.Subtypes[ty], wt)
+		}) {
+			problems = append(problems, path+"$type "+wt+" is not a listed subtype of "+strings.Join(types, "|"))
+		}
+		for k, sub := range t {
+			var next []string
+			for _, ty := range types {
+				next = append(next, c.Types[ty][k]...)
+			}
+			if len(next) > 0 {
+				problems = append(problems, c.checkTypes(next, sub, path+k+".")...)
+			}
+		}
+	}
+	return problems
+}
+
+// bodyProjection turns a JSON object into the projection of its attributes,
+// merging the objects in arrays. $type is left out: every entity has it.
 func bodyProjection(m map[string]any) cmdtest.Projection {
 	p := cmdtest.Projection{}
 	for k, v := range m {
-		if sub, ok := v.(map[string]any); ok {
-			p[k] = bodyProjection(sub)
-		} else {
-			p[k] = nil
+		if k == "$type" {
+			continue
 		}
+		p[k] = valueProjection(v)
 	}
 	return p
+}
+
+func valueProjection(v any) cmdtest.Projection {
+	switch t := v.(type) {
+	case map[string]any:
+		return bodyProjection(t)
+	case []any:
+		var merged cmdtest.Projection
+		for _, e := range t {
+			if sub := valueProjection(e); sub != nil {
+				merged = mergeProjection(merged, sub)
+			}
+		}
+		return merged
+	}
+	return nil
+}
+
+// mergeProjection merges b into a, keeping nested attributes of both.
+func mergeProjection(a, b cmdtest.Projection) cmdtest.Projection {
+	if a == nil {
+		a = cmdtest.Projection{}
+	}
+	for k, v := range b {
+		if v == nil {
+			if _, ok := a[k]; !ok {
+				a[k] = nil
+			}
+			continue
+		}
+		a[k] = mergeProjection(a[k], v)
+	}
+	return a
 }
 
 func TestRequestsMatchTheContract(t *testing.T) {
@@ -139,6 +203,7 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	yt := cmdtest.NewFakeYouTrack(t, "")
 	yt.SeedSampleIssues()
 	yt.SeedSampleWorkItems()
+	yt.SeedSampleProjects()
 	env.Login(yt)
 	allIssue := strings.Join(shared.IssueFields, ",")
 	allWorkItem := strings.Join(workitem.Fields, ",")
@@ -153,6 +218,15 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"work-item", "add", "NSR-40", "--duration", "1h30m", "--type", "Testing", "--text", "contract", "--date", "2026-10-06"},
 		{"work-item", "edit", "NSR-40", "115-1", "--duration", "2h", "--type", "Documentation", "--text", "", "--date", "2026-10-05"},
 		{"work-item", "delete", "NSR-40", "115-2", "--yes"},
+		{
+			"issue", "create", "-p", "NSR", "-s", "contract", "--description", "body", "--assignee", "me", "--tag", "backend",
+			"--field", "Priority=Critical", "--field", "Subsystem=Auth,Web", "--field", "Due Date=2026-10-20",
+			"--field", "Story points=3", "--field", "Deployed=2026-10-07T10:00:00Z", "--field", "Root cause=cookie",
+			"--field", "Estimation=2d", "--field", "Team=QA", "--json", allIssue,
+		},
+		{"issue", "edit", "NSR-40", "-s", "edited", "-d", "", "--field", "Type=Feature", "--assignee", "jroe", "--add-tag", "regression", "--remove-tag", "sso", "--json", allIssue},
+		{"issue", "command", "NSR-40", "State Fixed", "--comment", "done", "--silent"},
+		{"issue", "command", "NSR-40", "Priority Critical", "--dry-run"},
 	}
 	for _, args := range runs {
 		if code := env.Run(args...); code != 0 {
@@ -207,6 +281,15 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	}
 }
 
+func TestContractListsEveryWrittenType(t *testing.T) {
+	c := loadContract(t)
+	for _, wt := range customfields.WriteTypes() {
+		if !slices.Contains(c.Subtypes["IssueCustomField"], wt) {
+			t.Errorf("customfields writes %s, which the contract does not list under IssueCustomField", wt)
+		}
+	}
+}
+
 func TestContractCheckerCatchesMistakes(t *testing.T) {
 	c := loadContract(t)
 	for fields, want := range map[string]string{
@@ -226,6 +309,12 @@ func TestContractCheckerCatchesMistakes(t *testing.T) {
 	}
 	if got := c.checkBody(endpoint{Response: "IssueWorkItem"}, `{"duration":{"mins":5},"text":"x"}`); len(got) != 1 || !strings.Contains(got[0], "duration.mins is not an attribute") {
 		t.Errorf("a body with an unknown attribute: problems %q", got)
+	}
+	if got := c.checkBody(endpoint{Response: "Issue"}, `{"customFields":[{"name":"A","$type":"SingleEnumIssueCustomField","value":{"name":"x"}},{"name":"B","value":[{"nick":"y"}]}]}`); len(got) != 1 || !strings.Contains(got[0], "customFields.value.nick is not an attribute") {
+		t.Errorf("a body with an unknown attribute in an array: problems %q", got)
+	}
+	if got := c.checkBody(endpoint{Response: "Issue"}, `{"customFields":[{"name":"A","$type":"HologramIssueCustomField","value":null}]}`); len(got) != 1 || !strings.Contains(got[0], "customFields.$type HologramIssueCustomField is not a listed subtype") {
+		t.Errorf("a body with an unlisted $type: problems %q", got)
 	}
 	if _, ok := c.endpoint("DELETE", "/api/issues/NSR-1"); ok {
 		t.Error("an unlisted method matched")
