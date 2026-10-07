@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/zalando/go-keyring"
@@ -77,6 +78,33 @@ func TestStore(t *testing.T) {
 			if tok, _, _ := s.Get(h); tok != "" {
 				t.Errorf("token for %s survived Delete", h)
 			}
+		}
+	})
+}
+
+func TestStoreKeyringFailures(t *testing.T) {
+	t.Run("given a broken keyring and no file, Get reports the keyring error instead of no token", func(t *testing.T) {
+		keyring.MockInitWithError(errors.New("org.freedesktop.Secret.Error.IsLocked"))
+		_, _, err := Store{Dir: t.TempDir()}.Get("h")
+		if err == nil || !strings.Contains(err.Error(), "IsLocked") {
+			t.Fatalf("err = %v, want the keyring error", err)
+		}
+	})
+
+	t.Run("given an empty keyring, Get reports no token without an error", func(t *testing.T) {
+		keyring.MockInit()
+		tok, _, err := Store{Dir: t.TempDir()}.Get("h")
+		if tok != "" || err != nil {
+			t.Fatalf("Get = %q, %v", tok, err)
+		}
+	})
+
+	t.Run("given a broken keyring and a file copy, Delete succeeds", func(t *testing.T) {
+		keyring.MockInitWithError(errors.New("no keyring"))
+		s := Store{Dir: t.TempDir()}
+		_, _ = s.Set("h", "perm-x", true)
+		if err := s.Delete("h"); err != nil {
+			t.Fatalf("Delete: %v", err)
 		}
 	})
 }

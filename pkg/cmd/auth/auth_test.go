@@ -356,6 +356,20 @@ func TestStatus(t *testing.T) {
 		}
 	})
 
+	t.Run("given a locked keyring, it reports the keyring error and exits 1, not 4", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		env.Login(yt)
+		keyring.MockInitWithError(errors.New("org.freedesktop.Secret.Error.IsLocked"))
+
+		if code := env.Run("auth", "status"); code != 1 {
+			t.Fatalf("exit %d, want 1", code)
+		}
+		if !strings.Contains(env.Stderr.String(), "IsLocked") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+	})
+
 	t.Run("given YTRACK_HOST and YTRACK_TOKEN only, it reports the environment login", func(t *testing.T) {
 		env := cmdtest.New(t)
 		yt := cmdtest.NewFakeYouTrack(t, "")

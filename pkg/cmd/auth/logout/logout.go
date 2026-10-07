@@ -29,12 +29,14 @@ host given with --host. The token itself is not revoked in YouTrack.`,
 				return err
 			}
 			store := f.CredentialStore(cfg)
-			token, _, err := store.Get(host.Key)
-			if err != nil {
-				return err
-			}
-			if cfg.Host(host.Key) == nil && token == "" {
-				return clierr.FlagErrorf("not logged in to %s", host.Key)
+			if cfg.Host(host.Key) == nil {
+				token, _, err := store.Get(host.Key)
+				if err != nil {
+					return err
+				}
+				if token == "" {
+					return clierr.FlagErrorf("not logged in to %s", host.Key)
+				}
 			}
 			if err := store.Delete(host.Key); err != nil {
 				return err

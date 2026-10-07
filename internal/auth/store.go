@@ -62,18 +62,19 @@ func (s Store) Set(hostKey, token string, insecure bool) (string, error) {
 		return "", fmt.Errorf("%w: %w", ErrNoKeyring, err)
 	}
 	// A previous --insecure-storage login must not leave a plaintext copy behind.
-	if err := s.deleteFile(hostKey); err != nil {
+	if _, err := s.deleteFile(hostKey); err != nil {
 		return "", err
 	}
 	return config.StorageKeyring, nil
 }
 
 // Get returns the stored token for hostKey and its source, or "" if none.
+// A keyring failure other than "not found" (locked keyring, D-Bus error,
+// timeout) is an error unless the credentials file holds the token, so a
+// broken keyring is never reported as "not logged in".
 func (s Store) Get(hostKey string) (token, source string, err error) {
-	kerr := withTimeout(func() error {
-		var e error
-		token, e = keyring.Get(KeyringService(hostKey), keyringUser)
-		return e
+	token, kerr := withTimeoutValue(func() (string, error) {
+		return keyring.Get(KeyringService(hostKey), keyringUser)
 	})
 	if kerr == nil && token != "" {
 		return token, SourceKeyring, nil
@@ -85,20 +86,25 @@ func (s Store) Get(hostKey string) (token, source string, err error) {
 	if t := creds[hostKey]; t != "" {
 		return t, SourceFile, nil
 	}
+	if kerr != nil && !errors.Is(kerr, keyring.ErrNotFound) {
+		return "", "", fmt.Errorf("could not read the token for %s from the OS keyring: %w", hostKey, kerr)
+	}
 	return "", "", nil
 }
 
 // Delete removes hostKey's token from the keyring and the credentials file.
+// A keyring failure is reported only when the file held no copy, since a
+// host saved with --insecure-storage may have no usable keyring at all.
 func (s Store) Delete(hostKey string) error {
 	kerr := withTimeout(func() error { return keyring.Delete(KeyringService(hostKey), keyringUser) })
-	if kerr != nil && !errors.Is(kerr, keyring.ErrNotFound) {
-		// Still remove any file copy; report the keyring failure afterwards.
-		if err := s.deleteFile(hostKey); err != nil {
-			return err
-		}
-		return fmt.Errorf("could not remove the token from the keyring: %w", kerr)
+	hadFile, err := s.deleteFile(hostKey)
+	if err != nil {
+		return err
 	}
-	return s.deleteFile(hostKey)
+	if kerr != nil && !errors.Is(kerr, keyring.ErrNotFound) && !hadFile {
+		return fmt.Errorf("could not remove the token from the OS keyring: %w", kerr)
+	}
+	return nil
 }
 
 func (s Store) path() string { return filepath.Join(s.Dir, credentialFile) }
@@ -142,25 +148,40 @@ func (s Store) setFile(hostKey, token string) error {
 	return s.writeFile(creds)
 }
 
-func (s Store) deleteFile(hostKey string) error {
+func (s Store) deleteFile(hostKey string) (bool, error) {
 	creds, err := s.readFile()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if _, ok := creds[hostKey]; !ok {
-		return nil
+		return false, nil
 	}
 	delete(creds, hostKey)
-	return s.writeFile(creds)
+	return true, s.writeFile(creds)
 }
 
 func withTimeout(fn func() error) error {
-	ch := make(chan error, 1)
-	go func() { ch <- fn() }()
+	_, err := withTimeoutValue(func() (struct{}, error) { return struct{}{}, fn() })
+	return err
+}
+
+// withTimeoutValue runs fn but gives up after keyringTimeout. The result is
+// passed over a channel, so a late fn never writes to the caller's variables.
+func withTimeoutValue[T any](fn func() (T, error)) (T, error) {
+	type result struct {
+		v   T
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		v, err := fn()
+		ch <- result{v, err}
+	}()
 	select {
-	case err := <-ch:
-		return err
+	case r := <-ch:
+		return r.v, r.err
 	case <-time.After(keyringTimeout):
-		return errors.New("timed out waiting for the OS keyring")
+		var zero T
+		return zero, errors.New("timed out waiting for the OS keyring")
 	}
 }
