@@ -6,9 +6,11 @@ package transport
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -28,7 +30,7 @@ type Options struct {
 	DebugLog io.Writer
 	// Timeout bounds each request. Zero means 60s.
 	Timeout time.Duration
-	// HTTPClient overrides the underlying client's transport (tests).
+	// RoundTripper overrides the underlying transport (tests).
 	RoundTripper http.RoundTripper
 }
 
@@ -48,7 +50,10 @@ func New(opts Options) *Client {
 	if ua == "" {
 		ua = "ytrack"
 	}
-	rt = &authTransport{next: rt, token: opts.Token, userAgent: ua}
+	baseURL := strings.TrimRight(opts.BaseURL, "/")
+	base, _ := url.Parse(baseURL)
+	auth := &authTransport{next: rt, token: opts.Token, userAgent: ua, base: base}
+	rt = auth
 	if opts.DebugLog != nil {
 		rt = &debugTransport{next: rt, w: opts.DebugLog, secret: opts.Token}
 	}
@@ -57,8 +62,12 @@ func New(opts Options) *Client {
 		timeout = 60 * time.Second
 	}
 	return &Client{
-		baseURL: strings.TrimRight(opts.BaseURL, "/"),
-		http:    &http.Client{Transport: rt, Timeout: timeout},
+		baseURL: baseURL,
+		http: &http.Client{
+			Transport:     rt,
+			Timeout:       timeout,
+			CheckRedirect: auth.checkRedirect,
+		},
 	}
 }
 
@@ -92,15 +101,58 @@ func (c *Client) GetJSON(ctx context.Context, path string, v any) error {
 	return nil
 }
 
+// authTransport adds the token only to requests inside the service URL: same
+// scheme, same host and port, and under its path prefix. Anything else, such
+// as a redirect target elsewhere, goes out without credentials.
 type authTransport struct {
 	next      http.RoundTripper
 	token     string
 	userAgent string
+	base      *url.URL
+}
+
+func (t *authTransport) inScope(u *url.URL) bool {
+	if t.base == nil {
+		return false
+	}
+	if !strings.EqualFold(u.Scheme, t.base.Scheme) || !strings.EqualFold(u.Host, t.base.Host) {
+		return false
+	}
+	prefix := strings.TrimRight(t.base.Path, "/")
+	return prefix == "" || u.Path == prefix || strings.HasPrefix(u.Path, prefix+"/")
+}
+
+// sendsToken reports whether a request to u would carry the token.
+func (t *authTransport) sendsToken(u *url.URL) bool {
+	return t.token != "" && t.inScope(u)
+}
+
+// checkRedirect refuses https-to-http downgrades and, when the client holds a
+// token, redirects that leave the service URL.
+func (t *authTransport) checkRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	prev := via[len(via)-1].URL
+	if strings.EqualFold(prev.Scheme, "https") && !strings.EqualFold(req.URL.Scheme, "https") {
+		return fmt.Errorf("refusing redirect from https to %s", redactURL(req.URL))
+	}
+	if t.token != "" && !t.inScope(req.URL) {
+		return fmt.Errorf("refusing redirect to %s, outside %s", redactURL(req.URL), t.base.Redacted())
+	}
+	return nil
+}
+
+func redactURL(u *url.URL) string {
+	c := *u
+	c.RawQuery = ""
+	return c.Redacted()
 }
 
 func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req = req.Clone(req.Context())
-	if t.token != "" {
+	req.Header.Del("Authorization")
+	if t.sendsToken(req.URL) {
 		req.Header.Set("Authorization", "Bearer "+t.token)
 	}
 	if req.Header.Get("Accept") == "" {
@@ -133,7 +185,7 @@ func (t *debugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// The Authorization header is added by the inner transport, so show it here
 	// as it will be sent: redacted.
 	headers := req.Header.Clone()
-	if inner, ok := t.next.(*authTransport); ok && inner.token != "" {
+	if inner, ok := t.next.(*authTransport); ok && inner.sendsToken(req.URL) {
 		headers.Set("Authorization", "Bearer "+inner.token)
 	}
 	writeHeaders(&b, ">", headers)
