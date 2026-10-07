@@ -14,7 +14,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -23,9 +23,17 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Check the tag name
+        env:
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          if ! printf '%s\n' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::'$TAG' is not a release tag (vX.Y.Z or vX.Y.Z-pre)"
+            exit 1
+          fi
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
@@ -42,13 +50,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 0 # the changelog needs the history and the previous tag
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false # no cache in the job that holds a write token
+      # Runs repo code, so it happens here rather than as a goreleaser hook in
+      # the step that holds HOMEBREW_TAP_GITHUB_TOKEN.
+      - name: Generate shell completions
+        run: make completions
       - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser

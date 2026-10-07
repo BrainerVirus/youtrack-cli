@@ -8,11 +8,9 @@ project_name: ytrack
 before:
   hooks:
     - go mod tidy -diff
-    - rm -rf completions
-    - mkdir completions
-    - sh -c 'go run ./cmd/ytrack completion bash > completions/ytrack.bash'
-    - sh -c 'go run ./cmd/ytrack completion zsh > completions/_ytrack'
-    - sh -c 'go run ./cmd/ytrack completion fish > completions/ytrack.fish'
+    # completions/ is generated beforehand by `make completions` (a separate
+    # workflow step), so no repo code runs in the step that holds the tap token.
+    - test -s completions/ytrack.bash -a -s completions/_ytrack -a -s completions/ytrack.fish
 
 builds:
   - id: ytrack
@@ -24,12 +22,13 @@ builds:
     goarch: [amd64, arm64]
     flags:
       - -trimpath
-    # Same variables as the Makefile; `ytrack version` prints them.
+    # Same variables as the Makefile; `ytrack version` prints them. The date is the
+    # commit date (not the build time) so rebuilding a tag gives identical binaries.
     ldflags:
       - -s -w
       - -X github.com/BrainerVirus/youtrack-cli/internal/build.Version={{ .Version }}
       - -X github.com/BrainerVirus/youtrack-cli/internal/build.Commit={{ .ShortCommit }}
-      - -X github.com/BrainerVirus/youtrack-cli/internal/build.Date={{ time "2006-01-02" }}
+      - -X github.com/BrainerVirus/youtrack-cli/internal/build.Date={{ slice .CommitDate 0 10 }}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
@@ -58,19 +57,20 @@ changelog:
   sort: asc
   groups:
     - title: Features
-      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      regexp: '^feat(\(.+\))?!?:.+$'
       order: 0
     - title: Bug fixes
-      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      regexp: '^fix(\(.+\))?!?:.+$'
       order: 1
     - title: Performance
-      regexp: '^.*?perf(\(.+\))??!?:.+$'
+      regexp: '^perf(\(.+\))?!?:.+$'
       order: 2
     - title: Other changes
       order: 999
   filters:
     exclude:
-      - '^.*?(docs|test|chore|ci|style)(\(.+\))??!?:.+$'
+      # goreleaser matches the subject without the hash, so anchor at its start.
+      - '^(docs|test|chore|ci|style)(\(.+\))?!?:'
       - '^Merge '
 
 # Homebrew cask in BrainerVirus/homebrew-tap (`brew install brainervirus/tap/ytrack`).
