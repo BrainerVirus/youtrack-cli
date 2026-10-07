@@ -313,7 +313,9 @@ type statusJSON struct {
 	Active      bool   `json:"active"`
 	Token       string `json:"token"`
 	TokenSource string `json:"tokenSource"`
-	Valid       bool   `json:"valid"`
+	Storage     string `json:"storage"`
+	State       string `json:"state"`
+	Error       string `json:"error"`
 }
 
 func TestStatus(t *testing.T) {
@@ -351,15 +353,15 @@ func TestStatus(t *testing.T) {
 		yt := cmdtest.NewFakeYouTrack(t, "")
 		env.Login(yt)
 
-		if code := env.Run("auth", "status", "--json", "host,login,valid"); code != 0 {
+		if code := env.Run("auth", "status", "--json", "host,login,state"); code != 0 {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
 		}
 		var got []map[string]any
 		if err := json.Unmarshal(env.Stdout.Bytes(), &got); err != nil {
 			t.Fatalf("stdout is not JSON: %v\n%s", err, env.Stdout)
 		}
-		want := map[string]any{"host": yt.Key(), "login": "jdoe", "valid": true}
-		if len(got) != 1 || len(got[0]) != 3 || got[0]["host"] != want["host"] || got[0]["login"] != want["login"] || got[0]["valid"] != true {
+		want := map[string]any{"host": yt.Key(), "login": "jdoe", "state": "ok"}
+		if len(got) != 1 || len(got[0]) != 3 || got[0]["host"] != want["host"] || got[0]["login"] != want["login"] || got[0]["state"] != "ok" {
 			t.Errorf("got %v, want [%v]", got, want)
 		}
 	})
@@ -417,6 +419,38 @@ func TestStatus(t *testing.T) {
 		}
 	})
 
+	t.Run("given a rejected token, --json reports state rejected and exits 4", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		env.Login(yt)
+		yt.Token = "perm-rotated"
+
+		if code := env.Run("auth", "status", "--json", "state,error,storage"); code != 4 {
+			t.Fatalf("exit %d, want 4", code)
+		}
+		var got []statusJSON
+		_ = json.Unmarshal(env.Stdout.Bytes(), &got)
+		if len(got) != 1 || got[0].State != "rejected" || !strings.Contains(got[0].Error, "HTTP 401") || got[0].Storage != "keyring" {
+			t.Errorf("got %+v", got)
+		}
+	})
+
+	t.Run("given an unreachable host, --json reports state error and exits 1", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		env.Login(yt)
+		yt.Server.Close()
+
+		if code := env.Run("auth", "status", "--json", "state"); code != 1 {
+			t.Fatalf("exit %d, want 1", code)
+		}
+		var got []statusJSON
+		_ = json.Unmarshal(env.Stdout.Bytes(), &got)
+		if len(got) != 1 || got[0].State != "error" {
+			t.Errorf("got %+v", got)
+		}
+	})
+
 	t.Run("given a locked keyring, it reports the keyring error and exits 1, not 4", func(t *testing.T) {
 		env := cmdtest.New(t)
 		yt := cmdtest.NewFakeYouTrack(t, "")
@@ -437,12 +471,12 @@ func TestStatus(t *testing.T) {
 		t.Setenv("YTRACK_HOST", yt.URL())
 		t.Setenv("YTRACK_TOKEN", yt.Token)
 
-		if code := env.Run("auth", "status", "--json", "host,active,tokenSource,valid"); code != 0 {
+		if code := env.Run("auth", "status", "--json", "host,active,tokenSource,state"); code != 0 {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
 		}
 		var got []statusJSON
 		_ = json.Unmarshal(env.Stdout.Bytes(), &got)
-		if len(got) != 1 || !got[0].Active || got[0].TokenSource != "YTRACK_TOKEN" || !got[0].Valid {
+		if len(got) != 1 || !got[0].Active || got[0].TokenSource != "YTRACK_TOKEN" || got[0].State != "ok" {
 			t.Errorf("got %+v", got)
 		}
 		if !strings.Contains(env.Stderr.String(), "sending YTRACK_TOKEN to "+yt.Key()+", which is not a logged-in host") {

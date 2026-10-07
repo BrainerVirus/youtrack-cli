@@ -4,6 +4,7 @@ package status
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -19,7 +20,15 @@ import (
 )
 
 // Fields lists the --json fields of auth status.
-var Fields = []string{"host", "url", "active", "login", "fullName", "token", "tokenSource", "valid", "error"}
+var Fields = []string{"host", "url", "active", "login", "fullName", "token", "tokenSource", "storage", "state", "error"}
+
+// States of a host's credentials, reported as the "state" field.
+const (
+	StateOK       = "ok"       // the host accepted the token
+	StateRejected = "rejected" // HTTP 401, or 403 (token lacks the YouTrack scope)
+	StateNoToken  = "no_token" // no token in the environment or the store
+	StateError    = "error"    // the check failed otherwise (network, server)
+)
 
 type hostStatus struct {
 	Host        string
@@ -29,16 +38,16 @@ type hostStatus struct {
 	FullName    string
 	Token       string // masked
 	TokenSource string
-	Valid       bool
+	Storage     string
+	State       string
 	Error       string
-	httpStatus  int
 }
 
 func (s hostStatus) ExportData(fields []string) map[string]any {
 	all := map[string]any{
 		"host": s.Host, "url": s.URL, "active": s.Active, "login": s.Login,
 		"fullName": s.FullName, "token": s.Token, "tokenSource": s.TokenSource,
-		"valid": s.Valid, "error": s.Error,
+		"storage": s.Storage, "state": s.State, "error": s.Error,
 	}
 	out := make(map[string]any, len(fields))
 	for _, f := range fields {
@@ -54,10 +63,25 @@ func NewCmdStatus(f *cmdutil.Factory) *cobra.Command {
 		Use:   "status",
 		Short: "Show authentication status for each host",
 		Long: `Show which YouTrack hosts ytrack is logged in to, check each token
-against its host and show the account it belongs to. Tokens are masked.
+against its host and show the account it belongs to.
 
-With --host, only that host is checked. Exits 4 when not logged in or when a
-token is rejected.`,
+With --host, only that host is checked.
+
+JSON fields:
+  host         host key, e.g. acme.youtrack.cloud or tools.acme.com/youtrack
+  url          service URL
+  active       whether commands use this host by default
+  login        account login (when the token works)
+  fullName     account full name
+  token        the token, masked (e.g. perm-****); use "ytrack auth token" to print it
+  tokenSource  where the token came from: YTRACK_TOKEN, keyring or file
+  storage      where login saved the token: keyring or file
+  state        ok, rejected, no_token or error
+  error        why the state is not ok
+
+Exit status: 0 when every token works; 4 when a host has no token or rejects
+it (a 403 from /api/users/me means the token lacks the YouTrack scope, which
+is treated as rejected); 1 when a check fails for another reason.`,
 		Args: cmdutil.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := f.Config()
@@ -115,6 +139,9 @@ func collect(cmd *cobra.Command, f *cmdutil.Factory, cfg *config.Config) ([]host
 	statuses := make([]hostStatus, 0, len(targets))
 	for _, h := range targets {
 		s := hostStatus{Host: h.Key, URL: h.URL, Active: activeErr == nil && h.Key == active.Key}
+		if e := cfg.Host(h.Key); e != nil {
+			s.Storage = e.Storage
+		}
 		var token, source string
 		var err error
 		if s.Active {
@@ -127,21 +154,22 @@ func collect(cmd *cobra.Command, f *cmdutil.Factory, cfg *config.Config) ([]host
 		}
 		s.TokenSource = source
 		if token == "" {
-			s.Error = "no token stored"
-			s.httpStatus = 401
+			s.State, s.Error = StateNoToken, "no token stored"
 			statuses = append(statuses, s)
 			continue
 		}
 		s.Token = auth.Mask(token)
 		user, err := adapter.CurrentUser(cmd.Context(), f.NewClient(h, token))
-		if err != nil {
-			s.Error = err.Error()
-			var apiErr *transport.APIError
-			if errors.As(err, &apiErr) {
-				s.httpStatus = apiErr.StatusCode
-			}
-		} else {
-			s.Valid, s.Login, s.FullName = true, user.Login, user.FullName
+		var apiErr *transport.APIError
+		switch {
+		case err == nil:
+			s.State, s.Login, s.FullName = StateOK, user.Login, user.FullName
+		case errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden:
+			s.State, s.Error = StateRejected, err.Error()+"; the token may lack the YouTrack scope"
+		case errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusUnauthorized:
+			s.State, s.Error = StateRejected, err.Error()
+		default:
+			s.State, s.Error = StateError, err.Error()
 		}
 		statuses = append(statuses, s)
 	}
@@ -156,7 +184,7 @@ func render(f *cmdutil.Factory, statuses []hostStatus) {
 			fmt.Fprintln(w)
 		}
 		fmt.Fprintln(w, s.Host)
-		if s.Valid {
+		if s.State == StateOK {
 			name := s.Login
 			if s.FullName != "" && s.FullName != s.Login {
 				name = fmt.Sprintf("%s (%s)", s.Login, s.FullName)
@@ -178,9 +206,9 @@ func render(f *cmdutil.Factory, statuses []hostStatus) {
 func outcome(statuses []hostStatus) error {
 	authFailed, otherFailed := false, false
 	for _, s := range statuses {
-		switch {
-		case s.Valid:
-		case s.httpStatus == 401 || s.httpStatus == 403:
+		switch s.State {
+		case StateOK:
+		case StateRejected, StateNoToken:
 			authFailed = true
 		default:
 			otherFailed = true
