@@ -8,9 +8,33 @@ command, reading and commenting on issues, and time tracking (work items).
 
 ## Install
 
+Homebrew (macOS and Linux):
+
+```sh
+brew install brainervirus/tap/ytrack
+```
+
+With Go:
+
 ```sh
 go install github.com/BrainerVirus/youtrack-cli/cmd/ytrack@latest
 ```
+
+Or download an archive for your platform (Linux, macOS, Windows; amd64 or
+arm64) from the [releases page](https://github.com/BrainerVirus/youtrack-cli/releases),
+unpack it and put `ytrack` on your `PATH`. Archives also contain shell
+completions for bash, zsh and fish.
+
+Each release has a `ytrack_<version>_checksums.txt` with SHA-256 sums. Check a
+download before unpacking it:
+
+```sh
+sha256sum --check --ignore-missing ytrack_0.1.0_checksums.txt     # Linux
+shasum -a 256 --check --ignore-missing ytrack_0.1.0_checksums.txt # macOS
+```
+
+On Windows, compare `Get-FileHash ytrack_0.1.0_windows_amd64.zip` with the
+line in the checksums file.
 
 Or build from a clone with `make build` (binary in `bin/ytrack`).
 
@@ -129,7 +153,14 @@ Shell completion: `ytrack completion bash|zsh|fish|powershell`.
 
 ```sh
 make build test lint
+make snapshot              # local release dry run into dist/ (needs goreleaser v2)
 ```
+
+Releases: from an up-to-date `main`, run `make release VERSION=v0.1.0`. It
+runs the tests, tags `main` and pushes the tag; the `Release` workflow then
+builds the archives with goreleaser, publishes the GitHub release with a
+changelog grouped from the conventional commit titles, and updates the
+Homebrew cask.
 
 The REST surface ytrack relies on is listed by hand in
 `api/contract/youtrack-contract.json`, derived from JetBrains' public
