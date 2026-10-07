@@ -54,7 +54,7 @@ JSON fields:
   $ ytrack issue create -p APP -s 'Spike' --field 'Estimation=2d' --tag backend --json idReadable,url`,
 		Args: cmdutil.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := opts.description.Check(cmd); err != nil {
+			if err := opts.description.Check(f, cmd); err != nil {
 				return err
 			}
 			raw := opts.fields

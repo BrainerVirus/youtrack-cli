@@ -197,6 +197,13 @@ func TestContractMatchesOpenAPI(t *testing.T) {
 			t.Errorf("%s: it no longer returns %s (returns %v)", name, e.Response, targets(resp))
 		}
 	}
+	for base, subs := range c.Subtypes {
+		for _, sub := range subs {
+			if s.schemas[sub] == nil || !slices.Contains(s.family(base), sub) {
+				t.Errorf("$type %s is no longer a %s", sub, base)
+			}
+		}
+	}
 	for ty, attrs := range c.Types {
 		if s.schemas[ty] == nil {
 			t.Errorf("type %s is gone", ty)

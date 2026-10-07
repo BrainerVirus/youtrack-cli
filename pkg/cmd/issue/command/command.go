@@ -58,7 +58,8 @@ https://www.jetbrains.com/help/youtrack/cloud/commands.html.
 
 --dry-run asks YouTrack how it parses the command for this issue and prints
 each part without changing anything; it exits 1 when a part is not
-understood. --comment adds a comment along with the change. --silent
+understood. --comment adds a comment along with the change; the comment is visible to
+everyone who can see the issue. --silent
 applies the change without sending notifications.
 
 An issue URL must be on a logged-in host, or named with --host.

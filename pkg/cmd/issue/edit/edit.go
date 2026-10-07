@@ -60,7 +60,7 @@ JSON fields:
 				return err
 			}
 			opts.ref = ref
-			if err := opts.description.Check(cmd); err != nil {
+			if err := opts.description.Check(f, cmd); err != nil {
 				return err
 			}
 			opts.summarySet = cmd.Flags().Changed("summary")

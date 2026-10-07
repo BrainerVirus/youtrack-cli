@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -51,7 +52,9 @@ build, owned and group fields take an element name (case is ignored), user
 fields a login or "me", date fields YYYY-MM-DD, date-time fields
 2026-10-07T14:30 (local time) or RFC 3339, number fields a number, and text
 and string fields any text. Multi-value fields take a comma-separated list,
-which replaces their values. "Name=" clears a field. Period fields such as
+which replaces their values; to add or remove one value, use
+` + "`ytrack issue command <id> 'add <Field> <value>'` or `'remove <Field> <value>'`" + `.
+"Name=" clears a field unless the project requires a value. Period fields such as
 Estimation take a duration like "1w 2d 4h" and are set with a YouTrack
 command, so the instance's work schedule applies; everything else is
 written through the REST API. For anything else, use ` + "`ytrack issue command`."
@@ -115,6 +118,18 @@ func (w *FieldWriter) Encode(ctx context.Context, assigns []FieldAssign) (rest [
 		if err != nil {
 			return nil, nil, err
 		}
+		if d.NeedsUsers() && strings.TrimSpace(a.Value) != "me" && strings.TrimSpace(a.Value) != "" {
+			users, err := adapter.ProjectFieldUsers(ctx, w.Client, w.Project.ID, d.ID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("reading the users of field %q: %w", d.Name, err)
+			}
+			d.SetUsers(users)
+			for i := range w.defs {
+				if w.defs[i].ID == d.ID {
+					w.defs[i] = d
+				}
+			}
+		}
 		enc, err := d.Encode(a.Value, opts)
 		if err != nil {
 			return nil, nil, err
@@ -128,21 +143,40 @@ func (w *FieldWriter) Encode(ctx context.Context, assigns []FieldAssign) (rest [
 	return rest, commands, nil
 }
 
-// FindProject finds a project by short name or name, ignoring case.
+// FindProject finds a project that is not archived by key: an exact short
+// name first, then a short name ignoring case, then a name ignoring case,
+// which must match one project only.
 func FindProject(ctx context.Context, c *transport.Client, key string) (adapter.ProjectInfo, error) {
 	ps, err := adapter.ListProjects(ctx, c)
 	if err != nil {
 		return adapter.ProjectInfo{}, err
 	}
-	var names []string
-	for _, p := range ps {
-		if p.Archived {
-			continue
+	ps = slices.DeleteFunc(ps, func(p adapter.ProjectInfo) bool { return p.Archived })
+	for _, match := range []func(adapter.ProjectInfo) bool{
+		func(p adapter.ProjectInfo) bool { return p.ShortName == key },
+		func(p adapter.ProjectInfo) bool { return strings.EqualFold(p.ShortName, key) },
+		func(p adapter.ProjectInfo) bool { return strings.EqualFold(p.Name, key) },
+	} {
+		var found []string
+		var first adapter.ProjectInfo
+		for _, p := range ps {
+			if match(p) {
+				if len(found) == 0 {
+					first = p
+				}
+				found = append(found, p.ShortName)
+			}
 		}
-		if strings.EqualFold(p.ShortName, key) || strings.EqualFold(p.Name, key) {
-			return p, nil
+		switch {
+		case len(found) == 1:
+			return first, nil
+		case len(found) > 1:
+			return adapter.ProjectInfo{}, clierr.FlagErrorf("project %q is ambiguous; use one of the short names:\n  %s", key, strings.Join(found, "\n  "))
 		}
-		names = append(names, p.ShortName)
+	}
+	names := make([]string, len(ps))
+	for i, p := range ps {
+		names[i] = p.ShortName
 	}
 	return adapter.ProjectInfo{}, clierr.FlagErrorf("unknown project %q; projects you can use:\n  %s", key, strings.Join(names, "\n  "))
 }
@@ -202,9 +236,15 @@ func (d *DescriptionFlags) Add(cmd *cobra.Command) {
 }
 
 // Check validates the flags after parsing.
-func (d *DescriptionFlags) Check(cmd *cobra.Command) error {
+func (d *DescriptionFlags) Check(f *cmdutil.Factory, cmd *cobra.Command) error {
 	d.set = cmd.Flags().Changed("description")
-	return cmdutil.MutuallyExclusive("specify only one of `--description`, `--description-file` or `--editor`", d.set, d.File != "", d.Editor)
+	if err := cmdutil.MutuallyExclusive("specify only one of `--description`, `--description-file` or `--editor`", d.set, d.File != "", d.Editor); err != nil {
+		return err
+	}
+	if d.Editor && !f.IOStreams.CanPrompt() {
+		return clierr.FlagErrorf("`--editor` needs a terminal; use `--description` or `--description-file` instead")
+	}
+	return nil
 }
 
 // Given reports whether any description source was given.

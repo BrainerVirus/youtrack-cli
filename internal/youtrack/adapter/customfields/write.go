@@ -12,12 +12,21 @@ import (
 )
 
 // DefinitionProjection is the fields= projection of a project custom field
-// (ProjectCustomField) that Definition decodes.
-const DefinitionProjection = "canBeEmpty,field(name,fieldType(id)),bundle(values(name,archived),aggregatedUsers(login,fullName))"
+// (ProjectCustomField) that Definition decodes. It leaves out the users of
+// user fields, which can be many; UsersProjection fetches them for one field.
+const DefinitionProjection = "id,canBeEmpty,field(name,fieldType(id)),bundle(values(name,archived),groups(name))"
+
+// UsersProjection is the fields= projection of one user field's users.
+const UsersProjection = "bundle(aggregatedUsers(login,fullName))"
+
+// maxListed caps the valid values an error lists.
+const maxListed = 20
 
 // Definition is a project's custom field: what ytrack needs to write a value
 // to it.
 type Definition struct {
+	// ID is the project custom field's database ID.
+	ID   string
 	Name string
 	// FieldType is YouTrack's field type ID, e.g. "enum[1]" or "date and time".
 	FieldType  string
@@ -29,8 +38,32 @@ type Definition struct {
 	Values []string
 	// Archived are the archived elements' names; they cannot be set.
 	Archived []string
-	// Users are the users a user field accepts.
-	Users []User
+	// Groups are the user groups a group field accepts; nil when YouTrack
+	// did not send them.
+	Groups []string
+	// Users are the users a user field accepts, once SetUsers was called.
+	Users       []User
+	usersLoaded bool
+}
+
+// SetUsers records the users a user field accepts (see UsersProjection).
+func (d *Definition) SetUsers(users []User) { d.Users, d.usersLoaded = users, true }
+
+// NeedsUsers reports whether a user field's users are not loaded yet.
+func (d Definition) NeedsUsers() bool { return d.Kind == KindUser && !d.usersLoaded }
+
+// DecodeUsers decodes the users of a project custom field fetched with
+// UsersProjection.
+func DecodeUsers(b []byte) ([]User, error) {
+	var w struct {
+		Bundle *struct {
+			AggregatedUsers []User `json:"aggregatedUsers"`
+		} `json:"bundle"`
+	}
+	if err := json.Unmarshal(b, &w); err != nil || w.Bundle == nil {
+		return nil, err
+	}
+	return w.Bundle.AggregatedUsers, nil
 }
 
 // fieldTypeKinds maps YouTrack field type IDs, without the [1] or [*]
@@ -56,7 +89,8 @@ var fieldTypeKinds = map[string]Kind{
 // DefinitionProjection.
 func (d *Definition) UnmarshalJSON(b []byte) error {
 	var w struct {
-		CanBeEmpty bool `json:"canBeEmpty"`
+		ID         string `json:"id"`
+		CanBeEmpty bool   `json:"canBeEmpty"`
 		Field      struct {
 			Name      string `json:"name"`
 			FieldType struct {
@@ -68,7 +102,9 @@ func (d *Definition) UnmarshalJSON(b []byte) error {
 				Name     string `json:"name"`
 				Archived bool   `json:"archived"`
 			} `json:"values"`
-			AggregatedUsers []User `json:"aggregatedUsers"`
+			Groups []struct {
+				Name string `json:"name"`
+			} `json:"groups"`
 		} `json:"bundle"`
 	}
 	if err := json.Unmarshal(b, &w); err != nil {
@@ -81,7 +117,7 @@ func (d *Definition) UnmarshalJSON(b []byte) error {
 	if !ok {
 		kind = KindUnknown
 	}
-	*d = Definition{Name: w.Field.Name, FieldType: ft, Kind: kind, Multi: multi, CanBeEmpty: w.CanBeEmpty}
+	*d = Definition{ID: w.ID, Name: w.Field.Name, FieldType: ft, Kind: kind, Multi: multi, CanBeEmpty: w.CanBeEmpty}
 	if w.Bundle != nil {
 		for _, v := range w.Bundle.Values {
 			if v.Archived {
@@ -90,7 +126,12 @@ func (d *Definition) UnmarshalJSON(b []byte) error {
 				d.Values = append(d.Values, v.Name)
 			}
 		}
-		d.Users = w.Bundle.AggregatedUsers
+		if w.Bundle.Groups != nil {
+			d.Groups = []string{}
+			for _, g := range w.Bundle.Groups {
+				d.Groups = append(d.Groups, g.Name)
+			}
+		}
 	}
 	return nil
 }
@@ -110,6 +151,20 @@ var issueFieldTypes = map[Kind][2]string{
 	KindDateTime: {"SimpleIssueCustomField", ""},
 	KindSimple:   {"SimpleIssueCustomField", ""},
 	KindText:     {"TextIssueCustomField", ""},
+}
+
+// WriteTypes are the IssueCustomField $types Encode can produce.
+func WriteTypes() []string {
+	var out []string
+	for _, pair := range issueFieldTypes {
+		for _, t := range pair {
+			if t != "" && !slices.Contains(out, t) {
+				out = append(out, t)
+			}
+		}
+	}
+	slices.Sort(out)
+	return out
 }
 
 // Write is how ytrack sets one custom field: either Field, an
@@ -142,9 +197,17 @@ func (e *ValueError) Error() string {
 		msg += ": " + e.Hint
 	}
 	if len(e.Valid) > 0 {
-		msg += "; valid values:\n  " + strings.Join(e.Valid, "\n  ")
+		msg += "; valid values:\n  " + strings.Join(capList(e.Valid), "\n  ")
 	}
 	return msg
+}
+
+// capList keeps the first maxListed items and says how many were left out.
+func capList(items []string) []string {
+	if len(items) <= maxListed {
+		return items
+	}
+	return append(slices.Clone(items[:maxListed]), fmt.Sprintf("… and %d more", len(items)-maxListed))
 }
 
 // periodPattern is a YouTrack duration such as "1w 2d 4h 30m".
@@ -163,11 +226,20 @@ func (d Definition) Encode(raw string, opts EncodeOptions) (Write, error) {
 		return Write{}, fmt.Errorf("field %q has type %q, which ytrack cannot set with --field; use `ytrack issue command`", d.Name, d.FieldType)
 	}
 	wireType := types[0]
-	if d.Multi && types[1] != "" {
+	if d.Multi {
+		if types[1] == "" {
+			return Write{}, fmt.Errorf("field %q is a multi-value %s field, which ytrack cannot set with --field; use `ytrack issue command`", d.Name, d.FieldType)
+		}
 		wireType = types[1]
+	}
+	if d.Kind == KindGroup && d.Groups == nil {
+		return Write{}, fmt.Errorf("YouTrack did not list the groups field %q accepts, so ytrack does not set it; use `ytrack issue command`", d.Name)
 	}
 	w := Write{Name: d.Name, Field: map[string]any{"name": d.Name, "$type": wireType}}
 	raw = strings.TrimSpace(raw)
+	if raw == "" && !d.CanBeEmpty {
+		return Write{}, fmt.Errorf("field %q cannot be empty in this project", d.Name)
+	}
 	if raw == "" {
 		if d.Multi {
 			w.Field["value"] = []any{}
@@ -214,7 +286,14 @@ func (d Definition) encodeOne(v string, opts EncodeOptions) (any, error) {
 		return &ValueError{Field: d.Name, Value: v, Hint: hint, Valid: valid}
 	}
 	switch d.Kind {
-	case KindEnum, KindState, KindVersion, KindBuild, KindOwned, KindGroup:
+	case KindGroup:
+		for _, g := range d.Groups {
+			if strings.EqualFold(g, v) {
+				return map[string]any{"name": g}, nil
+			}
+		}
+		return nil, bad("not a group the field accepts", d.Groups...)
+	case KindEnum, KindState, KindVersion, KindBuild, KindOwned:
 		name, err := d.bundleValue(v)
 		if err != nil {
 			return nil, err
@@ -292,7 +371,7 @@ func (d Definition) userValue(v string, opts EncodeOptions) (string, error) {
 	if v == "me" && opts.Me != nil {
 		return opts.Me()
 	}
-	if len(d.Users) == 0 {
+	if !d.usersLoaded || len(d.Users) == 0 {
 		return v, nil
 	}
 	logins := make([]string, len(d.Users))

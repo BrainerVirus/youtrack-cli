@@ -243,6 +243,7 @@ func TestIssueCreate(t *testing.T) {
 
 	t.Run("with --editor, it sends what the editor saved", func(t *testing.T) {
 		env, yt := writable(t)
+		env.Interactive()
 		seen := useStubEditor(t, "From the editor")
 		mustRun(t, env, "issue", "create", "-p", "NSR", "-s", "x", "--editor")
 		if got := lastPost(t, yt, "/api/issues")["description"]; got != "From the editor" {
@@ -250,6 +251,88 @@ func TestIssueCreate(t *testing.T) {
 		}
 		if b, err := os.ReadFile(seen); err != nil || len(b) != 0 {
 			t.Errorf("the editor started with %q (%v)", b, err)
+		}
+	})
+
+	t.Run("not in a terminal, --editor is a usage error and no editor opens", func(t *testing.T) {
+		env, yt := writable(t)
+		seen := useStubEditor(t, "text")
+		before := len(yt.Requests())
+		for _, args := range [][]string{{"issue", "create", "-p", "NSR", "-s", "x", "--editor"}, {"issue", "edit", "NSR-40", "--editor"}} {
+			env.Reset()
+			if code := env.Run(args...); !env.IsUsageError(code) || !strings.Contains(env.Stderr.String(), "`--editor` needs a terminal") {
+				t.Errorf("%v: exit %d: %s", args[:2], code, env.Stderr)
+			}
+		}
+		if _, err := os.Stat(seen); err == nil || len(yt.Requests()) != before {
+			t.Error("the editor opened or requests were sent")
+		}
+	})
+
+	t.Run("given a project key, it prefers an exact short name, then a short name, then a unique name", func(t *testing.T) {
+		env, yt := writable(t)
+		yt.Projects = append(yt.Projects,
+			map[string]any{"$type": "Project", "id": "0-20", "shortName": "XYZ", "name": "NSR", "archived": false},
+			map[string]any{"$type": "Project", "id": "0-21", "shortName": "nsr2", "name": "Shared", "archived": false},
+			map[string]any{"$type": "Project", "id": "0-22", "shortName": "SHR", "name": "shared", "archived": false})
+		yt.ProjectFields["0-20"] = []map[string]any{}
+		for key, want := range map[string]string{"NSR": "0-12", "nsr": "0-12", "xyz": "0-20", "Nightshift": "0-12"} {
+			env.Reset()
+			mustRun(t, env, "issue", "create", "-p", key, "-s", "x")
+			if got := lastPost(t, yt, "/api/issues")["project"]; !reflect.DeepEqual(got, map[string]any{"id": want}) {
+				t.Errorf("-p %s: project = %v, want %s", key, got, want)
+			}
+		}
+		env.Reset()
+		if code := env.Run("issue", "create", "-p", "SHARED", "-s", "x"); code != 1 || !strings.Contains(env.Stderr.String(), `project "SHARED" is ambiguous`) {
+			t.Errorf("ambiguous name: exit %d: %s", code, env.Stderr)
+		}
+	})
+
+	t.Run("given a field that cannot be empty, an empty value is refused before sending", func(t *testing.T) {
+		env, yt := writable(t)
+		if code := env.Run("issue", "create", "-p", "NSR", "-s", "x", "--field", "Priority="); code != 1 || !strings.Contains(env.Stderr.String(), `field "Priority" cannot be empty`) {
+			t.Errorf("exit %d: %s", code, env.Stderr)
+		}
+		if len(requests(yt, "POST", "/api/issues")) != 0 {
+			t.Error("it created an issue")
+		}
+	})
+
+	t.Run("given a group field, it writes a group from the field's bundle", func(t *testing.T) {
+		env, yt := writable(t)
+		mustRun(t, env, "issue", "create", "-p", "NSR", "-s", "x", "--field", "Team=qa")
+		cfs := lastPost(t, yt, "/api/issues")["customFields"]
+		if want := []any{map[string]any{"name": "Team", "$type": "SingleGroupIssueCustomField", "value": map[string]any{"name": "QA"}}}; !reflect.DeepEqual(cfs, want) {
+			t.Errorf("customFields = %v", cfs)
+		}
+		if v := storedField(t, yt, "NSR-102", "Team"); !reflect.DeepEqual(v, map[string]any{"name": "QA"}) {
+			t.Errorf("stored Team = %v", v)
+		}
+		env.Reset()
+		if code := env.Run("issue", "create", "-p", "NSR", "-s", "x", "--field", "Team=Ops"); code != 1 || !strings.Contains(env.Stderr.String(), "  Developers\n  QA\n") {
+			t.Errorf("unknown group: exit %d: %s", code, env.Stderr)
+		}
+	})
+
+	t.Run("it reads a user field's users only when a login is being checked", func(t *testing.T) {
+		env, yt := writable(t)
+		userReads := func() int { return len(requests(yt, "GET", "/customFields/93-13")) }
+		mustRun(t, env, "issue", "create", "-p", "NSR", "-s", "x", "--field", "Priority=Major", "--assignee", "me")
+		if n := userReads(); n != 0 {
+			t.Errorf("read the users %d times without a login to check", n)
+		}
+		for _, r := range requests(yt, "GET", "/customFields") {
+			if strings.Contains(query(t, r).Get("fields"), "aggregatedUsers") {
+				t.Errorf("the definitions request asks for users: %s", r.RawQuery)
+			}
+		}
+		mustRun(t, env, "issue", "create", "-p", "NSR", "-s", "x", "--assignee", "JROE")
+		if n := userReads(); n != 1 {
+			t.Errorf("read the users %d times, want once", n)
+		}
+		if got := lastPost(t, yt, "/api/issues")["customFields"].([]any)[0].(map[string]any)["value"]; !reflect.DeepEqual(got, map[string]any{"login": "jroe"}) {
+			t.Errorf("assignee = %v", got)
 		}
 	})
 
@@ -327,6 +410,7 @@ func TestIssueEdit(t *testing.T) {
 
 	t.Run("given --editor, it starts from the current description", func(t *testing.T) {
 		env, yt := writable(t)
+		env.Interactive()
 		seen := useStubEditor(t, "Rewritten\n")
 		mustRun(t, env, "issue", "edit", "NSR-40", "--editor")
 		if b, _ := os.ReadFile(seen); !strings.HasPrefix(string(b), "After SSO login the user lands on the dashboard.") {

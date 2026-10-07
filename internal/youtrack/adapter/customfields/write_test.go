@@ -3,6 +3,7 @@ package customfields
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -61,7 +62,8 @@ func TestEncode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := Definition{Name: "F", FieldType: tt.fieldType, Values: []string{"Bug", "In Progress"}, Users: tt.users}
+			d := Definition{Name: "F", FieldType: tt.fieldType, CanBeEmpty: true, Values: []string{"Bug", "In Progress"}}
+			d.SetUsers(tt.users)
 			base, multi := strings.CutSuffix(tt.fieldType, "[*]")
 			d.Kind, d.Multi = fieldTypeKinds[strings.TrimSuffix(base, "[1]")], multi
 			w, err := d.Encode(tt.raw, opts)
@@ -78,6 +80,50 @@ func TestEncode(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("given an empty value for a field that cannot be empty, it refuses naming the field", func(t *testing.T) {
+		d := Definition{Name: "Priority", FieldType: "enum[1]", Kind: KindEnum, Values: []string{"Major"}}
+		if _, err := d.Encode(" ", opts); err == nil || err.Error() != `field "Priority" cannot be empty in this project` {
+			t.Errorf("err = %v", err)
+		}
+	})
+
+	t.Run("given a multi-value field of a kind without a multi-value type, it refuses", func(t *testing.T) {
+		for _, ft := range []string{"state[*]", "date[*]"} {
+			d := definition(t, `{"canBeEmpty":true,"field":{"name":"F","fieldType":{"id":"`+ft+`"}},"bundle":{"values":[{"name":"Open"}]}}`)
+			if _, err := d.Encode("Open", opts); err == nil || !strings.Contains(err.Error(), "use `ytrack issue command`") {
+				t.Errorf("%s: err = %v", ft, err)
+			}
+		}
+	})
+
+	t.Run("a group field takes a group from the bundle, and fails closed without the list", func(t *testing.T) {
+		d := definition(t, `{"canBeEmpty":true,"field":{"name":"Team","fieldType":{"id":"group[*]"}},"bundle":{"groups":[{"name":"Developers"},{"name":"QA"}]}}`)
+		w, err := d.Encode("qa,developers", opts)
+		if b, _ := json.Marshal(w.Field); err != nil || string(b) != `{"$type":"MultiGroupIssueCustomField","name":"Team","value":[{"name":"QA"},{"name":"Developers"}]}` {
+			t.Errorf("got %s, %v", b, err)
+		}
+		if _, err := d.Encode("Ops", opts); err == nil || !strings.Contains(err.Error(), "valid values:\n  Developers\n  QA") {
+			t.Errorf("err = %v", err)
+		}
+		blind := definition(t, `{"canBeEmpty":true,"field":{"name":"Team","fieldType":{"id":"group[1]"}}}`)
+		if _, err := blind.Encode("QA", opts); err == nil || !strings.Contains(err.Error(), "use `ytrack issue command`") {
+			t.Errorf("without groups: err = %v", err)
+		}
+	})
+
+	t.Run("given many valid values, the error lists the first 20", func(t *testing.T) {
+		d := Definition{Name: "Assignee", FieldType: "user[1]", Kind: KindUser, CanBeEmpty: true}
+		var users []User
+		for i := range 30 {
+			users = append(users, User{Login: fmt.Sprintf("user%02d", i)})
+		}
+		d.SetUsers(users)
+		_, err := d.Encode("nobody", opts)
+		if err == nil || !strings.Contains(err.Error(), "\n  user18\n  … and 11 more") || strings.Contains(err.Error(), "user19") {
+			t.Errorf("err = %v", err)
+		}
+	})
 
 	t.Run("given a value outside the bundle, the error lists the valid values", func(t *testing.T) {
 		d := Definition{Name: "Priority", FieldType: "enum[1]", Kind: KindEnum, Values: []string{"Major", "Minor"}}

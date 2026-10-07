@@ -67,6 +67,11 @@ const sampleProjectFields = `[
    "field": {"$type": "CustomField", "id": "58-9", "name": "Story points", "fieldType": {"$type": "FieldType", "id": "integer"}}},
   {"$type": "SimpleProjectCustomField", "id": "93-18", "canBeEmpty": true, "issueType": "SimpleIssueCustomField",
    "field": {"$type": "CustomField", "id": "58-10", "name": "Deployed", "fieldType": {"$type": "FieldType", "id": "date and time"}}},
+  {"$type": "GroupProjectCustomField", "id": "93-20", "canBeEmpty": true, "issueType": "SingleGroupIssueCustomField",
+   "field": {"$type": "CustomField", "id": "58-12", "name": "Team", "fieldType": {"$type": "FieldType", "id": "group[1]"}},
+   "bundle": {"$type": "UserBundle", "id": "68-7", "groups": [
+     {"$type": "UserGroup", "id": "3-1", "name": "Developers"},
+     {"$type": "UserGroup", "id": "3-2", "name": "QA"}]}},
   {"$type": "TextProjectCustomField", "id": "93-19", "canBeEmpty": true, "issueType": "TextIssueCustomField",
    "field": {"$type": "CustomField", "id": "58-11", "name": "Root cause", "fieldType": {"$type": "FieldType", "id": "text"}}}
 ]`
@@ -112,6 +117,18 @@ func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
 			return
 		}
 		writeProjected(w, r, 200, page(r, fs))
+	})
+	mux.HandleFunc("GET /api/admin/projects/{id}/customFields/{field}", func(w http.ResponseWriter, r *http.Request) {
+		yt.mu.Lock()
+		fs := slices.Clone(yt.ProjectFields[r.PathValue("id")])
+		yt.mu.Unlock()
+		for _, f := range fs {
+			if f["id"] == r.PathValue("field") {
+				writeProjected(w, r, 200, f)
+				return
+			}
+		}
+		notFound(w, r.PathValue("field"))
 	})
 	mux.HandleFunc("GET /api/tags", func(w http.ResponseWriter, r *http.Request) {
 		yt.mu.Lock()
@@ -354,6 +371,11 @@ func checkValue(def, value any) string {
 			m, _ := it.(map[string]any)
 			if !slices.ContainsFunc(bundleMembers(d, "aggregatedUsers", "login"), func(l string) bool { return l == m["login"] }) {
 				return fmt.Sprintf("User %v not found", m["login"])
+			}
+		case strings.HasPrefix(ft, "group"):
+			m, _ := it.(map[string]any)
+			if !slices.Contains(bundleMembers(d, "groups", "name"), fmt.Sprint(m["name"])) {
+				return fmt.Sprintf("Group %v not found", m["name"])
 			}
 		case strings.Contains(ft, "["):
 			m, _ := it.(map[string]any)

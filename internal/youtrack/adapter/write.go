@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -48,6 +49,17 @@ func ProjectFields(ctx context.Context, c *transport.Client, projectID string) (
 			url.PathEscape(projectID), customfields.DefinitionProjection, skip, top), &page)
 		return page, err
 	})
+}
+
+// ProjectFieldUsers returns the users a project's user field accepts.
+func ProjectFieldUsers(ctx context.Context, c *transport.Client, projectID, fieldID string) ([]customfields.User, error) {
+	var raw json.RawMessage
+	err := c.GetJSON(ctx, fmt.Sprintf("/api/admin/projects/%s/customFields/%s?fields=%s",
+		url.PathEscape(projectID), url.PathEscape(fieldID), customfields.UsersProjection), &raw)
+	if err != nil {
+		return nil, err
+	}
+	return customfields.DecodeUsers(raw)
 }
 
 // Tag is an issue tag.

@@ -36,6 +36,7 @@ type Request struct {
 //	POST|DELETE /api/issues/{id}/tags[/{tag}]  tags and untags an issue
 //	GET  /api/admin/projects        Projects, paged
 //	GET  /api/admin/projects/{id}/customFields  ProjectFields[project id], paged
+//	GET  /api/admin/projects/{id}/customFields/{field}  one of them
 //	GET  /api/tags                  Tags, paged
 //	POST /api/commands[/assist]     applies or previews a small subset of the
 //	                                YouTrack command language (see command)

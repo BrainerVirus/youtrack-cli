@@ -1,5 +1,5 @@
 {
-  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return (empty when ytrack reads no body). Types list the attributes ytrack requests in fields= or writes in a request body ($type, the discriminator every entity has, is implied), each with the entity types it may hold (empty for a scalar). internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schema.",
+  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return (empty when ytrack reads no body). Types list the attributes ytrack requests in fields= or writes in a request body ($type, the discriminator every entity has, is implied as an attribute; the $type values ytrack writes are listed under subtypes, by the type they specialize), each with the entity types it may hold (empty for a scalar). internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schema.",
   "endpoints": [
     {"method": "GET", "path": "/users/me", "query": ["fields"], "response": "User"},
     {"method": "GET", "path": "/issues", "query": ["fields", "query", "customFields", "$skip", "$top"], "response": "Issue"},
@@ -19,9 +19,19 @@
     {"method": "GET", "path": "/tags", "query": ["fields", "$skip", "$top"], "response": "Tag"},
     {"method": "GET", "path": "/admin/projects", "query": ["fields", "$skip", "$top"], "response": "Project"},
     {"method": "GET", "path": "/admin/projects/{id}/customFields", "query": ["fields", "$skip", "$top"], "response": "ProjectCustomField"},
+    {"method": "GET", "path": "/admin/projects/{id}/customFields/{projectCustomFieldId}", "query": ["fields"], "response": "ProjectCustomField"},
     {"method": "POST", "path": "/commands", "query": ["fields"], "response": "CommandList"},
     {"method": "POST", "path": "/commands/assist", "query": ["fields"], "response": "CommandList"}
   ],
+  "subtypes": {
+    "IssueCustomField": [
+      "SingleEnumIssueCustomField", "MultiEnumIssueCustomField", "StateIssueCustomField",
+      "SingleUserIssueCustomField", "MultiUserIssueCustomField", "SingleGroupIssueCustomField", "MultiGroupIssueCustomField",
+      "SingleVersionIssueCustomField", "MultiVersionIssueCustomField", "SingleBuildIssueCustomField", "MultiBuildIssueCustomField",
+      "SingleOwnedIssueCustomField", "MultiOwnedIssueCustomField", "PeriodIssueCustomField", "DateIssueCustomField",
+      "SimpleIssueCustomField", "TextIssueCustomField"
+    ]
+  },
   "types": {
     "Issue": {
       "id": [],
@@ -66,11 +76,11 @@
       "projectCustomField": ["ProjectCustomField"],
       "value": ["BundleElement", "User", "UserGroup", "PeriodValue", "TextFieldValue"]
     },
-    "ProjectCustomField": {"field": ["CustomField"], "canBeEmpty": [], "bundle": ["Bundle"]},
+    "ProjectCustomField": {"id": [], "field": ["CustomField"], "canBeEmpty": [], "bundle": ["Bundle"]},
     "CustomField": {"name": [], "fieldType": ["FieldType"]},
     "FieldType": {"id": []},
     "BundleElement": {"name": [], "archived": []},
-    "Bundle": {"values": ["BundleElement"], "aggregatedUsers": ["User"]},
+    "Bundle": {"values": ["BundleElement"], "aggregatedUsers": ["User"], "groups": ["UserGroup"]},
     "CommandList": {"query": [], "caret": [], "comment": [], "silent": [], "issues": ["Issue"], "commands": ["ParsedCommand"]},
     "ParsedCommand": {"description": [], "error": [], "delete": []},
     "UserGroup": {"name": []},
