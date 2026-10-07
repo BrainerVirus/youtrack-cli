@@ -52,6 +52,7 @@ ytrack auth logout
 ```sh
 ytrack issue list -q 'project: APP for: me #Unresolved'      # native query syntax
 ytrack issue list --project APP --assignee me --state Open --sort 'updated desc'
+ytrack issue list --project APP --all                         # resolved too
 ytrack issue list -q '#Unresolved' --json idReadable,summary,state,url
 ytrack issue view APP-123 --comments
 ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --web
@@ -59,7 +60,9 @@ ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
 ```
 
-`--json` with no fields lists the available ones. Only the attributes needed
+Without `--query` or `--state`, `issue list` shows only unresolved issues
+(it adds `#Unresolved`); `--all` includes resolved ones. `--json` with no
+fields lists the available ones. Only the attributes needed
 for the table or the requested fields are fetched. In `issue list`, `-q` is
 `--query`; use `--jq` for jq. `--limit` defaults to 30; `--limit 0` lists all.
 The editor for `issue comment --editor` is `$YTRACK_EDITOR`, `$GIT_EDITOR`,

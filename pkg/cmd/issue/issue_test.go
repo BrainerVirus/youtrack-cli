@@ -111,9 +111,31 @@ func TestIssueList(t *testing.T) {
 
 	t.Run("given a multi-word sort attribute without an order, it braces it", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
-		mustRun(t, env, "issue", "list", "--sort", "issue id")
+		mustRun(t, env, "issue", "list", "--all", "--sort", "issue id")
 		if got := query(t, yt.LastRequest(t)).Get("query"); got != "sort by: {issue id}" {
 			t.Errorf("query = %q", got)
+		}
+	})
+
+	t.Run("by default, it lists only unresolved issues", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		for _, tt := range []struct {
+			args []string
+			want string
+		}{
+			{nil, "#Unresolved"},
+			{[]string{"--project", "NSR", "--assignee", "me"}, "#Unresolved project: NSR for: me"},
+			{[]string{"--all"}, ""},
+			{[]string{"--all", "--project", "NSR"}, "project: NSR"},
+			{[]string{"-q", "project: NSR #Resolved"}, "project: NSR #Resolved"},
+			{[]string{"--state", "Fixed"}, "State: Fixed"},
+		} {
+			env.Reset()
+			mustRun(t, env, append([]string{"issue", "list"}, tt.args...)...)
+			q := query(t, yt.LastRequest(t))
+			if got := q.Get("query"); got != tt.want || (tt.want == "") == q.Has("query") {
+				t.Errorf("%v: query = %q (sent: %v), want %q", tt.args, got, q.Has("query"), tt.want)
+			}
 		}
 	})
 

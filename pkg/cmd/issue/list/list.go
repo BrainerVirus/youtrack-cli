@@ -28,6 +28,7 @@ type options struct {
 	assignee string
 	state    string
 	sort     string
+	all      bool
 	limit    int
 	exporter *output.Exporter
 }
@@ -45,8 +46,10 @@ func NewCmdList(f *cmdutil.Factory) *cobra.Command {
 --assignee, --state and --sort add the matching query terms to it:
 --project APP adds "project: APP", --assignee me adds "for: me", --state
 'In Progress' adds "State: {In Progress}" and --sort 'updated desc' adds
-"sort by: updated desc". Without any of them, every issue you can see is
-listed in YouTrack's default order.
+"sort by: updated desc".
+
+Unless you pass --query or --state, only unresolved issues are listed
+("#Unresolved" is added to the query); --all lists resolved ones too.
 
 --limit 0 lists every matching issue.
 
@@ -54,6 +57,7 @@ JSON fields:
 ` + shared.IssueFieldsHelp,
 		Example: `  $ ytrack issue list -q 'project: APP for: me #Unresolved'
   $ ytrack issue list --project APP --assignee me --state Open --sort 'updated desc'
+  $ ytrack issue list --project APP --all
   $ ytrack issue list -q '#Unresolved' --json idReadable,summary,state --jq '.[].idReadable'`,
 		Args: cmdutil.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -76,6 +80,7 @@ JSON fields:
 	fl.StringVarP(&opts.assignee, "assignee", "a", "", "Only issues assigned to this `login` (\"me\" for yourself)")
 	fl.StringVarP(&opts.state, "state", "s", "", "Only issues in this `state`")
 	fl.StringVar(&opts.sort, "sort", "", "Sort by an `attribute`, optionally followed by asc or desc")
+	fl.BoolVar(&opts.all, "all", false, "Include resolved issues (no implicit #Unresolved)")
 	fl.IntVarP(&opts.limit, "limit", "L", DefaultLimit, "Maximum number of issues to list (0 for all)")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, shared.IssueFields, cmdutil.WithoutJQShorthand())
 	return cmd
@@ -127,11 +132,17 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, query string) er
 	return tbl.Render()
 }
 
+// DefaultFilter is added to the query when neither --query, --state nor
+// --all is given.
+const DefaultFilter = "#Unresolved"
+
 // buildQuery appends the convenience flags to --query as YouTrack terms.
 func buildQuery(o *options) (string, error) {
 	var parts []string
 	if q := strings.TrimSpace(o.query); q != "" {
 		parts = append(parts, q)
+	} else if o.state == "" && !o.all {
+		parts = append(parts, DefaultFilter)
 	}
 	for _, t := range []struct{ flag, attr, value string }{
 		{"--project", "project", o.project},
