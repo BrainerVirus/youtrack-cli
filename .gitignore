@@ -2,3 +2,5 @@ bin/
 /ytrack
 *.test
 coverage.out
+/completions/
+/dist/
