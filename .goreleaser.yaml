@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# Release build for ytrack. Run by .github/workflows/release.yml on v* tags.
+# Local dry run: goreleaser release --snapshot --clean
+version: 2
+
+project_name: ytrack
+
+before:
+  hooks:
+    - go mod tidy -diff
+    # completions/ is generated beforehand by `make completions` (a separate
+    # workflow step), so no repo code runs in the step that holds the tap token.
+    - test -s completions/ytrack.bash -a -s completions/_ytrack -a -s completions/ytrack.fish
+
+builds:
+  - id: ytrack
+    main: ./cmd/ytrack
+    binary: ytrack
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    # Same variables as the Makefile; `ytrack version` prints them. The date is the
+    # commit date (not the build time) so rebuilding a tag gives identical binaries.
+    ldflags:
+      - -s -w
+      - -X github.com/BrainerVirus/youtrack-cli/internal/build.Version={{ .Version }}
+      - -X github.com/BrainerVirus/youtrack-cli/internal/build.Commit={{ .ShortCommit }}
+      - -X github.com/BrainerVirus/youtrack-cli/internal/build.Date={{ slice .CommitDate 0 10 }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: ytrack
+    ids: [ytrack]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+      - completions/*
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: git
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat(\(.+\))?!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^fix(\(.+\))?!?:.+$'
+      order: 1
+    - title: Performance
+      regexp: '^perf(\(.+\))?!?:.+$'
+      order: 2
+    - title: Other changes
+      order: 999
+  filters:
+    exclude:
+      # goreleaser matches the subject without the hash, so anchor at its start.
+      - '^(docs|test|chore|ci|style)(\(.+\))?!?:'
+      - '^Merge '
+
+# Homebrew cask in BrainerVirus/homebrew-tap (`brew install brainervirus/tap/ytrack`).
+# Publishing needs HOMEBREW_TAP_GITHUB_TOKEN (a PAT with contents:write on the tap);
+# without it the cask is still generated but not pushed, and the release goes ahead.
+homebrew_casks:
+  - name: ytrack
+    ids: [ytrack]
+    repository:
+      owner: BrainerVirus
+      name: homebrew-tap
+      token: '{{ envOrDefault "HOMEBREW_TAP_GITHUB_TOKEN" "" }}'
+    skip_upload: '{{ if eq (envOrDefault "HOMEBREW_TAP_GITHUB_TOKEN" "") "" }}true{{ else }}auto{{ end }}'
+    directory: Casks
+    homepage: https://github.com/BrainerVirus/youtrack-cli
+    description: Unofficial command-line interface for JetBrains YouTrack
+    license: MIT
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "ytrack {{ .Tag }}"
+    completions:
+      bash: completions/ytrack.bash
+      zsh: completions/_ytrack
+      fish: completions/ytrack.fish
+    hooks:
+      post:
+        # The binaries are not notarized; drop the quarantine flag so macOS runs them.
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ytrack"]
+          end
+
+release:
+  github:
+    owner: BrainerVirus
+    name: youtrack-cli
+  prerelease: auto
+  footer: |
+    Verify a download: `sha256sum --check --ignore-missing ytrack_{{ .Version }}_checksums.txt`
