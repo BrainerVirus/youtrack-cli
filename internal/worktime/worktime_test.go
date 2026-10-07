@@ -105,6 +105,49 @@ func TestParseDurationExplainsDaysAndUnits(t *testing.T) {
 	}
 }
 
+func TestParseDurationLimits(t *testing.T) {
+	for _, tt := range []struct {
+		in   string
+		want int
+		err  string
+	}{
+		{"2147483647", 2147483647, ""},
+		{"2147483648", 0, "too long"},
+		{"99999999999999999999999", 0, "too long"},
+		{"35791394h", 2147483640, ""},
+		{"35791395h", 0, "too long"},
+		// Exact decimals: 1.1 * 60 is 66.00000000000001 in float64.
+		{"1.1h", 66, ""},
+		{"0.7h", 42, ""},
+		{"1.01h", 0, "not a whole number of minutes"},
+		{"0.0000001h", 0, "not a whole number of minutes"},
+		{"1.0000000001h", 0, "not a whole number of minutes"},
+		{"1.00000001h", 0, "not a whole number of minutes"},
+	} {
+		got, err := ParseDuration(tt.in)
+		if tt.err == "" {
+			if err != nil || got != tt.want {
+				t.Errorf("ParseDuration(%q) = %d, %v; want %d", tt.in, got, err, tt.want)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), tt.err) {
+			t.Errorf("ParseDuration(%q) = %d, %v; want an error mentioning %q", tt.in, got, err, tt.err)
+		}
+	}
+}
+
+func TestParseDayYears(t *testing.T) {
+	for in, ok := range map[string]bool{
+		"1970-01-01": true, "9999-12-31": true,
+		"1969-12-31": false, "0001-01-01": false, "10000-01-01": false,
+	} {
+		if _, err := ParseDay(in); (err == nil) != ok {
+			t.Errorf("ParseDay(%q) error = %v, want ok=%v", in, err, ok)
+		}
+	}
+}
+
 func TestFormatMinutes(t *testing.T) {
 	for minutes, want := range map[int]string{45: "45m", 60: "1h", 90: "1h 30m", 600: "10h"} {
 		if got := FormatMinutes(minutes); got != want {

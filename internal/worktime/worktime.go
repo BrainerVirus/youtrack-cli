@@ -9,8 +9,8 @@ package worktime
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -22,7 +22,7 @@ var (
 	term = regexp.MustCompile(`^(\d+(?:\.\d+)?)\s*([a-z]+)\s*`)
 )
 
-var unitMinutes = map[string]float64{
+var unitMinutes = map[string]int64{
 	"h": 60, "hr": 60, "hrs": 60, "hour": 60, "hours": 60,
 	"m": 1, "min": 1, "mins": 1, "minute": 1, "minutes": 1,
 }
@@ -37,45 +37,45 @@ func ParseDuration(s string) (int, error) {
 	if text == "" {
 		return 0, fmt.Errorf("empty duration; use e.g. 1h30m, 90m or 1.5h")
 	}
+	// Decimals are summed exactly (big.Rat), so "whole minutes" is strict:
+	// 1.1h is 66 minutes and 1.01h (60.6) is refused, with no float rounding.
+	total := new(big.Rat)
 	if bareMinutes.MatchString(text) {
-		n, err := strconv.Atoi(text)
-		if err != nil || n <= 0 {
-			return 0, fmt.Errorf("invalid duration %q: it must be more than 0 minutes", s)
-		}
-		return n, nil
-	}
-	total := 0.0
-	for rest := text; rest != ""; {
-		m := term.FindStringSubmatch(rest)
-		if m == nil {
-			return 0, fmt.Errorf("invalid duration %q: use hours and minutes, e.g. 1h30m, 90m or 1.5h", s)
-		}
-		factor, ok := unitMinutes[m[2]]
-		if !ok {
-			if m[2] == "d" || m[2] == "w" || strings.HasPrefix(m[2], "day") || strings.HasPrefix(m[2], "week") {
-				return 0, fmt.Errorf("invalid duration %q: days and weeks depend on the YouTrack work schedule; give hours or minutes", s)
+		total.SetString(text)
+	} else {
+		for rest := text; rest != ""; {
+			m := term.FindStringSubmatch(rest)
+			if m == nil {
+				return 0, fmt.Errorf("invalid duration %q: use hours and minutes, e.g. 1h30m, 90m or 1.5h", s)
 			}
-			return 0, fmt.Errorf("invalid duration %q: unknown unit %q (use h or m)", s, m[2])
+			factor, ok := unitMinutes[m[2]]
+			if !ok {
+				if m[2] == "d" || m[2] == "w" || strings.HasPrefix(m[2], "day") || strings.HasPrefix(m[2], "week") {
+					return 0, fmt.Errorf("invalid duration %q: days and weeks depend on the YouTrack work schedule; give hours or minutes", s)
+				}
+				return 0, fmt.Errorf("invalid duration %q: unknown unit %q (use h or m)", s, m[2])
+			}
+			n, ok := new(big.Rat).SetString(m[1])
+			if !ok {
+				return 0, fmt.Errorf("invalid duration %q", s)
+			}
+			total.Add(total, n.Mul(n, big.NewRat(factor, 1)))
+			rest = rest[len(m[0]):]
 		}
-		n, err := strconv.ParseFloat(m[1], 64)
-		if err != nil {
-			return 0, fmt.Errorf("invalid duration %q", s)
-		}
-		total += n * factor
-		rest = rest[len(m[0]):]
 	}
-	minutes := math.Round(total)
-	if math.Abs(total-minutes) > 1e-9 {
+	switch {
+	case total.Sign() <= 0:
+		return 0, fmt.Errorf("invalid duration %q: it must be more than 0 minutes", s)
+	case total.Cmp(maxMinutes) > 0:
+		return 0, fmt.Errorf("invalid duration %q: too long", s)
+	case !total.IsInt():
 		return 0, fmt.Errorf("invalid duration %q: it is not a whole number of minutes", s)
 	}
-	if minutes <= 0 {
-		return 0, fmt.Errorf("invalid duration %q: it must be more than 0 minutes", s)
-	}
-	if minutes > math.MaxInt32 {
-		return 0, fmt.Errorf("invalid duration %q: too long", s)
-	}
-	return int(minutes), nil
+	return int(total.Num().Int64()), nil
 }
+
+// maxMinutes caps a duration at YouTrack's 32-bit minutes.
+var maxMinutes = big.NewRat(math.MaxInt32, 1)
 
 // FormatMinutes renders minutes as YouTrack shows durations without a work
 // schedule: "1h 30m", "45m", "2h".
@@ -112,9 +112,16 @@ func WorkDate(raw string, now time.Time, loc *time.Location) (time.Time, error) 
 }
 
 // ParseDay parses a YYYY-MM-DD day as midnight UTC. It rejects days that do
-// not exist, such as 2026-02-30.
+// not exist, such as 2026-02-30, and years outside 1970-9999.
 func ParseDay(raw string) (time.Time, error) {
-	return time.Parse("2006-1-2", strings.TrimSpace(raw))
+	d, err := time.Parse("2006-1-2", strings.TrimSpace(raw))
+	if err != nil {
+		return time.Time{}, err
+	}
+	if d.Year() < 1970 || d.Year() > 9999 {
+		return time.Time{}, fmt.Errorf("year %d is outside 1970-9999", d.Year())
+	}
+	return d, nil
 }
 
 // Location returns the timezone that decides today's date for "auto": name
