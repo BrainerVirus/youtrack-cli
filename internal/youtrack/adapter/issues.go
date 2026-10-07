@@ -56,18 +56,11 @@ func (i Issue) CustomField(name string) (customfields.Field, bool) {
 	return customfields.Field{}, false
 }
 
-// State is the value of the State field, or of the first state-kind field
-// when no field is called State.
+// State is the value of the State field. It is looked up by name only, as
+// the customFields= filter in lists is, so list and view agree.
 func (i Issue) State() string {
-	if f, ok := i.CustomField(StateField); ok {
-		return f.String()
-	}
-	for _, f := range i.CustomFields {
-		if f.Kind == customfields.KindState {
-			return f.String()
-		}
-	}
-	return ""
+	f, _ := i.CustomField(StateField)
+	return f.String()
 }
 
 // Priority is the value of the Priority field.
@@ -119,7 +112,7 @@ var customFieldAttrs = map[string]string{
 }
 
 const (
-	allCustomFields   = "customFields(name," + customfields.ValueProjection + ")"
+	allCustomFields   = "customFields(name," + customfields.TypeProjection + "," + customfields.ValueProjection + ")"
 	namedCustomFields = "customFields(name,value(name,login,fullName))"
 )
 
@@ -260,7 +253,7 @@ func GetIssue(ctx context.Context, c *transport.Client, id string, attrs []strin
 	return w.domain(), err
 }
 
-// Comment is an issue comment.
+// Comment is an issue comment. Deleted comments are never returned.
 type Comment struct {
 	ID      string
 	Text    string
@@ -269,7 +262,7 @@ type Comment struct {
 	Updated time.Time
 }
 
-const commentFields = "id,text,author(login,fullName),created,updated"
+const commentFields = "id,text,author(login,fullName),created,updated,deleted"
 
 type wireComment struct {
 	ID      string    `json:"id"`
@@ -277,10 +270,12 @@ type wireComment struct {
 	Author  *wireUser `json:"author"`
 	Created *int64    `json:"created"`
 	Updated *int64    `json:"updated"`
+	Deleted bool      `json:"deleted"`
 }
 
 // ListComments returns an issue's comments, oldest first, starting at skip;
-// limit 0 returns all of them.
+// limit 0 returns all of them. Deleted comments are left out, so fewer than
+// limit may come back.
 func ListComments(ctx context.Context, c *transport.Client, issueID string, skip, limit int) ([]Comment, error) {
 	wire, err := transport.Paginate(skip, PageSize, limit, func(skip, top int) ([]wireComment, error) {
 		var page []wireComment
@@ -290,9 +285,12 @@ func ListComments(ctx context.Context, c *transport.Client, issueID string, skip
 	if err != nil {
 		return nil, err
 	}
-	out := make([]Comment, len(wire))
-	for i, w := range wire {
-		out[i] = Comment{ID: w.ID, Text: w.Text, Author: w.Author.domain(), Created: millis(w.Created), Updated: millis(w.Updated)}
+	out := make([]Comment, 0, len(wire))
+	for _, w := range wire {
+		if w.Deleted {
+			continue
+		}
+		out = append(out, Comment{ID: w.ID, Text: w.Text, Author: w.Author.domain(), Created: millis(w.Created), Updated: millis(w.Updated)})
 	}
 	return out, nil
 }

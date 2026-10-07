@@ -124,11 +124,11 @@ func TestIssueList(t *testing.T) {
 		if got, want := q.Get("fields"), "idReadable,summary,updated,customFields(name,value(name,login,fullName))"; got != want {
 			t.Errorf("fields = %q, want %q", got, want)
 		}
-		if got := q["customFields"]; !reflect.DeepEqual(got, []string{"State", "Assignee"}) {
-			t.Errorf("customFields = %v, want only State and Assignee", got)
+		if got := q["customFields"]; !reflect.DeepEqual(got, []string{"State", "Priority", "Assignee"}) {
+			t.Errorf("customFields = %v, want only State, Priority and Assignee", got)
 		}
-		want := "NSR-40\tLogin redirect drops the return URL\tIn Progress\tjdoe\t2026-10-06T15:20:00Z\n" +
-			"NSR-41\tDark mode toggle\tFixed\t\t2026-10-07T05:13:20Z\n"
+		want := "NSR-40\tLogin redirect drops the return URL\tIn Progress\tMajor\tjdoe\t2026-10-06T15:20:00Z\n" +
+			"NSR-41\tDark mode toggle\tFixed\tNormal\t\t2026-10-07T05:13:20Z\n"
 		if env.Stdout.String() != want {
 			t.Errorf("stdout = %q, want %q", env.Stdout, want)
 		}
@@ -194,7 +194,7 @@ func TestIssueList(t *testing.T) {
 		env, yt := loggedIn(t, "")
 		mustRun(t, env, "issue", "list", "--json", "customFields,state", "--limit", "1")
 		q := query(t, yt.LastRequest(t))
-		if got, want := q.Get("fields"), "customFields(name,value(name,login,fullName,minutes,presentation,text))"; got != want {
+		if got, want := q.Get("fields"), "customFields(name,projectCustomField(field(fieldType(id))),value(name,login,fullName,minutes,presentation,text))"; got != want {
 			t.Errorf("fields = %q, want %q", got, want)
 		}
 		if _, ok := q["customFields"]; ok {
@@ -221,6 +221,7 @@ func TestIssueList(t *testing.T) {
 			"Spent time":   {"name": "Spent time", "kind": "period", "value": nil},
 			"Due Date":     {"name": "Due Date", "kind": "date", "value": "2026-10-07"},
 			"Story points": {"name": "Story points", "kind": "simple", "value": float64(5)},
+			"Deployed":     {"name": "Deployed", "kind": "datetime", "value": "2026-10-07T12:00:00Z"},
 			"Root cause":   {"name": "Root cause", "kind": "text", "value": "Session cookie set before redirect"},
 			"Sentiment":    {"name": "Sentiment", "kind": "unknown", "value": map[string]any{"$type": "Mood"}},
 		}
@@ -338,7 +339,7 @@ func TestIssueView(t *testing.T) {
 		if len(reqs) != 1 {
 			t.Fatalf("requests = %v", reqs)
 		}
-		if got, want := query(t, reqs[0]).Get("fields"), "idReadable,summary,description,project(shortName,name),reporter(login,fullName),created,updated,resolved,tags(name),commentsCount,customFields(name,value(name,login,fullName,minutes,presentation,text))"; got != want {
+		if got, want := query(t, reqs[0]).Get("fields"), "idReadable,summary,description,project(shortName,name),reporter(login,fullName),created,updated,resolved,tags(name),commentsCount,customFields(name,projectCustomField(field(fieldType(id))),value(name,login,fullName,minutes,presentation,text))"; got != want {
 			t.Errorf("fields = %q\nwant     %q", got, want)
 		}
 		want := `NSR-40: Login redirect drops the return URL
@@ -356,6 +357,7 @@ Fix versions: 2026.3
 Estimation: 1d 4h 30m
 Due Date:   2026-10-07
 Story points: 5
+Deployed:   2026-10-07T12:00:00Z
 Root cause: Session cookie set before redirect
 Sentiment:  {"$type":"Mood"}
 
@@ -379,7 +381,7 @@ View this issue on YouTrack: ` + yt.URL() + `/issue/NSR-40
 			t.Fatalf("requests = %v", reqs)
 		}
 		q := query(t, reqs[0])
-		if q.Get("$skip") != "1" || q.Get("$top") != "2" || q.Get("fields") != "id,text,author(login,fullName),created,updated" {
+		if q.Get("$skip") != "1" || q.Get("$top") != "2" || q.Get("fields") != "id,text,author(login,fullName),created,updated,deleted" {
 			t.Errorf("comments query = %s", reqs[0].RawQuery)
 		}
 		out := env.Stdout.String()
@@ -639,6 +641,222 @@ func TestIssueComment(t *testing.T) {
 		t.Setenv("YTRACK_TOKEN", "perm-wrong")
 		if code := env.Run("issue", "comment", "NSR-40", "--body", "x"); code != 4 {
 			t.Errorf("exit %d, want 4: %s", code, env.Stderr)
+		}
+	})
+}
+
+func TestIssueURLHost(t *testing.T) {
+	url := func(yt *cmdtest.FakeYouTrack) string { return yt.URL() + "/issue/NSR-40" }
+
+	t.Run("given YTRACK_HOST naming another host than the URL, it is a usage error", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		t.Setenv("YTRACK_HOST", "acme.youtrack.cloud")
+		before := len(yt.Requests())
+		if code := env.Run("issue", "view", url(yt)); !env.IsUsageError(code) {
+			t.Errorf("exit %d: %s", code, env.Stderr)
+		}
+		if !strings.Contains(env.Stderr.String(), "but YTRACK_HOST is acme.youtrack.cloud") || len(yt.Requests()) != before {
+			t.Errorf("stderr = %q, requests %d -> %d", env.Stderr, before, len(yt.Requests()))
+		}
+	})
+
+	t.Run("given YTRACK_TOKEN and a URL on a host that is not logged in, it refuses to send the token", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		other := cmdtest.NewFakeYouTrack(t, "")
+		other.SeedSampleIssues()
+		t.Setenv("YTRACK_TOKEN", other.Token)
+		for _, args := range [][]string{{"issue", "view", url(other)}, {"issue", "comment", url(other), "--body", "x"}} {
+			env.Reset()
+			if code := env.Run(args...); code != 1 {
+				t.Errorf("%v: exit %d, want 1", args, code)
+			}
+			if !strings.Contains(env.Stderr.String(), "refusing to send YTRACK_TOKEN to "+other.Key()) {
+				t.Errorf("stderr = %q", env.Stderr)
+			}
+		}
+		if n := len(other.Requests()); n != 0 {
+			t.Errorf("the URL's host received %d requests", n)
+		}
+	})
+
+	t.Run("given YTRACK_TOKEN and --host naming the URL's host, it sends the token there", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		other := cmdtest.NewFakeYouTrack(t, "")
+		other.SeedSampleIssues()
+		t.Setenv("YTRACK_TOKEN", other.Token)
+		mustRun(t, env, "issue", "view", url(other), "--host", other.URL(), "--json", "idReadable")
+		if env.Stdout.String() != `{"idReadable":"NSR-40"}`+"\n" || len(other.Requests()) != 1 {
+			t.Errorf("stdout = %q, requests = %d", env.Stdout, len(other.Requests()))
+		}
+	})
+
+	t.Run("given YTRACK_TOKEN and a URL on the logged-in host, it uses it", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		t.Setenv("YTRACK_TOKEN", yt.Token)
+		mustRun(t, env, "issue", "view", url(yt), "--json", "idReadable")
+	})
+
+	t.Run("given a URL on a host without credentials, it exits 4 without contacting it", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		other := cmdtest.NewFakeYouTrack(t, "")
+		if code := env.Run("issue", "view", url(other)); code != 4 {
+			t.Errorf("exit %d, want 4: %s", code, env.Stderr)
+		}
+		if !strings.Contains(env.Stderr.String(), "not logged in to "+other.Key()) || len(other.Requests()) != 0 {
+			t.Errorf("stderr = %q, requests = %d", env.Stderr, len(other.Requests()))
+		}
+	})
+
+	t.Run("given --web and a URL on a host that is not logged in, it opens the URL's host", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		other := cmdtest.NewFakeYouTrack(t, "")
+		t.Setenv("YTRACK_TOKEN", "anything")
+		mustRun(t, env, "issue", "view", url(other), "--web")
+		if want := []string{url(other)}; !reflect.DeepEqual(env.Browser.URLs, want) {
+			t.Errorf("browsed %v", env.Browser.URLs)
+		}
+	})
+}
+
+func TestTerminalSafety(t *testing.T) {
+	hostile := func(yt *cmdtest.FakeYouTrack) {
+		is := yt.Issues[0]
+		is["summary"] = "Evil\x1b]0;pwned\x07 \x1b[31mred\ttab"
+		is["description"] = "\x1b]8;;https://evil.example\x07link\x1b]8;;\x07\r\nline2\u009b2J"
+		cf := is["customFields"].([]any)[1].(map[string]any) // Type
+		cf["value"].(map[string]any)["name"] = "Bug\x1b[2J\nInjected: yes"
+		yt.Comments["NSR-40"][2]["text"] = "ok\x1b]52;c;Y2xpcA==\x07 done"
+	}
+	controls := func(s string) []rune {
+		var bad []rune
+		for _, r := range s {
+			if r != '\n' && r != '\t' && (r < 0x20 || (r >= 0x7f && r <= 0x9f)) {
+				bad = append(bad, r)
+			}
+		}
+		return bad
+	}
+
+	t.Run("the list table strips control characters and turns tabs into spaces", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		hostile(yt)
+		mustRun(t, env, "issue", "list")
+		first := strings.SplitN(env.Stdout.String(), "\n", 2)[0]
+		if bad := controls(env.Stdout.String()); len(bad) != 0 {
+			t.Errorf("control characters %q in %q", bad, env.Stdout)
+		}
+		if cells := strings.Split(first, "\t"); len(cells) != 6 || cells[1] != "Evil]0;pwned [31mred tab" {
+			t.Errorf("row = %q", first)
+		}
+	})
+
+	t.Run("the issue view strips control characters but keeps line breaks", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		hostile(yt)
+		mustRun(t, env, "issue", "view", "NSR-40", "--comments")
+		out := env.Stdout.String()
+		if bad := controls(out); len(bad) != 0 {
+			t.Errorf("control characters %q in:\n%s", bad, out)
+		}
+		for _, want := range []string{
+			"NSR-40: Evil]0;pwned [31mred tab\n",
+			"\n]8;;https://evil.examplelink]8;;\nline22J\n",
+			"Type:       Bug[2J Injected: yes\n",
+			"  ok]52;c;Y2xpcA== done\n",
+		} {
+			if !strings.Contains(out, want) {
+				t.Errorf("stdout lacks %q:\n%s", want, out)
+			}
+		}
+	})
+
+	t.Run("JSON output keeps the text exactly, escaped by the encoder", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		hostile(yt)
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "summary")
+		if got := decodeJSON[map[string]string](t, env.Stdout.Bytes())["summary"]; got != "Evil\x1b]0;pwned\x07 \x1b[31mred\ttab" {
+			t.Errorf("summary = %q", got)
+		}
+		if strings.ContainsRune(env.Stdout.String(), 0x1b) {
+			t.Error("raw ESC in JSON output")
+		}
+	})
+}
+
+func TestIssueReviewFixes(t *testing.T) {
+	t.Run("given -q that looks like jq together with --json, it suggests --jq", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		for _, q := range []string{".[].idReadable", "map(.id) | length", "#Unresolved []"} {
+			env.Reset()
+			if code := env.Run("issue", "list", "--json", "idReadable", "-q", q); !env.IsUsageError(code) || !strings.Contains(env.Stderr.String(), "did you mean --jq?") {
+				t.Errorf("%q: exit %d: %s", q, code, env.Stderr)
+			}
+		}
+		env.Reset()
+		mustRun(t, env, "issue", "list", "--json", "idReadable", "-q", "project: NSR")
+	})
+
+	t.Run("given a flag value with a brace, it is a usage error", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		before := len(yt.Requests())
+		if code := env.Run("issue", "list", "--state", "Open} or {Fixed"); !env.IsUsageError(code) || len(yt.Requests()) != before {
+			t.Errorf("exit %d: %s", code, env.Stderr)
+		}
+	})
+
+	t.Run("deleted comments are left out", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.Comments["NSR-40"][1]["deleted"] = true
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "comments", "--jq", "[.comments[].id]")
+		if env.Stdout.String() != `["4-1","4-3"]`+"\n" {
+			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given --json comments with --comments-limit, it returns only the latest", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "comments", "--comments-limit", "1", "--jq", "[.comments[].id]")
+		if env.Stdout.String() != `["4-3"]`+"\n" {
+			t.Errorf("stdout = %q", env.Stdout)
+		}
+		q := query(t, requests(yt, "GET", "/comments")[0])
+		if q.Get("$skip") != "2" || q.Get("$top") != "1" {
+			t.Errorf("comments query = %v", q)
+		}
+	})
+
+	t.Run("given a renamed state field, list and view both report no state", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		cf := yt.Issues[0]["customFields"].([]any)[2].(map[string]any)
+		cf["name"] = "Stage"
+		mustRun(t, env, "issue", "list", "--json", "state", "--limit", "1")
+		list := env.Stdout.String()
+		env.Reset()
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "state")
+		if list != `[{"state":""}]`+"\n" || env.Stdout.String() != `{"state":""}`+"\n" {
+			t.Errorf("list %q, view %q", list, env.Stdout)
+		}
+	})
+
+	t.Run("given a failed post after editing, it keeps the text in a file", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		exe, _ := os.Executable()
+		for _, k := range []string{"YTRACK_EDITOR", "GIT_EDITOR", "VISUAL"} {
+			t.Setenv(k, "")
+		}
+		t.Setenv("EDITOR", exe)
+		t.Setenv(editorEnv, "A long careful comment")
+		if code := env.Run("issue", "comment", "NOPE-1", "--editor"); code != 1 {
+			t.Fatalf("exit %d", code)
+		}
+		_, rest, ok := strings.Cut(env.Stderr.String(), "your text is saved in ")
+		path, _, _ := strings.Cut(rest, "\n")
+		if !ok {
+			t.Fatalf("stderr = %q", env.Stderr)
+		}
+		t.Cleanup(func() { _ = os.Remove(path) })
+		if b, err := os.ReadFile(path); err != nil || string(b) != "A long careful comment" {
+			t.Errorf("draft = %q, %v", b, err)
 		}
 	})
 }

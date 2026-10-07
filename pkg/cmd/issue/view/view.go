@@ -29,6 +29,7 @@ var humanAttrs = []string{
 
 type options struct {
 	ref           shared.Ref
+	limitGiven    bool
 	web           bool
 	comments      bool
 	commentsLimit int
@@ -46,11 +47,12 @@ func NewCmdView(f *cmdutil.Factory) *cobra.Command {
 The issue is an ID such as APP-123 or its web URL. A URL selects its host.
 
 --comments adds the latest comments (--comments-limit of them). --web opens
-the issue in the browser instead.
+the issue in the browser instead. Deleted comments are not shown.
 
 JSON fields:
 ` + shared.IssueFieldsHelp + `
-  comments      all comments: [{id, text, author, created, updated, url}]`,
+  comments      [{id, text, author, created, updated, url}]: all comments,
+                or the latest --comments-limit when that flag is given`,
 		Example: `  $ ytrack issue view APP-123
   $ ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments
   $ ytrack issue view APP-123 --json summary,state,comments --jq '.comments | length'`,
@@ -61,13 +63,14 @@ JSON fields:
 				return err
 			}
 			opts.ref = ref
+			opts.limitGiven = cmd.Flags().Changed("comments-limit")
 			if opts.commentsLimit < 1 {
 				return clierr.FlagErrorf("invalid --comments-limit %d: use a positive number", opts.commentsLimit)
 			}
 			if err := cmdutil.MutuallyExclusive("cannot use `--web` with `--json` or `--comments`", opts.web, opts.exporter != nil || opts.comments); err != nil {
 				return err
 			}
-			if err := shared.UseRefHost(f, ref); err != nil {
+			if err := shared.UseRefHost(f, ref, !opts.web); err != nil {
 				return err
 			}
 			if opts.web {
@@ -114,13 +117,20 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if wantComments {
 			extra = []string{"idReadable"} // comment URLs need it
 		}
+		if wantComments && opts.limitGiven {
+			extra = append(extra, "commentsCount")
+		}
 		issue, err := adapter.GetIssue(ctx, client, id, shared.Attrs(opts.exporter.Fields, extra...))
 		if err != nil {
 			return shared.NotFound(err, id, host)
 		}
 		out := shared.Issue{Issue: issue, Host: host}
 		if wantComments {
-			if out.Comments, err = adapter.ListComments(ctx, client, id, 0, 0); err != nil {
+			skip, limit := 0, 0
+			if opts.limitGiven {
+				skip, limit = max(0, issue.CommentsCount-opts.commentsLimit), opts.commentsLimit
+			}
+			if out.Comments, err = adapter.ListComments(ctx, client, id, skip, limit); err != nil {
 				return err
 			}
 		}
@@ -159,9 +169,10 @@ func (p printer) time(t time.Time) string {
 	return t.UTC().Format(time.RFC3339)
 }
 
+// kv prints one "Key: value" line; both are sanitized onto one line.
 func (p printer) kv(key, value string) {
 	if value != "" {
-		fmt.Fprintf(p.w, "%-11s %s\n", key+":", value)
+		fmt.Fprintf(p.w, "%-11s %s\n", output.SanitizeCell(key)+":", output.SanitizeCell(value))
 	}
 }
 
@@ -176,7 +187,7 @@ func userString(u *adapter.User) string {
 }
 
 func (p printer) issue(is shared.Issue, showComments bool, comments []adapter.Comment) {
-	fmt.Fprintf(p.w, "%s: %s\n", is.IDReadable, is.Summary)
+	fmt.Fprintf(p.w, "%s: %s\n", output.SanitizeCell(is.IDReadable), output.SanitizeCell(is.Summary))
 	if is.Project != nil {
 		project := is.Project.ShortName
 		if is.Project.Name != "" && is.Project.Name != project {
@@ -200,7 +211,7 @@ func (p printer) issue(is shared.Issue, showComments bool, comments []adapter.Co
 	}
 
 	fmt.Fprintln(p.w)
-	desc := strings.TrimSpace(strings.ReplaceAll(is.Description, "\r\n", "\n"))
+	desc := strings.TrimSpace(output.SanitizeText(is.Description))
 	if desc == "" {
 		desc = "No description provided."
 	}
@@ -211,8 +222,8 @@ func (p printer) issue(is shared.Issue, showComments bool, comments []adapter.Co
 	case showComments && len(comments) > 0:
 		fmt.Fprintf(p.w, "Comments (latest %d of %d):\n", len(comments), is.CommentsCount)
 		for _, c := range comments {
-			fmt.Fprintf(p.w, "\n%s • %s\n", userString(c.Author), p.time(c.Created))
-			fmt.Fprintln(p.w, text.Indent(strings.TrimSpace(c.Text), "  "))
+			fmt.Fprintf(p.w, "\n%s • %s\n", output.SanitizeCell(userString(c.Author)), p.time(c.Created))
+			fmt.Fprintln(p.w, text.Indent(strings.TrimSpace(output.SanitizeText(c.Text)), "  "))
 		}
 		fmt.Fprintln(p.w)
 	case showComments:

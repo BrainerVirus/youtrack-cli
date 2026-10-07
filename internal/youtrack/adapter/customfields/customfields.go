@@ -28,7 +28,10 @@ const (
 	KindOwned   Kind = "owned"
 	KindPeriod  Kind = "period"
 	KindDate    Kind = "date"
-	KindText    Kind = "text"
+	// KindDateTime is a "date and time" field. YouTrack sends it as a
+	// SimpleIssueCustomField; only the field type (see TypeProjection) tells.
+	KindDateTime Kind = "datetime"
+	KindText     Kind = "text"
 	// KindSimple is a string, integer, float or date-time field: YouTrack
 	// sends the bare JSON value and the $type does not say which.
 	KindSimple  Kind = "simple"
@@ -38,6 +41,13 @@ const (
 // ValueProjection is the fields= projection for custom field values that
 // covers every Kind this package decodes.
 const ValueProjection = "value(name,login,fullName,minutes,presentation,text)"
+
+// TypeProjection fetches the field type, which tells date-time fields apart
+// from other simple fields.
+const TypeProjection = "projectCustomField(field(fieldType(id)))"
+
+// dateTimeFieldType is the field type ID of "date and time" fields.
+const dateTimeFieldType = "date and time"
 
 // Value is one decoded custom field value.
 type Value interface {
@@ -91,6 +101,12 @@ type Date struct{ Time time.Time }
 
 func (d Date) String() string { return d.Time.UTC().Format(time.DateOnly) }
 func (d Date) Export() any    { return d.String() }
+
+// DateTime is an instant (YouTrack sends epoch milliseconds).
+type DateTime struct{ Time time.Time }
+
+func (d DateTime) String() string { return d.Time.UTC().Format(time.RFC3339) }
+func (d DateTime) Export() any    { return d.String() }
 
 // Text is the source text of a text field.
 type Text string
@@ -217,12 +233,23 @@ func Decode(raw []byte) Field {
 		Type  string          `json:"$type"`
 		Name  string          `json:"name"`
 		Value json.RawMessage `json:"value"`
+		PCF   *struct {
+			Field *struct {
+				FieldType *struct {
+					ID string `json:"id"`
+				} `json:"fieldType"`
+			} `json:"field"`
+		} `json:"projectCustomField"`
 	}
 	if err := json.Unmarshal(raw, &w); err != nil {
 		return Field{Kind: KindUnknown, Value: rawValue(raw)}
 	}
 	f := Field{Name: w.Name, WireType: w.Type}
 	wt, known := wireTypes[w.Type]
+	if w.Type == "SimpleIssueCustomField" && w.PCF != nil && w.PCF.Field != nil && w.PCF.Field.FieldType != nil &&
+		w.PCF.Field.FieldType.ID == dateTimeFieldType {
+		wt = wireType{KindDateTime, false, decodeDateTime}
+	}
 	if !known {
 		f.Kind, f.Value = KindUnknown, rawValue(w.Value)
 		return f
@@ -308,6 +335,14 @@ func decodeDate(b json.RawMessage) (Value, bool) {
 		return nil, false
 	}
 	return Date{Time: time.UnixMilli(ms).UTC()}, true
+}
+
+func decodeDateTime(b json.RawMessage) (Value, bool) {
+	var ms int64
+	if json.Unmarshal(b, &ms) != nil {
+		return nil, false
+	}
+	return DateTime{Time: time.UnixMilli(ms).UTC()}, true
 }
 
 func decodeText(b json.RawMessage) (Value, bool) {

@@ -77,7 +77,7 @@ JSON fields:
 				}
 				opts.editor = true
 			}
-			if err := shared.UseRefHost(f, ref); err != nil {
+			if err := shared.UseRefHost(f, ref, true); err != nil {
 				return err
 			}
 			return run(cmd, f, opts)
@@ -108,6 +108,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 
 	c, err := adapter.AddComment(cmd.Context(), client, opts.ref.ID, body)
 	if err != nil {
+		if opts.editor {
+			saveDraft(f, body)
+		}
 		return shared.NotFound(err, opts.ref.ID, host)
 	}
 	issueID := c.IssueIDReadable
@@ -120,6 +123,20 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	fmt.Fprintln(ios.Out, res.URL)
 	return nil
+}
+
+// saveDraft keeps text written in the editor when posting it failed, so the
+// user does not lose it.
+func saveDraft(f *cmdutil.Factory, body string) {
+	d, err := os.CreateTemp("", "ytrack-comment-*.md")
+	if err != nil {
+		return
+	}
+	_, werr := d.WriteString(body)
+	if cerr := d.Close(); werr != nil || cerr != nil {
+		return
+	}
+	fmt.Fprintf(f.IOStreams.ErrOut, "! the comment was not posted; your text is saved in %s\n", d.Name())
 }
 
 func readBody(f *cmdutil.Factory, opts *options) (string, error) {

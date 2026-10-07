@@ -29,6 +29,7 @@ const sampleIssues = `[
       {"$type": "PeriodIssueCustomField", "id": "92-8", "name": "Spent time", "value": null},
       {"$type": "DateIssueCustomField", "id": "92-9", "name": "Due Date", "value": 1791374400000},
       {"$type": "SimpleIssueCustomField", "id": "92-10", "name": "Story points", "value": 5},
+      {"$type": "SimpleIssueCustomField", "id": "92-13", "name": "Deployed", "projectCustomField": {"$type": "SimpleProjectCustomField", "field": {"$type": "CustomField", "fieldType": {"$type": "FieldType", "id": "date and time"}}}, "value": 1791374400000},
       {"$type": "TextIssueCustomField", "id": "92-11", "name": "Root cause", "value": {"$type": "TextFieldValue", "id": "t-1", "text": "Session cookie set before redirect"}},
       {"$type": "HologramIssueCustomField", "id": "92-12", "name": "Sentiment", "value": {"$type": "Mood", "score": 7}}
     ]

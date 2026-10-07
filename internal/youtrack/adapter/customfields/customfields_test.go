@@ -55,6 +55,14 @@ func TestDecode(t *testing.T) {
 			KindText, false, "line one\nline two", `"line one\nline two"`,
 		},
 		{
+			"a date-time (a simple field whose type is date and time)", `{"name":"Deployed","$type":"SimpleIssueCustomField","projectCustomField":{"field":{"fieldType":{"id":"date and time"}}},"value":1791374400000}`,
+			KindDateTime, false, "2026-10-07T12:00:00Z", `"2026-10-07T12:00:00Z"`,
+		},
+		{
+			"a simple integer with its field type", `{"name":"Points","$type":"SimpleIssueCustomField","projectCustomField":{"field":{"fieldType":{"id":"integer"}}},"value":3}`,
+			KindSimple, false, "3", `3`,
+		},
+		{
 			"a simple integer", `{"name":"Story points","$type":"SimpleIssueCustomField","value":8}`,
 			KindSimple, false, "8", `8`,
 		},

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"slices"
 	"strings"
@@ -41,7 +42,8 @@ const IssueFieldsHelp = `  id            database ID, e.g. 2-1234
   tags          tag names
   url           issue web URL
   customFields  [{name, kind, value}]: kind is enum, state, user, group,
-                version, build, owned, period, date, text, simple or unknown;
+                version, build, owned, period, date, datetime, text, simple
+                or unknown;
                 value is null, a value, or an array for multi-value fields`
 
 var idPattern = regexp.MustCompile(`^(?:[A-Za-z][A-Za-z0-9_]*-[0-9]+|[0-9]+-[0-9]+)$`)
@@ -74,9 +76,12 @@ func ParseRef(arg string) (Ref, error) {
 	return Ref{ID: id, ServiceURL: u.Scheme + "://" + u.Host + prefix}, nil
 }
 
-// UseRefHost points f at the host of an issue URL. An explicit --host for a
-// different host is a usage error.
-func UseRefHost(f *cmdutil.Factory, ref Ref) error {
+// UseRefHost points f at the host of an issue URL. A --host or $YTRACK_HOST
+// naming a different host is a usage error. When sendsToken is set and
+// $YTRACK_TOKEN is in use, the URL's host must be a logged-in host in
+// hosts.yml or be named by --host or $YTRACK_HOST: a pasted link must not
+// pick where the token goes.
+func UseRefHost(f *cmdutil.Factory, ref Ref, sendsToken bool) error {
 	if ref.ServiceURL == "" {
 		return nil
 	}
@@ -84,10 +89,26 @@ func UseRefHost(f *cmdutil.Factory, ref Ref) error {
 	if err != nil {
 		return clierr.FlagErrorWrap(err)
 	}
-	if f.HostFlag != "" {
-		have, err := hosts.Parse(f.HostFlag)
-		if err == nil && have.Key != want.Key {
-			return clierr.FlagErrorf("the issue URL is on %s but --host is %s", want.Key, have.Key)
+	for _, src := range []struct{ name, value string }{{"--host", f.HostFlag}, {"YTRACK_HOST", os.Getenv("YTRACK_HOST")}} {
+		if src.value == "" {
+			continue
+		}
+		have, err := hosts.Parse(src.value)
+		if err != nil {
+			return clierr.FlagErrorWrap(err)
+		}
+		if have.Key != want.Key {
+			return clierr.FlagErrorf("the issue URL is on %s but %s is %s", want.Key, src.name, have.Key)
+		}
+		return nil // named explicitly: the normal host and token rules apply
+	}
+	if sendsToken && os.Getenv("YTRACK_TOKEN") != "" {
+		cfg, err := f.Config()
+		if err != nil {
+			return err
+		}
+		if cfg.Host(want.Key) == nil {
+			return fmt.Errorf("refusing to send YTRACK_TOKEN to %s, which is not a logged-in host; pass --host %s to allow it", want.Key, want.Key)
 		}
 	}
 	f.HostFlag = ref.ServiceURL
