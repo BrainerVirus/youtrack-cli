@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/auth"
 	"github.com/BrainerVirus/youtrack-cli/internal/browser"
@@ -28,13 +29,31 @@ type Factory struct {
 	Config     func() (*config.Config, error)
 	// RoundTripper replaces the HTTP transport when non-nil (tests).
 	RoundTripper http.RoundTripper
+	// Now returns the current time; nil means time.Now (tests set it).
+	Now func() time.Time
 
 	// Bound to the root command's persistent flags.
 	HostFlag string
 	Debug    bool
 
 	warned map[string]bool
+	// urlHost is the service URL of an issue URL given as an argument.
+	urlHost string
+	// explicitHost is the key of the host named by --host or $YTRACK_HOST.
+	explicitHost string
 }
+
+// Clock returns the current time from Now, or time.Now.
+func (f *Factory) Clock() time.Time {
+	if f.Now != nil {
+		return f.Now()
+	}
+	return time.Now()
+}
+
+// UseURLHost makes serviceURL, taken from an issue URL argument, the host to
+// talk to when neither --host nor $YTRACK_HOST names one.
+func (f *Factory) UseURLHost(serviceURL string) { f.urlHost = serviceURL }
 
 // Warnf prints a "! " warning to stderr once per distinct message.
 func (f *Factory) Warnf(format string, args ...any) {
@@ -54,16 +73,20 @@ func (f *Factory) CredentialStore(cfg *config.Config) auth.Store {
 	return auth.Store{Dir: cfg.Dir()}
 }
 
-// ResolveHost picks the host to talk to: --host, then $YTRACK_HOST, then the
-// default host from hosts.yml. A known host keeps its stored URL (scheme and
-// path prefix); an unknown one is normalized from the input.
+// ResolveHost picks the host to talk to: --host, then the host of an issue
+// URL argument, then $YTRACK_HOST, then the default host from hosts.yml. A
+// known host keeps its stored URL (scheme and path prefix); an unknown one
+// is normalized from the input.
 func (f *Factory) ResolveHost(cfg *config.Config) (hosts.Host, error) {
-	input := f.HostFlag
+	input, explicit := f.HostFlag, true
 	if input == "" {
-		input = os.Getenv("YTRACK_HOST")
+		input, explicit = f.urlHost, false
 	}
 	if input == "" {
-		input = cfg.DefaultHost()
+		input, explicit = os.Getenv("YTRACK_HOST"), true
+	}
+	if input == "" {
+		input, explicit = cfg.DefaultHost(), false
 	}
 	if input == "" {
 		return hosts.Host{}, clierr.AuthErrorf("no YouTrack host configured; run `ytrack auth login` or set YTRACK_HOST")
@@ -71,6 +94,9 @@ func (f *Factory) ResolveHost(cfg *config.Config) (hosts.Host, error) {
 	h, err := hosts.Parse(input)
 	if err != nil {
 		return hosts.Host{}, clierr.FlagErrorWrap(err)
+	}
+	if explicit {
+		f.explicitHost = h.Key
 	}
 	if e := cfg.Host(h.Key); e != nil && e.URL != "" {
 		if stored, err := hosts.Parse(e.URL); err == nil {
@@ -82,10 +108,11 @@ func (f *Factory) ResolveHost(cfg *config.Config) (hosts.Host, error) {
 
 // ResolveToken returns the token for host and where it came from:
 // $YTRACK_TOKEN wins over stored credentials. It returns "" when there is none.
-// It warns when YTRACK_TOKEN goes to a host that is not in hosts.yml.
+// It warns when YTRACK_TOKEN goes to a host that is not in hosts.yml, unless
+// the user named that host with --host or $YTRACK_HOST (the usual CI setup).
 func (f *Factory) ResolveToken(cfg *config.Config, host hosts.Host) (token, source string, err error) {
 	if t := os.Getenv("YTRACK_TOKEN"); t != "" {
-		if cfg.Host(host.Key) == nil {
+		if cfg.Host(host.Key) == nil && host.Key != f.explicitHost {
 			f.Warnf("sending YTRACK_TOKEN to %s, which is not a logged-in host in hosts.yml", host.Key)
 		}
 		return t, auth.SourceEnv, nil

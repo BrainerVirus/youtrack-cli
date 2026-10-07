@@ -111,7 +111,7 @@ func UseRefHost(f *cmdutil.Factory, ref Ref, sendsToken bool) error {
 			return fmt.Errorf("refusing to send YTRACK_TOKEN to %s, which is not a logged-in host; pass --host %s to allow it", want.Key, want.Key)
 		}
 	}
-	f.HostFlag = ref.ServiceURL
+	f.UseURLHost(ref.ServiceURL)
 	return nil
 }
 
