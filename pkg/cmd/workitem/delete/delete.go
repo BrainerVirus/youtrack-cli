@@ -27,8 +27,9 @@ func NewCmdDelete(f *cmdutil.Factory) *cobra.Command {
 		Short: "Delete a work item",
 		Long: `Delete a work item from an issue.
 
-In a terminal ytrack shows the work item and asks before deleting it.
-Otherwise --yes is required.`,
+ytrack first reads the work item and refuses unless it belongs to the issue
+you named. In a terminal it then shows the item and asks before deleting
+it; otherwise --yes is required.`,
 		Example: `  $ ytrack work-item delete APP-123 115-3
   $ ytrack work-item delete APP-123 115-3 --yes`,
 		Args: cmdutil.ExactArgs(2, "expected an issue ID or URL and a work item ID, e.g. APP-123 115-3"),
@@ -60,11 +61,17 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		return err
 	}
 	ctx := cmd.Context()
+	// Always read the item first, also with --yes: work item IDs are global,
+	// so it must be checked to belong to the issue named.
+	issue, err := shared.IssueProject(ctx, client, host, opts.ref.ID)
+	if err != nil {
+		return err
+	}
+	item, err := shared.ItemOnIssue(ctx, client, host, issue, opts.ref.ID, opts.itemID)
+	if err != nil {
+		return err
+	}
 	if !opts.yes {
-		item, err := adapter.GetWorkItem(ctx, client, opts.ref.ID, opts.itemID)
-		if err != nil {
-			return shared.NotFound(err, opts.ref.ID, opts.itemID, host)
-		}
 		w := shared.New(item, host, opts.ref.ID)
 		author := ""
 		if w.Author != nil {

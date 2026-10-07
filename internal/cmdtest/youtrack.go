@@ -40,7 +40,8 @@ type Request struct {
 //	                                {duration{minutes}, date, text, type{id}}; 400 for
 //	                                a missing duration or a type the project lacks
 //	GET|POST|DELETE /api/issues/{id}/timeTracking/workItems/{item}
-//	                                reads, updates (merging the body) or deletes one
+//	                                reads, updates (merging the body) or deletes one,
+//	                                found by ID across all issues (any {id})
 //	GET  /api/admin/projects/{id}/timeTrackingSettings   TimeTracking[project id]
 //	GET  /api/plain                 a text/plain body
 //	GET  /users/me                  the web token page (no auth; 404 if HubTokenPage)

@@ -106,7 +106,11 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		ch.Text = &text
 	}
 	if opts.typeName != "" {
-		if ch.TypeID, err = shared.ResolveType(ctx, client, host, opts.ref.ID, opts.typeName); err != nil {
+		p, err := shared.IssueProject(ctx, client, host, opts.ref.ID)
+		if err != nil {
+			return err
+		}
+		if ch.TypeID, err = shared.ResolveType(ctx, client, p, opts.typeName); err != nil {
 			return err
 		}
 	}

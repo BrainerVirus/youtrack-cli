@@ -32,7 +32,8 @@ func NewCmdEdit(f *cmdutil.Factory) *cobra.Command {
 		Use:   "edit {<issue-id> | <url>} <work-item-id>",
 		Short: "Change a work item",
 		Long: `Change the duration, date, text or type of a work item. Attributes you do
-not pass stay as they are; --text '' clears the text.
+not pass stay as they are; --text '' clears the text. ytrack refuses unless
+the work item belongs to the issue you named.
 
 --duration and --date take the same values as in ` + "`work-item add`" + `.
 ` + shared.DateHelp + `
@@ -68,6 +69,9 @@ JSON fields:
 			if fl.Changed("type") && opts.typeName == "" {
 				return clierr.FlagErrorf("`--type` needs a work item type name")
 			}
+			if fl.Changed("date") && opts.date == "" {
+				return clierr.FlagErrorf("`--date` needs auto or a YYYY-MM-DD day")
+			}
 			if err := issueshared.UseRefHost(f, ref, true); err != nil {
 				return err
 			}
@@ -96,8 +100,15 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, ch adapter.WorkI
 		return err
 	}
 	ctx := cmd.Context()
+	issue, err := shared.IssueProject(ctx, client, host, opts.ref.ID)
+	if err != nil {
+		return err
+	}
+	if _, err := shared.ItemOnIssue(ctx, client, host, issue, opts.ref.ID, opts.itemID); err != nil {
+		return err
+	}
 	if opts.typeName != "" {
-		if ch.TypeID, err = shared.ResolveType(ctx, client, host, opts.ref.ID, opts.typeName); err != nil {
+		if ch.TypeID, err = shared.ResolveType(ctx, client, issue, opts.typeName); err != nil {
 			return err
 		}
 	}

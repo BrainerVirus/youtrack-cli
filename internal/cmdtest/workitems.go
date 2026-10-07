@@ -61,13 +61,13 @@ func (yt *FakeYouTrack) workItemRoutes(mux *http.ServeMux) {
 		writeProjected(w, r, 200, item)
 	})
 	mux.HandleFunc("GET "+items+"/{item}", func(w http.ResponseWriter, r *http.Request) {
-		_, item, ok := yt.workItem(w, r)
+		_, item, _, ok := yt.workItem(w, r)
 		if ok {
 			writeProjected(w, r, 200, item)
 		}
 	})
 	mux.HandleFunc("POST "+items+"/{item}", func(w http.ResponseWriter, r *http.Request) {
-		is, item, ok := yt.workItem(w, r)
+		is, item, _, ok := yt.workItem(w, r)
 		if !ok {
 			return
 		}
@@ -88,13 +88,12 @@ func (yt *FakeYouTrack) workItemRoutes(mux *http.ServeMux) {
 		writeProjected(w, r, 200, item)
 	})
 	mux.HandleFunc("DELETE "+items+"/{item}", func(w http.ResponseWriter, r *http.Request) {
-		is, item, ok := yt.workItem(w, r)
+		_, item, owner, ok := yt.workItem(w, r)
 		if !ok {
 			return
 		}
-		id := is["idReadable"].(string)
 		yt.mu.Lock()
-		yt.WorkItems[id] = slices.DeleteFunc(yt.WorkItems[id], func(m map[string]any) bool { return m["id"] == item["id"] })
+		yt.WorkItems[owner] = slices.DeleteFunc(yt.WorkItems[owner], func(m map[string]any) bool { return m["id"] == item["id"] })
 		yt.mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	})
@@ -110,23 +109,28 @@ func (yt *FakeYouTrack) workItemRoutes(mux *http.ServeMux) {
 	})
 }
 
-// workItem finds the issue and the work item a request names, writing a 404
-// when either is missing. The item is the stored map itself.
-func (yt *FakeYouTrack) workItem(w http.ResponseWriter, r *http.Request) (issue, item map[string]any, ok bool) {
+// workItem finds the issue a request names and the work item with the
+// request's item ID, writing a 404 when either is missing. Like the global
+// /api/workItems/{id}, the item is found by ID across all issues, so a
+// request may reach another issue's item; owner is that item's issue. The
+// item is the stored map itself.
+func (yt *FakeYouTrack) workItem(w http.ResponseWriter, r *http.Request) (issue, item map[string]any, owner string, ok bool) {
 	is, ok := yt.issue(r.PathValue("id"))
 	if !ok {
 		notFound(w, r.PathValue("id"))
-		return nil, nil, false
+		return nil, nil, "", false
 	}
 	yt.mu.Lock()
 	defer yt.mu.Unlock()
-	for _, it := range yt.WorkItems[is["idReadable"].(string)] {
-		if it["id"] == r.PathValue("item") {
-			return is, it, true
+	for id, list := range yt.WorkItems {
+		for _, it := range list {
+			if it["id"] == r.PathValue("item") {
+				return is, it, id, true
+			}
 		}
 	}
 	notFound(w, r.PathValue("item"))
-	return nil, nil, false
+	return nil, nil, "", false
 }
 
 // applyWorkItem copies the attributes in body onto item, as YouTrack does,

@@ -450,13 +450,15 @@ func TestWorkItemEdit(t *testing.T) {
 		}
 	})
 
-	t.Run("given nothing to change or a malformed ID, it is a usage error before any request", func(t *testing.T) {
+	t.Run("given nothing to change, an empty --date or --type, or a malformed ID, it is a usage error before any request", func(t *testing.T) {
 		env, yt := loggedIn(t)
 		before := len(yt.Requests())
 		for _, args := range [][]string{
 			{"NSR-40", "115-1"},
 			{"NSR-40", "abc", "--duration", "1h"},
 			{"NSR-40", "115-1", "--duration", "1h30"},
+			{"NSR-40", "115-1", "--date", ""},
+			{"NSR-40", "115-1", "--type", ""},
 		} {
 			env.Reset()
 			if code := env.Run(append([]string{"work-item", "edit"}, args...)...); !env.IsUsageError(code) {
@@ -465,6 +467,24 @@ func TestWorkItemEdit(t *testing.T) {
 		}
 		if len(yt.Requests()) != before {
 			t.Error("a request was sent")
+		}
+	})
+
+	t.Run("given another issue's work item, it refuses and changes nothing", func(t *testing.T) {
+		env, yt := loggedIn(t)
+		if code := env.Run("work-item", "edit", "NSR-41", "115-1", "--duration", "2h"); code != 1 || !strings.Contains(env.Stderr.String(), "work item 115-1 belongs to NSR-40, not NSR-41") {
+			t.Errorf("exit %d: %s", code, env.Stderr)
+		}
+		if len(requests(yt, "POST", "/timeTracking/workItems/")) != 0 {
+			t.Error("an update was sent")
+		}
+	})
+
+	t.Run("given the issue by database ID, it matches the item's readable issue and edits it", func(t *testing.T) {
+		env, yt := loggedIn(t)
+		mustRun(t, env, "work-item", "edit", "2-4040", "115-1", "--duration", "2h")
+		if len(requests(yt, "POST", "/api/issues/2-4040/timeTracking/workItems/115-1")) != 1 {
+			t.Error("not updated")
 		}
 	})
 
@@ -498,8 +518,8 @@ func TestWorkItemDelete(t *testing.T) {
 	t.Run("given --yes, it deletes without asking", func(t *testing.T) {
 		env, yt := loggedIn(t)
 		mustRun(t, env, "work-item", "delete", "NSR-40", "115-1", "--yes")
-		if len(requests(yt, "GET", "/timeTracking/workItems/115-1")) != 0 {
-			t.Error("it read the item although --yes skips the question")
+		if len(requests(yt, "GET", "/timeTracking/workItems/115-1")) != 1 {
+			t.Error("it did not read the item to check its issue before deleting")
 		}
 		if got := remaining(t, env); !reflect.DeepEqual(got, []string{"115-2", "115-3"}) {
 			t.Errorf("remaining = %v", got)
@@ -528,6 +548,34 @@ func TestWorkItemDelete(t *testing.T) {
 		}
 		if len(requests(yt, "DELETE", "/timeTracking")) != 0 {
 			t.Error("deleted")
+		}
+	})
+
+	t.Run("given another issue's work item, it refuses with --yes or in a terminal and deletes nothing", func(t *testing.T) {
+		env, yt := loggedIn(t)
+		if code := env.Run("work-item", "delete", "NSR-41", "115-1", "--yes"); code != 1 || !strings.Contains(env.Stderr.String(), "work item 115-1 belongs to NSR-40, not NSR-41") {
+			t.Errorf("--yes: exit %d: %s", code, env.Stderr)
+		}
+		env.Reset()
+		env.Interactive()
+		env.Stdin.WriteString("y\n")
+		if code := env.Run("work-item", "delete", "NSR-41", "115-1"); code != 1 || strings.Contains(env.Stderr.String(), "(y/N)") {
+			t.Errorf("terminal: exit %d (it must refuse before asking): %s", code, env.Stderr)
+		}
+		if len(requests(yt, "DELETE", "/timeTracking")) != 0 {
+			t.Error("a DELETE was sent")
+		}
+		env.IO.SetStdoutTTY(false)
+		if got := remaining(t, env); !reflect.DeepEqual(got, []string{"115-1", "115-2", "115-3"}) {
+			t.Errorf("remaining = %v", got)
+		}
+	})
+
+	t.Run("given the issue by database ID, it matches the item's readable issue and deletes it", func(t *testing.T) {
+		env, _ := loggedIn(t)
+		mustRun(t, env, "work-item", "delete", "2-4040", "115-2", "--yes")
+		if got := remaining(t, env); !reflect.DeepEqual(got, []string{"115-1", "115-3"}) {
+			t.Errorf("remaining = %v", got)
 		}
 	})
 

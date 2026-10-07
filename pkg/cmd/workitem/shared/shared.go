@@ -138,13 +138,37 @@ func WorkDate(f *cmdutil.Factory, raw string) (time.Time, error) {
 	return worktime.WorkDate(raw, now, loc)
 }
 
-// ResolveType finds the ID of the work item type called name (ignoring case)
-// in the time tracking settings of the issue's project.
-func ResolveType(ctx context.Context, c *transport.Client, host hosts.Host, issueID, name string) (string, error) {
+// IssueProject reads the named issue's readable ID and project.
+func IssueProject(ctx context.Context, c *transport.Client, host hosts.Host, issueID string) (adapter.IssueProject, error) {
 	p, err := adapter.GetIssueProject(ctx, c, issueID)
 	if err != nil {
-		return "", issueshared.NotFound(err, issueID, host)
+		return adapter.IssueProject{}, issueshared.NotFound(err, issueID, host)
 	}
+	return p, nil
+}
+
+// ItemOnIssue reads a work item and checks that it belongs to issue, the
+// issue named on the command line as YouTrack resolved it (so a database
+// ID or an old project alias still matches). Work item IDs are global, so
+// edit and delete must not trust the issue in the URL to scope them.
+func ItemOnIssue(ctx context.Context, c *transport.Client, host hosts.Host, issue adapter.IssueProject, named, itemID string) (adapter.WorkItem, error) {
+	item, err := adapter.GetWorkItem(ctx, c, named, itemID)
+	if err != nil {
+		return adapter.WorkItem{}, NotFound(err, named, itemID, host)
+	}
+	if item.IssueIDReadable == "" || item.IssueIDReadable != issue.IssueIDReadable {
+		owner := item.IssueIDReadable
+		if owner == "" {
+			owner = "an unknown issue"
+		}
+		return adapter.WorkItem{}, fmt.Errorf("work item %s belongs to %s, not %s; nothing was changed", itemID, owner, issue.IssueIDReadable)
+	}
+	return item, nil
+}
+
+// ResolveType finds the ID of the work item type called name (ignoring case)
+// in the time tracking settings of the issue's project p.
+func ResolveType(ctx context.Context, c *transport.Client, p adapter.IssueProject, name string) (string, error) {
 	project := p.ShortName
 	if project == "" {
 		project = p.ProjectID
