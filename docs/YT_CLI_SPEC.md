@@ -15,7 +15,8 @@ disagrees, these win.
 
 1. **Build, don't adopt.** Existing YouTrack CLIs are small, unbacked projects.
    This one aims for `gh`/`glab` parity and a JSON contract that workit owns.
-   Borrow the agent-frugal output idea from DorskFR/yt.
+   Borrow the agent-frugal output idea from
+   [DorskFR/yt](https://github.com/DorskFR/yt).
 2. **Go, one static binary per platform.** No runtime install, fast startup, and
    `gh`/`glab` (both Go, MIT) patterns transfer, reused with attribution (§37).
 3. **Executable name `ytrack`.** `yt` collides with three existing tools. The
@@ -26,30 +27,65 @@ disagrees, these win.
    questions 3 and 4). Commit `api/openapi/youtrack.json` as a snapshot, and
    contract tests check requests against it.
 5. **Agent output.** `--json <field,...>` takes an explicit field list (the `gh`
-   rule), so output is frugal by default. Also: `--jq`, `--template`, errors on
-   stderr, stable exit codes, and pipe-safe output with no color or prompts when
-   not a TTY.
-6. **Login.** `ytrack auth login` in v1 is assisted permanent-token login. It
-   opens the instance's token page, takes the token through a hidden prompt,
-   stdin (`--with-token`) or `YTRACK_TOKEN`, and verifies it with
-   `/api/users/me` before saving. Browser login (`--web`: Authorization Code
-   with PKCE and a loopback redirect) comes later. It needs an OAuth client
-   registered on the instance (YouTrack 2026.2+), and its tokens expire with no
-   refresh. YouTrack offers no device-code flow and no dynamic client
-   registration (§9.2).
-7. **Credentials.** The OS keyring holds one entry per host. Login fails when
+   rule), so output is frugal by default. `--json` with no fields lists the
+   available ones. Field names are the CLI's domain names, documented per
+   command, not raw wire names. Also: `--jq`, `--template`, errors on stderr,
+   and pipe-safe output with no color or prompts when not a TTY. Exit codes
+   follow `gh`: 0 success, 1 failure (including usage errors), 2 cancelled,
+   4 authentication required. They replace the "possible" table in §27.
+6. **Login.** `ytrack auth login` in v1 is assisted permanent-token login:
+   - it opens `<host>/users/me?tab=account-security` and tells the user to
+     create a token named `ytrack` with scope `YouTrack`;
+   - it reads the token from a hidden prompt or from stdin (`--with-token`);
+   - it verifies the token with `/api/users/me` before saving it.
+
+   On Server with an external Hub the token page lives in Hub. If the
+   instance page is missing, `auth login` prints the docs link.
+
+   Browser login (`--web`: Authorization Code with PKCE and a loopback
+   redirect) comes later. It needs an OAuth client that an admin registers:
+   in YouTrack from 2026.2, in Hub before that. Access tokens are short-lived
+   (`expires_in`). Hub issues refresh tokens for Authorization Code with
+   `access_type=offline`. Whether a public PKCE client without a secret gets
+   one is to be verified when `--web` is built. There is no device-code flow,
+   and no dynamic client registration. The only automatic registration is
+   CIMD (2026.2), which an admin must enable and which is documented for MCP
+   clients only, so it is not relied on. This replaces §9.2 item 3 and
+   Phase 5's automatic-registration step.
+
+7. **Credentials and precedence.** The OS keyring holds one entry per host. Login fails when
    no keyring is available unless `--insecure-storage` is passed (file written
    `0600`). Tokens never appear in argv, and `--debug` redacts `Authorization`.
    `auth status` masks the token; `auth token` prints it on request.
+   - Host precedence: `--host`, then `YTRACK_HOST`, then the default host in
+     config.
+   - Token precedence: `YTRACK_TOKEN` (a runtime override for CI that is never
+     saved by `auth login`), then the keyring entry for the host.
+   - Config is YAML in the user config dir (`ytrack/config.yml` plus
+     `ytrack/hosts.yml`, which has no secrets). The `--insecure-storage`
+     fallback is `ytrack/credentials.yml`, written `0600`.
+   - Debugging: `--debug` or `YTRACK_DEBUG=1` logs requests with
+     `Authorization` redacted. `--verbose` is not a separate flag.
 8. **workit integration.** workit calls `ytrack ... --json` when it is
    installed. Its built-in YouTrack code stays one release as a fallback, then
    is removed. A token moves over with `ytrack auth login --with-token`.
-9. **Slice order.**
-   1. Foundation: auth, config, HTTP, output, `ytrack api`.
-   2. `issue list|view|comment`.
-   3. `work-item add|list`. After this slice workit can switch to `ytrack`.
-   4. `issue create|edit|command`.
-   5. goreleaser binaries and a Homebrew tap.
+9. **Smaller settled points.**
+   - `ytrack api` accepts both `/issues` and `/api/issues` and normalizes them
+     (open question 9).
+   - Fetching the OAS at login (§6.5) is deferred to Phase 6.
+   - Supported servers: YouTrack Cloud and Server 2025.1 or later. This is
+     provisional until integration tests run against a Server image (open
+     question 1). The adapter uses `/api/users/me` and avoids the Hub user
+     endpoints that moved in 2026.1.
+   - Open questions 2, 3, 4, 6, 8 and 9 are settled by decisions 3, 4, 4, 6,
+     7 and this item.
+
+10. **Slice order.**
+    1. Foundation: auth, config, HTTP, output, `ytrack api`.
+    2. `issue list|view|comment`.
+    3. `work-item add|list`. After this slice workit can switch to `ytrack`.
+    4. `issue create|edit|command`.
+    5. goreleaser binaries and a Homebrew tap.
 
 ---
 
