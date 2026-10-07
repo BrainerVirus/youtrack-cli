@@ -36,7 +36,9 @@ ytrack auth login --host acme.youtrack.cloud --with-token < token.txt
 The token is checked against `/api/users/me` and saved in the OS keyring
 (macOS Keychain, Windows Credential Manager, Secret Service on Linux). With no
 keyring, login fails unless you pass `--insecure-storage`, which writes
-`credentials.yml` (mode 0600) in the config directory.
+`credentials.yml` (mode 0600) in the config directory. On Windows the mode
+bits are not enforced; the file is protected by the ACL of your
+`%AppData%\ytrack` folder, which by default only your account can read.
 
 ```sh
 ytrack auth status        # hosts, accounts, masked tokens; exit 4 if not logged in
@@ -56,7 +58,10 @@ ytrack api /commands --input command.json
 ```
 
 `/issues` and `/api/issues` are the same path. `--paginate` pages with
-`$skip`/`$top` and prints one JSON array. See `ytrack api --help`.
+`$skip`/`$top` and prints one JSON array. The token is sent only to the
+configured service URL: redirects to other hosts and from https to http are
+refused. Plain-http hosts other than localhost trigger a warning. See
+`ytrack api --help`.
 
 ## Scripting
 
