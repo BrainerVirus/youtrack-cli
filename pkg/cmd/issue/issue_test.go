@@ -19,11 +19,13 @@ const (
 
 // TestMain lets the test binary act as a portable stub editor: run with
 // YTRACK_TEST_EDITOR_TEXT set, it writes that text to the file named by its
-// last argument (or exits 3 for "fail") instead of running tests.
+// last argument (or exits 3 for "fail") instead of running tests. With
+// YTRACK_TEST_EDITOR_MARKER set, it first copies the file's initial text there.
 func TestMain(m *testing.M) {
 	if text, ok := os.LookupEnv(editorEnv); ok && len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-test.") {
 		if marker := os.Getenv(editorMarkerEnv); marker != "" {
-			_ = os.WriteFile(marker, nil, 0o600)
+			initial, _ := os.ReadFile(os.Args[len(os.Args)-1])
+			_ = os.WriteFile(marker, initial, 0o600)
 		}
 		if text == "fail" {
 			os.Exit(3)

@@ -119,17 +119,50 @@ func (c *contract) checkBody(e endpoint, body string) []string {
 	return c.checkProjection([]string{e.Response}, bodyProjection(m), "")
 }
 
-// bodyProjection turns a JSON object into the projection of its attributes.
+// bodyProjection turns a JSON object into the projection of its attributes,
+// merging the objects in arrays. $type is left out: every entity has it.
 func bodyProjection(m map[string]any) cmdtest.Projection {
 	p := cmdtest.Projection{}
 	for k, v := range m {
-		if sub, ok := v.(map[string]any); ok {
-			p[k] = bodyProjection(sub)
-		} else {
-			p[k] = nil
+		if k == "$type" {
+			continue
 		}
+		p[k] = valueProjection(v)
 	}
 	return p
+}
+
+func valueProjection(v any) cmdtest.Projection {
+	switch t := v.(type) {
+	case map[string]any:
+		return bodyProjection(t)
+	case []any:
+		var merged cmdtest.Projection
+		for _, e := range t {
+			if sub := valueProjection(e); sub != nil {
+				merged = mergeProjection(merged, sub)
+			}
+		}
+		return merged
+	}
+	return nil
+}
+
+// mergeProjection merges b into a, keeping nested attributes of both.
+func mergeProjection(a, b cmdtest.Projection) cmdtest.Projection {
+	if a == nil {
+		a = cmdtest.Projection{}
+	}
+	for k, v := range b {
+		if v == nil {
+			if _, ok := a[k]; !ok {
+				a[k] = nil
+			}
+			continue
+		}
+		a[k] = mergeProjection(a[k], v)
+	}
+	return a
 }
 
 func TestRequestsMatchTheContract(t *testing.T) {
@@ -139,6 +172,7 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	yt := cmdtest.NewFakeYouTrack(t, "")
 	yt.SeedSampleIssues()
 	yt.SeedSampleWorkItems()
+	yt.SeedSampleProjects()
 	env.Login(yt)
 	allIssue := strings.Join(shared.IssueFields, ",")
 	allWorkItem := strings.Join(workitem.Fields, ",")
@@ -153,6 +187,15 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"work-item", "add", "NSR-40", "--duration", "1h30m", "--type", "Testing", "--text", "contract", "--date", "2026-10-06"},
 		{"work-item", "edit", "NSR-40", "115-1", "--duration", "2h", "--type", "Documentation", "--text", "", "--date", "2026-10-05"},
 		{"work-item", "delete", "NSR-40", "115-2", "--yes"},
+		{
+			"issue", "create", "-p", "NSR", "-s", "contract", "--description", "body", "--assignee", "me", "--tag", "backend",
+			"--field", "Priority=Critical", "--field", "Subsystem=Auth,Web", "--field", "Due Date=2026-10-20",
+			"--field", "Story points=3", "--field", "Deployed=2026-10-07T10:00:00Z", "--field", "Root cause=cookie",
+			"--field", "Estimation=2d", "--json", allIssue,
+		},
+		{"issue", "edit", "NSR-40", "-s", "edited", "-d", "", "--field", "Type=Feature", "--add-tag", "regression", "--remove-tag", "sso", "--json", allIssue},
+		{"issue", "command", "NSR-40", "State Fixed", "--comment", "done", "--silent"},
+		{"issue", "command", "NSR-40", "Priority Critical", "--dry-run"},
 	}
 	for _, args := range runs {
 		if code := env.Run(args...); code != 0 {
@@ -226,6 +269,9 @@ func TestContractCheckerCatchesMistakes(t *testing.T) {
 	}
 	if got := c.checkBody(endpoint{Response: "IssueWorkItem"}, `{"duration":{"mins":5},"text":"x"}`); len(got) != 1 || !strings.Contains(got[0], "duration.mins is not an attribute") {
 		t.Errorf("a body with an unknown attribute: problems %q", got)
+	}
+	if got := c.checkBody(endpoint{Response: "Issue"}, `{"customFields":[{"name":"A","$type":"X","value":{"name":"x"}},{"name":"B","value":[{"nick":"y"}]}]}`); len(got) != 1 || !strings.Contains(got[0], "customFields.value.nick is not an attribute") {
+		t.Errorf("a body with an unknown attribute in an array: problems %q", got)
 	}
 	if _, ok := c.endpoint("DELETE", "/api/issues/NSR-1"); ok {
 		t.Error("an unlisted method matched")
