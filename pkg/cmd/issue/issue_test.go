@@ -12,6 +12,30 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
 )
 
+const (
+	editorEnv       = "YTRACK_TEST_EDITOR_TEXT"
+	editorMarkerEnv = "YTRACK_TEST_EDITOR_MARKER"
+)
+
+// TestMain lets the test binary act as a portable stub editor: run with
+// YTRACK_TEST_EDITOR_TEXT set, it writes that text to the file named by its
+// last argument (or exits 3 for "fail") instead of running tests.
+func TestMain(m *testing.M) {
+	if text, ok := os.LookupEnv(editorEnv); ok && len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-test.") {
+		if marker := os.Getenv(editorMarkerEnv); marker != "" {
+			_ = os.WriteFile(marker, nil, 0o600)
+		}
+		if text == "fail" {
+			os.Exit(3)
+		}
+		if err := os.WriteFile(os.Args[len(os.Args)-1], []byte(text), 0o600); err != nil {
+			os.Exit(2)
+		}
+		os.Exit(0)
+	}
+	os.Exit(m.Run())
+}
+
 func loggedIn(t *testing.T, prefix string) (*cmdtest.Env, *cmdtest.FakeYouTrack) {
 	t.Helper()
 	env := cmdtest.New(t)
@@ -510,21 +534,24 @@ func TestIssueComment(t *testing.T) {
 		}
 	})
 
-	stubEditor := func(t *testing.T, script string) {
+	// stubEditor makes this test binary the editor (see TestMain): it writes
+	// text to the file it is given, or exits with status 3 for "fail".
+	stubEditor := func(t *testing.T, text string) {
 		t.Helper()
-		path := filepath.Join(t.TempDir(), "editor.sh")
-		if err := os.WriteFile(path, []byte("#!/bin/sh\n"+script+"\n"), 0o700); err != nil {
+		exe, err := os.Executable()
+		if err != nil {
 			t.Fatal(err)
 		}
 		for _, k := range []string{"YTRACK_EDITOR", "GIT_EDITOR", "VISUAL"} {
 			t.Setenv(k, "")
 		}
-		t.Setenv("EDITOR", path)
+		t.Setenv("EDITOR", exe)
+		t.Setenv(editorEnv, text)
 	}
 
 	t.Run("given --editor, it posts what the editor saved", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
-		stubEditor(t, `printf 'Written in the editor\n\n' > "$1"`)
+		stubEditor(t, "Written in the editor\n\n")
 		mustRun(t, env, "issue", "comment", "NSR-40", "--editor", "--json", "id,url,issue")
 		if reqs := posted(t, yt); len(reqs) != 1 || reqs[0].Body != `{"text":"Written in the editor"}` {
 			t.Errorf("requests = %+v", reqs)
@@ -537,7 +564,7 @@ func TestIssueComment(t *testing.T) {
 
 	t.Run("given an editor that saves nothing, it posts nothing and exits 1", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
-		stubEditor(t, `: > "$1"`)
+		stubEditor(t, "")
 		if code := env.Run("issue", "comment", "NSR-40", "--editor"); code != 1 {
 			t.Fatalf("exit %d", code)
 		}
@@ -548,7 +575,7 @@ func TestIssueComment(t *testing.T) {
 
 	t.Run("given a failing editor, it posts nothing and exits 1", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
-		stubEditor(t, `exit 3`)
+		stubEditor(t, "fail")
 		if code := env.Run("issue", "comment", "NSR-40", "--editor"); code != 1 {
 			t.Fatalf("exit %d", code)
 		}
@@ -595,7 +622,8 @@ func TestIssueComment(t *testing.T) {
 	t.Run("given a rejected token, it exits 4 before opening the editor", func(t *testing.T) {
 		env, _ := loggedIn(t, "")
 		marker := filepath.Join(t.TempDir(), "opened")
-		stubEditor(t, `touch "`+marker+`"`)
+		stubEditor(t, "text")
+		t.Setenv(editorMarkerEnv, marker)
 		t.Setenv("YTRACK_TOKEN", "")
 		t.Setenv("YTRACK_HOST", "nobody.youtrack.cloud")
 		if code := env.Run("issue", "comment", "NSR-40", "--editor"); code != 4 {

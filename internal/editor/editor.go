@@ -26,14 +26,28 @@ func Command() string {
 	return "vi"
 }
 
+// split turns the editor command into arguments. A command that names an
+// existing file is taken whole, so Windows paths and paths with spaces work
+// without quoting; anything else is split like a shell would.
+func split(command string) ([]string, error) {
+	if st, err := os.Stat(command); err == nil && !st.IsDir() {
+		return []string{command}, nil
+	}
+	args, err := shlex.Split(command)
+	if err != nil || len(args) == 0 {
+		return nil, fmt.Errorf("invalid editor command %q", command)
+	}
+	return args, nil
+}
+
 // Edit writes initial to a temporary file whose name ends in suffix, runs
 // command (split like a shell would, with the file appended) and returns the
 // file's content after the editor exits. The editor reads in and writes to
 // out, which should be the terminal.
 func Edit(command, suffix, initial string, in io.Reader, out io.Writer) (string, error) {
-	args, err := shlex.Split(command)
-	if err != nil || len(args) == 0 {
-		return "", fmt.Errorf("invalid editor command %q", command)
+	args, err := split(command)
+	if err != nil {
+		return "", err
 	}
 	f, err := os.CreateTemp("", "ytrack-*"+suffix)
 	if err != nil {
