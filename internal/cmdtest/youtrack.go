@@ -1,11 +1,15 @@
 package cmdtest
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,13 +28,19 @@ type Request struct {
 // FakeYouTrack is a minimal YouTrack REST API:
 //
 //	GET  /api/users/me          the token's user
-//	GET  /api/issues            Issues, paged with $skip/$top (default $top 42)
-//	POST /api/issues            echoes the JSON body back
-//	GET  /api/issues/NOPE-1     404 with a YouTrack error body
-//	GET  /api/plain             a text/plain body
-//	GET  /users/me              the web token page (no auth; 404 if HubTokenPage)
+//	GET  /api/issues                Issues, paged with $skip/$top (default $top 42)
+//	                                and restricted by customFields= when given
+//	POST /api/issues                echoes the JSON body back
+//	GET  /api/issues/{id}           the issue in Issues with that idReadable or id,
+//	                                with commentsCount; 404 with a YouTrack body if none
+//	GET  /api/issues/{id}/comments  Comments[idReadable], paged with $skip/$top
+//	POST /api/issues/{id}/comments  appends {"text"} to Comments and returns it
+//	GET  /api/plain                 a text/plain body
+//	GET  /users/me                  the web token page (no auth; 404 if HubTokenPage)
 //
-// Every /api route requires "Authorization: Bearer <Token>".
+// Like YouTrack, JSON responses keep only the attributes named in fields=
+// (plus $type), when fields= is given. Every /api route requires
+// "Authorization: Bearer <Token>".
 type FakeYouTrack struct {
 	Server   *httptest.Server
 	Prefix   string
@@ -38,6 +48,8 @@ type FakeYouTrack struct {
 	Login    string
 	FullName string
 	Issues   []map[string]any
+	// Comments holds each issue's comments by readable ID, oldest first.
+	Comments map[string][]map[string]any
 	// MaxTop caps $top like a server limit would (0 means no cap).
 	MaxTop int
 	// HubTokenPage makes the instance's token page 404, as on a Server
@@ -57,27 +69,62 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		writeJSON(w, 200, map[string]any{"login": yt.Login, "fullName": yt.FullName, "$type": "Me"})
 	})
 	mux.HandleFunc("GET /api/issues", func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query()
-		skip, _ := strconv.Atoi(q.Get("$skip"))
-		top := 42
-		if v := q.Get("$top"); v != "" {
-			top, _ = strconv.Atoi(v)
-		}
-		if yt.MaxTop > 0 {
-			top = min(top, yt.MaxTop)
-		}
 		items := []map[string]any{}
-		for i := skip; i < len(yt.Issues) && i < skip+top; i++ {
-			items = append(items, yt.Issues[i])
+		for _, is := range page(r, yt.Issues) {
+			items = append(items, onlyCustomFields(is, r.URL.Query()["customFields"]))
 		}
-		writeJSON(w, 200, items)
+		writeProjected(w, r, 200, items)
 	})
 	mux.HandleFunc("POST /api/issues", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.Copy(w, r.Body)
 	})
-	mux.HandleFunc("GET /api/issues/NOPE-1", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, 404, map[string]any{"error": "Not Found", "error_description": "Entity with id NOPE-1 not found"})
+	mux.HandleFunc("GET /api/issues/{id}", func(w http.ResponseWriter, r *http.Request) {
+		is, ok := yt.issue(r.PathValue("id"))
+		if !ok {
+			notFound(w, r.PathValue("id"))
+			return
+		}
+		writeProjected(w, r, 200, is)
+	})
+	mux.HandleFunc("GET /api/issues/{id}/comments", func(w http.ResponseWriter, r *http.Request) {
+		is, ok := yt.issue(r.PathValue("id"))
+		if !ok {
+			notFound(w, r.PathValue("id"))
+			return
+		}
+		yt.mu.Lock()
+		comments := yt.Comments[is["idReadable"].(string)]
+		yt.mu.Unlock()
+		writeProjected(w, r, 200, page(r, comments))
+	})
+	mux.HandleFunc("POST /api/issues/{id}/comments", func(w http.ResponseWriter, r *http.Request) {
+		is, ok := yt.issue(r.PathValue("id"))
+		if !ok {
+			notFound(w, r.PathValue("id"))
+			return
+		}
+		var body struct {
+			Text string `json:"text"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": err.Error()})
+			return
+		}
+		id := is["idReadable"].(string)
+		yt.mu.Lock()
+		if yt.Comments == nil {
+			yt.Comments = map[string][]map[string]any{}
+		}
+		c := map[string]any{
+			"id": fmt.Sprintf("4-%d", 100+len(yt.Comments[id])), "text": body.Text, "$type": "IssueComment",
+			"author":  map[string]any{"login": yt.Login, "fullName": yt.FullName, "$type": "User"},
+			"created": 1791374400000, "updated": nil,
+			"issue": map[string]any{"id": is["id"], "idReadable": id, "$type": "Issue"},
+		}
+		yt.Comments[id] = append(yt.Comments[id], c)
+		yt.mu.Unlock()
+		writeProjected(w, r, 200, c)
 	})
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -106,6 +153,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		inner.Handle("/", authed)
 	}
 	root := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r = r.WithContext(context.WithValue(r.Context(), fakeKey{}, yt))
 		body, _ := io.ReadAll(r.Body)
 		r.Body = io.NopCloser(strings.NewReader(string(body)))
 		yt.mu.Lock()
@@ -147,6 +195,158 @@ func (yt *FakeYouTrack) SeedIssues(n int) {
 	for i := 1; i <= n; i++ {
 		yt.Issues = append(yt.Issues, map[string]any{"idReadable": fmt.Sprintf("APP-%d", i), "summary": fmt.Sprintf("Issue %d", i)})
 	}
+}
+
+func (yt *FakeYouTrack) issue(id string) (map[string]any, bool) {
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	for _, is := range yt.Issues {
+		if is["idReadable"] == id || (is["id"] != nil && is["id"] == id) {
+			out := maps.Clone(is)
+			out["commentsCount"] = len(yt.Comments[fmt.Sprint(is["idReadable"])])
+			return out, true
+		}
+	}
+	return nil, false
+}
+
+func notFound(w http.ResponseWriter, id string) {
+	writeJSON(w, 404, map[string]any{"error": "Not Found", "error_description": "Entity with id " + id + " not found"})
+}
+
+// page applies $skip and $top (default 42, capped by MaxTop) to items.
+func page[T any](r *http.Request, items []T) []T {
+	q := r.URL.Query()
+	skip, _ := strconv.Atoi(q.Get("$skip"))
+	top := 42
+	if v := q.Get("$top"); v != "" {
+		top, _ = strconv.Atoi(v)
+	}
+	if yt, ok := r.Context().Value(fakeKey{}).(*FakeYouTrack); ok && yt.MaxTop > 0 {
+		top = min(top, yt.MaxTop)
+	}
+	out := []T{}
+	for i := skip; i < len(items) && i < skip+top; i++ {
+		out = append(out, items[i])
+	}
+	return out
+}
+
+type fakeKey struct{}
+
+// onlyCustomFields keeps the custom fields called one of names, as
+// YouTrack's customFields= parameter does; no names keeps them all.
+func onlyCustomFields(issue map[string]any, names []string) map[string]any {
+	cfs, ok := issue["customFields"].([]any)
+	if !ok || len(names) == 0 {
+		return issue
+	}
+	out := maps.Clone(issue)
+	kept := []any{}
+	for _, cf := range cfs {
+		if m, ok := cf.(map[string]any); ok && slices.Contains(names, fmt.Sprint(m["name"])) {
+			kept = append(kept, cf)
+		}
+	}
+	out["customFields"] = kept
+	return out
+}
+
+// writeProjected writes v keeping only the attributes in the request's
+// fields= projection, as YouTrack does.
+func writeProjected(w http.ResponseWriter, r *http.Request, status int, v any) {
+	if fields := r.URL.Query().Get("fields"); fields != "" {
+		tree, err := ParseProjection(fields)
+		if err != nil {
+			writeJSON(w, 400, map[string]any{"error": "invalid_query", "error_description": err.Error()})
+			return
+		}
+		v = project(normalize(v), tree)
+	}
+	writeJSON(w, status, v)
+}
+
+// Projection is a parsed fields= value: attribute name to its nested
+// projection (nil for a leaf).
+type Projection map[string]Projection
+
+// ParseProjection parses YouTrack's fields syntax, e.g. "id,project(name)".
+func ParseProjection(s string) (Projection, error) {
+	p, rest, err := parseProjection(s)
+	if err != nil {
+		return nil, err
+	}
+	if rest != "" {
+		return nil, fmt.Errorf("unexpected %q in fields", rest)
+	}
+	return p, nil
+}
+
+func parseProjection(s string) (Projection, string, error) {
+	p := Projection{}
+	for {
+		i := strings.IndexAny(s, ",()")
+		if i < 0 {
+			i = len(s)
+		}
+		name := strings.TrimSpace(s[:i])
+		if name == "" {
+			return nil, s, fmt.Errorf("empty attribute name in fields near %q", s)
+		}
+		s = s[i:]
+		var sub Projection
+		if strings.HasPrefix(s, "(") {
+			var err error
+			sub, s, err = parseProjection(s[1:])
+			if err != nil {
+				return nil, s, err
+			}
+			if !strings.HasPrefix(s, ")") {
+				return nil, s, errors.New("unbalanced parentheses in fields")
+			}
+			s = s[1:]
+		}
+		p[name] = sub
+		if !strings.HasPrefix(s, ",") {
+			return p, s, nil
+		}
+		s = s[1:]
+	}
+}
+
+func normalize(v any) any {
+	b, _ := json.Marshal(v)
+	var out any
+	_ = json.Unmarshal(b, &out)
+	return out
+}
+
+func project(v any, p Projection) any {
+	switch t := v.(type) {
+	case []any:
+		out := make([]any, len(t))
+		for i, e := range t {
+			out[i] = project(e, p)
+		}
+		return out
+	case map[string]any:
+		out := map[string]any{}
+		if typ, ok := t["$type"]; ok {
+			out["$type"] = typ
+		}
+		for name, sub := range p {
+			val, ok := t[name]
+			if !ok {
+				continue
+			}
+			if sub != nil {
+				val = project(val, sub)
+			}
+			out[name] = val
+		}
+		return out
+	}
+	return v
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

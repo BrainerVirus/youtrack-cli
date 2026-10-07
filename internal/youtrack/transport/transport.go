@@ -4,6 +4,7 @@
 package transport
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -94,6 +95,35 @@ func (c *Client) GetJSON(ctx context.Context, path string, v any) error {
 	defer func() { _ = resp.Body.Close() }()
 	if err := CheckResponse(resp); err != nil {
 		return err
+	}
+	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+		return fmt.Errorf("decoding %s response: %w", path, err)
+	}
+	return nil
+}
+
+// SendJSON sends method path with body encoded as JSON and decodes a
+// successful JSON response into v (when v is non-nil).
+func (c *Client) SendJSON(ctx context.Context, method, path string, body, v any) error {
+	b, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("encoding %s request: %w", path, err)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, c.URL(path), bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if err := CheckResponse(resp); err != nil {
+		return err
+	}
+	if v == nil {
+		return nil
 	}
 	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
 		return fmt.Errorf("decoding %s response: %w", path, err)

@@ -27,10 +27,11 @@ func NewTable(ios *iostreams.IOStreams, headers ...string) *Table {
 	return &Table{tp}
 }
 
-// Row adds one row.
+// Row adds one row. Fields are sanitized with SanitizeCell, so server data
+// cannot inject terminal escapes or break the tab-separated layout.
 func (t *Table) Row(fields ...string) {
 	for _, f := range fields {
-		t.AddField(f)
+		t.AddField(SanitizeCell(f))
 	}
 	t.EndRow()
 }

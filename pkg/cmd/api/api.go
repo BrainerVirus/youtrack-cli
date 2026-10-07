@@ -235,10 +235,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	return output.WriteJSON(ios, bytes.NewReader(merged), format)
 }
 
-// paginate requests pages with $skip/$top and returns all items. It stops at
-// an empty page, or at a page shorter than both $top and the first page (a
-// server may cap $top below what was asked). $skip and $top already in the
-// path set the start and page size.
+// paginate requests pages with $skip/$top and returns all items (see
+// transport.Paginate). $skip and $top already in the path set the start and
+// page size.
 func paginate(rawQuery string, send func(string) (*http.Response, error)) ([]json.RawMessage, error) {
 	skip, top := 0, DefaultPageSize
 	rest := make([]string, 0)
@@ -267,9 +266,7 @@ func paginate(rawQuery string, send func(string) (*http.Response, error)) ([]jso
 	}
 	base := strings.Join(rest, "&")
 
-	all := []json.RawMessage{}
-	limit := top // shrinks to the first page's size if the server caps $top
-	for first := true; ; first = false {
+	return transport.Paginate(skip, top, 0, func(skip, top int) ([]json.RawMessage, error) {
 		q := fmt.Sprintf("$skip=%d&$top=%d", skip, top)
 		if base != "" {
 			q = base + "&" + q
@@ -278,21 +275,13 @@ func paginate(rawQuery string, send func(string) (*http.Response, error)) ([]jso
 		if err != nil {
 			return nil, err
 		}
+		defer func() { _ = resp.Body.Close() }()
 		var page []json.RawMessage
-		err = json.NewDecoder(resp.Body).Decode(&page)
-		_ = resp.Body.Close()
-		if err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
 			return nil, errors.New("--paginate needs an endpoint that returns a JSON array")
 		}
-		all = append(all, page...)
-		if len(page) == 0 || (!first && len(page) < limit) {
-			return all, nil
-		}
-		if first {
-			limit = min(top, len(page))
-		}
-		skip += len(page)
-	}
+		return page, nil
+	})
 }
 
 func readsStdin(magicFields []string) bool {
