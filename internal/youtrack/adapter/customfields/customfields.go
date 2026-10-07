@@ -204,7 +204,7 @@ type wireType struct {
 }
 
 // wireTypes maps every IssueCustomField subtype in the YouTrack REST API
-// (api/openapi/youtrack.json) to its domain kind and value decoder.
+// (see the IssueCustomField schema in YouTrack's /api/openapi.json) to its domain kind and value decoder.
 var wireTypes = map[string]wireType{
 	"SingleEnumIssueCustomField":    {KindEnum, false, decodeNamed},
 	"MultiEnumIssueCustomField":     {KindEnum, true, decodeNamed},

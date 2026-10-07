@@ -109,6 +109,12 @@ Shell completion: `ytrack completion bash|zsh|fish|powershell`.
 make build test lint
 ```
 
+The REST surface ytrack relies on is listed by hand in
+`api/contract/youtrack-contract.json`, derived from JetBrains' public
+[YouTrack REST API docs](https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html).
+Tests check every request against it, and a weekly workflow checks it against
+the live API description.
+
 See [AGENTS.md](AGENTS.md) for layout and conventions.
 
 ## License

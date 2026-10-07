@@ -1,0 +1,50 @@
+{
+  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return. Types list the attributes ytrack requests in fields=, each with the entity types it may hold (empty for a scalar). internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schema.",
+  "endpoints": [
+    {"method": "GET", "path": "/users/me", "query": ["fields"], "response": "User"},
+    {"method": "GET", "path": "/issues", "query": ["fields", "query", "customFields", "$skip", "$top"], "response": "Issue"},
+    {"method": "GET", "path": "/issues/{id}", "query": ["fields"], "response": "Issue"},
+    {"method": "GET", "path": "/issues/{id}/comments", "query": ["fields", "$skip", "$top"], "response": "IssueComment"},
+    {"method": "POST", "path": "/issues/{id}/comments", "query": ["fields"], "response": "IssueComment"}
+  ],
+  "types": {
+    "Issue": {
+      "id": [],
+      "idReadable": [],
+      "summary": [],
+      "description": [],
+      "project": ["Project"],
+      "reporter": ["User"],
+      "created": [],
+      "updated": [],
+      "resolved": [],
+      "tags": ["Tag"],
+      "commentsCount": [],
+      "customFields": ["IssueCustomField"]
+    },
+    "IssueComment": {
+      "id": [],
+      "text": [],
+      "author": ["User"],
+      "created": [],
+      "updated": [],
+      "deleted": [],
+      "issue": ["Issue"]
+    },
+    "Project": {"shortName": [], "name": []},
+    "User": {"login": [], "fullName": []},
+    "Tag": {"name": []},
+    "IssueCustomField": {
+      "name": [],
+      "projectCustomField": ["ProjectCustomField"],
+      "value": ["BundleElement", "User", "UserGroup", "PeriodValue", "TextFieldValue"]
+    },
+    "ProjectCustomField": {"field": ["CustomField"]},
+    "CustomField": {"fieldType": ["FieldType"]},
+    "FieldType": {"id": []},
+    "BundleElement": {"name": []},
+    "UserGroup": {"name": []},
+    "PeriodValue": {"minutes": [], "presentation": []},
+    "TextFieldValue": {"text": []}
+  }
+}
