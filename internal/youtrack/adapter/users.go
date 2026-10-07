@@ -5,14 +5,12 @@ package adapter
 import (
 	"context"
 
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter/customfields"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 )
 
 // User is a YouTrack account.
-type User struct {
-	Login    string `json:"login"`
-	FullName string `json:"fullName"`
-}
+type User = customfields.User
 
 // CurrentUser returns the account the client's token belongs to.
 func CurrentUser(ctx context.Context, c *transport.Client) (User, error) {
