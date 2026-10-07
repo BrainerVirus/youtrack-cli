@@ -13,6 +13,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/version"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
 
@@ -42,6 +43,7 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 		Example: `  $ ytrack auth login
   $ ytrack issue list -q 'project: APP for: me #Unresolved'
   $ ytrack issue view APP-123 --comments
+  $ ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
   $ ytrack api /users/me --fields login,fullName
   $ ytrack api /issues --paginate --fields idReadable,summary --jq '.[].idReadable'`,
 	}
@@ -60,6 +62,7 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 
 	cmd.AddCommand(auth.NewCmdAuth(f))
 	cmd.AddCommand(issue.NewCmdIssue(f))
+	cmd.AddCommand(workitem.NewCmdWorkItem(f))
 	cmd.AddCommand(api.NewCmdAPI(f))
 	cmd.AddCommand(version.NewCmdVersion(f))
 	return cmd

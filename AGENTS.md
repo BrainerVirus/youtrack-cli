@@ -20,6 +20,7 @@ Spec: `docs/YT_CLI_SPEC.md` (its Decisions section wins over the body).
   weekly `openapi-contract` workflow checks it against the live `/api/openapi.json` (never committed).
   Update it when the adapter requests something new.
 - `internal/{config,hosts,auth}` YAML config, URL normalization, keyring store
+- `internal/worktime` work item durations and dates (mirrors workit's parser and work date)
 - `internal/{iostreams,output,prompter,browser,editor,clierr,build}`
 - `internal/cmdtest` in-process command runner + fake YouTrack server for tests
 

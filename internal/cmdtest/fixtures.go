@@ -76,3 +76,41 @@ func (yt *FakeYouTrack) SeedSampleIssues() {
 	yt.Issues = issues
 	yt.Comments = map[string][]map[string]any{"NSR-40": comments}
 }
+
+// sampleWorkItems are NSR-40's work items as YouTrack returns them with
+// every attribute, by two authors, with and without a type.
+const sampleWorkItems = `[
+  {"$type": "IssueWorkItem", "id": "115-1", "date": 1790726400000, "duration": {"$type": "DurationValue", "id": "d-1", "minutes": 90, "presentation": "1h 30m"}, "author": {"$type": "User", "id": "1-3", "login": "jdoe", "fullName": "John Doe"}, "creator": {"$type": "User", "id": "1-3", "login": "jdoe", "fullName": "John Doe"}, "type": {"$type": "WorkItemType", "id": "117-0", "name": "Development", "autoAttached": true}, "text": "Traced the lost return URL", "textPreview": "<p>Traced the lost return URL</p>", "created": 1790760000000, "updated": 1790760000000, "issue": {"$type": "Issue", "id": "2-4040", "idReadable": "NSR-40"}, "attributes": []},
+  {"$type": "IssueWorkItem", "id": "115-2", "date": 1790812800000, "duration": {"$type": "DurationValue", "id": "d-2", "minutes": 30, "presentation": "30m"}, "author": {"$type": "User", "id": "1-7", "login": "jroe", "fullName": "Jane Roe"}, "creator": {"$type": "User", "id": "1-7", "login": "jroe", "fullName": "Jane Roe"}, "type": null, "text": "Meetings", "textPreview": "<p>Meetings</p>", "created": 1790850000000, "updated": 1790850000000, "issue": {"$type": "Issue", "id": "2-4040", "idReadable": "NSR-40"}, "attributes": []},
+  {"$type": "IssueWorkItem", "id": "115-3", "date": 1791158400000, "duration": {"$type": "DurationValue", "id": "d-3", "minutes": 480, "presentation": "1d"}, "author": {"$type": "User", "id": "1-3", "login": "jdoe", "fullName": "John Doe"}, "creator": {"$type": "User", "id": "1-3", "login": "jdoe", "fullName": "John Doe"}, "type": {"$type": "WorkItemType", "id": "117-1", "name": "Testing", "autoAttached": false}, "text": "", "textPreview": "", "created": 1791190000000, "updated": 1791200000000, "issue": {"$type": "Issue", "id": "2-4040", "idReadable": "NSR-40"}, "attributes": []}
+]`
+
+// sampleTimeTracking is the Nightshift project's time tracking settings.
+const sampleTimeTracking = `{
+  "$type": "ProjectTimeTrackingSettings", "id": "0-12", "enabled": true,
+  "estimate": {"$type": "PeriodProjectCustomField", "id": "93-1"},
+  "timeSpent": {"$type": "PeriodProjectCustomField", "id": "93-2"},
+  "workItemTypes": [
+    {"$type": "WorkItemType", "id": "117-0", "name": "Development", "autoAttached": true},
+    {"$type": "WorkItemType", "id": "117-1", "name": "Testing", "autoAttached": false},
+    {"$type": "WorkItemType", "id": "117-2", "name": "Documentation", "autoAttached": false}
+  ]
+}`
+
+// SeedSampleWorkItems gives NSR-40 three work items and the NSR project
+// (0-12) time tracking with the types Development, Testing and
+// Documentation. Seed the issues first.
+func (yt *FakeYouTrack) SeedSampleWorkItems() {
+	var items []map[string]any
+	var settings map[string]any
+	if err := json.Unmarshal([]byte(sampleWorkItems), &items); err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal([]byte(sampleTimeTracking), &settings); err != nil {
+		panic(err)
+	}
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	yt.WorkItems = map[string][]map[string]any{"NSR-40": items}
+	yt.TimeTracking = map[string]map[string]any{"0-12": settings}
+}

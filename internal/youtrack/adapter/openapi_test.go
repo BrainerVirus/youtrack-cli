@@ -189,6 +189,9 @@ func TestContractMatchesOpenAPI(t *testing.T) {
 				t.Errorf("%s: query parameter %q is gone", name, q)
 			}
 		}
+		if e.Response == "" {
+			continue // ytrack reads no body
+		}
 		resp := op.Responses["200"].Content["application/json"].Schema
 		if !slices.ContainsFunc(targets(resp), func(tg string) bool { return slices.Contains(s.family(e.Response), tg) }) {
 			t.Errorf("%s: it no longer returns %s (returns %v)", name, e.Response, targets(resp))

@@ -40,6 +40,9 @@ type HostEntry struct {
 
 type preferences struct {
 	Browser string `yaml:"browser,omitempty"`
+	// Timezone is the IANA zone that decides today's date for work items
+	// (`work-item add --date auto`); empty means the process timezone.
+	Timezone string `yaml:"timezone,omitempty"`
 }
 
 type hostsDoc struct {
@@ -103,6 +106,9 @@ func (c *Config) Dir() string { return c.dir }
 
 // Browser returns the configured browser launcher, if any.
 func (c *Config) Browser() string { return c.prefs.Browser }
+
+// Timezone returns the configured work timezone, or "".
+func (c *Config) Timezone() string { return c.prefs.Timezone }
 
 // DefaultHost returns the key of the default host, or "".
 func (c *Config) DefaultHost() string { return c.hosts.DefaultHost }

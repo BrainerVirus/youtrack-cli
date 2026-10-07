@@ -479,8 +479,52 @@ func TestStatus(t *testing.T) {
 		if len(got) != 1 || !got[0].Active || got[0].TokenSource != "YTRACK_TOKEN" || got[0].State != "ok" {
 			t.Errorf("got %+v", got)
 		}
-		if !strings.Contains(env.Stderr.String(), "sending YTRACK_TOKEN to "+yt.Key()+", which is not a logged-in host") {
-			t.Errorf("no warning about an unknown host: %q", env.Stderr)
+		if strings.Contains(env.Stderr.String(), "sending YTRACK_TOKEN") {
+			t.Errorf("warned although YTRACK_HOST names the host: %q", env.Stderr)
+		}
+	})
+}
+
+func TestTokenHostWarning(t *testing.T) {
+	const warning = "sending YTRACK_TOKEN to"
+
+	t.Run("given YTRACK_HOST and YTRACK_TOKEN only (CI), it sends the token without a warning", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		t.Setenv("YTRACK_HOST", yt.URL())
+		t.Setenv("YTRACK_TOKEN", yt.Token)
+		if code := env.Run("api", "/users/me"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if strings.Contains(env.Stderr.String(), warning) {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+	})
+
+	t.Run("given --host and YTRACK_TOKEN on a host that is not logged in, it sends the token without a warning", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		t.Setenv("YTRACK_TOKEN", yt.Token)
+		if code := env.Run("api", "/users/me", "--host", yt.URL()); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if strings.Contains(env.Stderr.String(), warning) {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+	})
+
+	t.Run("given YTRACK_TOKEN and a default host missing from hosts.yml, it still warns", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		if err := os.WriteFile(filepath.Join(env.ConfigDir, "hosts.yml"), []byte("default_host: "+yt.URL()+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("YTRACK_TOKEN", yt.Token)
+		if code := env.Run("api", "/users/me"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if !strings.Contains(env.Stderr.String(), warning+" "+yt.Key()+", which is not a logged-in host") {
+			t.Errorf("no warning: %q", env.Stderr)
 		}
 	})
 }
