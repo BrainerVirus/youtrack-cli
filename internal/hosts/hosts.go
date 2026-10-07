@@ -8,8 +8,11 @@ package hosts
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
+
+	"golang.org/x/net/idna"
 )
 
 // Host is a normalized YouTrack service location.
@@ -19,6 +22,27 @@ type Host struct {
 	// Key is URL without the scheme, e.g. tools.acme.com/youtrack.
 	Key string
 }
+
+// IsHTTPS reports whether the service URL uses https.
+func (h Host) IsHTTPS() bool { return strings.HasPrefix(h.URL, "https://") }
+
+// IsLoopback reports whether the host is localhost or a loopback address.
+func (h Host) IsLoopback() bool {
+	u, err := url.Parse(h.URL)
+	if err != nil {
+		return false
+	}
+	name := u.Hostname()
+	if name == "localhost" || strings.HasSuffix(name, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(name)
+	return ip != nil && ip.IsLoopback()
+}
+
+// PlainHTTP reports whether credentials would cross the network unencrypted:
+// plain http to a host that is not loopback.
+func (h Host) PlainHTTP() bool { return !h.IsHTTPS() && !h.IsLoopback() }
 
 // APIURL returns the REST API root, e.g. https://acme.youtrack.cloud/api.
 func (h Host) APIURL() string { return h.URL + "/api" }
@@ -54,11 +78,23 @@ func Parse(input string) (Host, error) {
 	path = strings.TrimSuffix(path, "/api")
 	path = strings.TrimRight(path, "/")
 
-	hostport := strings.ToLower(u.Host)
-	if scheme == "https" {
-		hostport = strings.TrimSuffix(hostport, ":443")
+	// Internationalized names are stored as punycode so one host has one key.
+	name := u.Hostname()
+	if ip := net.ParseIP(name); ip != nil {
+		name = ip.String()
+		if ip.To4() == nil {
+			name = "[" + name + "]"
+		}
 	} else {
-		hostport = strings.TrimSuffix(hostport, ":80")
+		name, err = idna.Lookup.ToASCII(name)
+		if err != nil {
+			return Host{}, fmt.Errorf("invalid host %q: %w", input, err)
+		}
+	}
+	hostport := strings.ToLower(name)
+	defaultPort := map[string]string{"https": "443", "http": "80"}[scheme]
+	if port := u.Port(); port != "" && port != defaultPort {
+		hostport += ":" + port
 	}
 
 	return Host{

@@ -18,6 +18,9 @@ func TestParse(t *testing.T) {
 		{"query and fragment are discarded", "https://acme.youtrack.cloud/?tab=x#y", "https://acme.youtrack.cloud", "acme.youtrack.cloud"},
 		{"the default https port is dropped", "https://acme.youtrack.cloud:443", "https://acme.youtrack.cloud", "acme.youtrack.cloud"},
 		{"a custom port is kept in the key", "http://127.0.0.1:8080", "http://127.0.0.1:8080", "127.0.0.1:8080"},
+		{"an internationalized name becomes punycode", "https://bücher.example/youtrack", "https://xn--bcher-kva.example/youtrack", "xn--bcher-kva.example/youtrack"},
+		{"an upper-case internationalized name gets the same key", "BÜCHER.example", "https://xn--bcher-kva.example", "xn--bcher-kva.example"},
+		{"an IPv6 literal keeps its brackets", "http://[::1]:8080", "http://[::1]:8080", "[::1]:8080"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -47,5 +50,24 @@ func TestParseRejects(t *testing.T) {
 				t.Errorf("Parse(%q) succeeded, want error", input)
 			}
 		})
+	}
+}
+
+func TestPlainHTTP(t *testing.T) {
+	for input, want := range map[string]bool{
+		"https://acme.youtrack.cloud": false,
+		"http://acme.youtrack.cloud":  true,
+		"http://127.0.0.1:8080":       false,
+		"http://localhost:8080":       false,
+		"http://[::1]:8080":           false,
+		"http://10.0.0.5/youtrack":    true,
+	} {
+		h, err := Parse(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if h.PlainHTTP() != want {
+			t.Errorf("%s: PlainHTTP() = %t, want %t", input, h.PlainHTTP(), want)
+		}
 	}
 }

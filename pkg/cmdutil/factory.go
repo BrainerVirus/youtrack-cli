@@ -3,6 +3,7 @@
 package cmdutil
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,6 +32,21 @@ type Factory struct {
 	// Bound to the root command's persistent flags.
 	HostFlag string
 	Debug    bool
+
+	warned map[string]bool
+}
+
+// Warnf prints a "! " warning to stderr once per distinct message.
+func (f *Factory) Warnf(format string, args ...any) {
+	msg := fmt.Sprintf(format, args...)
+	if f.warned == nil {
+		f.warned = map[string]bool{}
+	}
+	if f.warned[msg] {
+		return
+	}
+	f.warned[msg] = true
+	fmt.Fprintf(f.IOStreams.ErrOut, "! %s\n", msg)
 }
 
 // CredentialStore returns the token store for the config directory.
@@ -66,8 +82,12 @@ func (f *Factory) ResolveHost(cfg *config.Config) (hosts.Host, error) {
 
 // ResolveToken returns the token for host and where it came from:
 // $YTRACK_TOKEN wins over stored credentials. It returns "" when there is none.
+// It warns when YTRACK_TOKEN goes to a host that is not in hosts.yml.
 func (f *Factory) ResolveToken(cfg *config.Config, host hosts.Host) (token, source string, err error) {
 	if t := os.Getenv("YTRACK_TOKEN"); t != "" {
+		if cfg.Host(host.Key) == nil {
+			f.Warnf("sending YTRACK_TOKEN to %s, which is not a logged-in host in hosts.yml", host.Key)
+		}
 		return t, auth.SourceEnv, nil
 	}
 	return f.CredentialStore(cfg).Get(host.Key)
@@ -85,8 +105,12 @@ func (f *Factory) DebugEnabled() bool {
 	return v != "" && v != "0"
 }
 
-// NewClient returns an API client for host using token.
+// NewClient returns an API client for host using token. It warns when the
+// host is reached over plain http and is not loopback.
 func (f *Factory) NewClient(host hosts.Host, token string) *transport.Client {
+	if host.PlainHTTP() {
+		f.Warnf("%s uses plain http; requests and tokens are sent unencrypted", host.URL)
+	}
 	opts := transport.Options{
 		BaseURL:      host.URL,
 		Token:        token,

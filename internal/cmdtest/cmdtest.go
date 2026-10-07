@@ -4,6 +4,9 @@ package cmdtest
 
 import (
 	"bytes"
+	"context"
+	"net"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -98,4 +101,16 @@ func (e *Env) Login(yt *FakeYouTrack) {
 // gh) with the --help hint on stderr.
 func (e *Env) IsUsageError(code clierr.ExitCode) bool {
 	return code == clierr.ExitError && strings.Contains(e.Stderr.String(), "--help' for usage")
+}
+
+// RouteAllTo sends every HTTP connection to the fake server, whatever host
+// the URL names, so tests can use non-loopback host names.
+func (e *Env) RouteAllTo(yt *FakeYouTrack) {
+	addr := yt.Server.Listener.Addr().String()
+	e.Factory.RoundTripper = &http.Transport{
+		DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
+			var d net.Dialer
+			return d.DialContext(ctx, network, addr)
+		},
+	}
 }

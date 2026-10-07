@@ -23,6 +23,7 @@ import (
 )
 
 type options struct {
+	allowHTTP       bool
 	withToken       bool
 	insecureStorage bool
 	web             bool
@@ -58,6 +59,7 @@ saves the token in a plain-text file readable only by you.`,
 	}
 	cmd.Flags().BoolVar(&opts.withToken, "with-token", false, "Read the token from standard input")
 	cmd.Flags().BoolVar(&opts.insecureStorage, "insecure-storage", false, "Save the token in a plain-text file instead of the OS keyring")
+	cmd.Flags().BoolVar(&opts.allowHTTP, "allow-insecure-http", false, "Allow changing a saved https host to plain http")
 	cmd.Flags().BoolVar(&opts.web, "web", false, "Log in with the browser (not yet supported)")
 	return cmd
 }
@@ -83,6 +85,10 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	host, err := resolveLoginHost(f, opts)
 	if err != nil {
 		return err
+	}
+	// http and https URLs share a host key, so compare schemes explicitly.
+	if saved := cfg.Host(host.Key); saved != nil && strings.HasPrefix(saved.URL, "https://") && !host.IsHTTPS() && !opts.allowHTTP {
+		return clierr.FlagErrorf("%s is saved as %s; refusing to switch it to plain http (pass --allow-insecure-http to do it anyway)", host.Key, saved.URL)
 	}
 
 	if os.Getenv("YTRACK_TOKEN") != "" {

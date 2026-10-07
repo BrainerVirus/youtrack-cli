@@ -115,15 +115,15 @@ func collect(cmd *cobra.Command, f *cmdutil.Factory, cfg *config.Config) ([]host
 	statuses := make([]hostStatus, 0, len(targets))
 	for _, h := range targets {
 		s := hostStatus{Host: h.Key, URL: h.URL, Active: activeErr == nil && h.Key == active.Key}
-		token, source := "", ""
-		if s.Active && envToken != "" {
-			token, source = envToken, auth.SourceEnv
+		var token, source string
+		var err error
+		if s.Active {
+			token, source, err = f.ResolveToken(cfg, h)
 		} else {
-			var err error
 			token, source, err = store.Get(h.Key)
-			if err != nil {
-				return nil, err
-			}
+		}
+		if err != nil {
+			return nil, err
 		}
 		s.TokenSource = source
 		if token == "" {

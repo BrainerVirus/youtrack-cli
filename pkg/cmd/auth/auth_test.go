@@ -13,6 +13,7 @@ import (
 
 	"github.com/BrainerVirus/youtrack-cli/internal/auth"
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
+	"github.com/BrainerVirus/youtrack-cli/internal/config"
 )
 
 func keyringToken(t *testing.T, hostKey string) string {
@@ -185,6 +186,66 @@ func TestLoginWithToken(t *testing.T) {
 		}
 		if keyringToken(t, yt.Key()) != "" {
 			t.Error("YTRACK_TOKEN was saved")
+		}
+	})
+}
+
+func TestLoginPlainHTTP(t *testing.T) {
+	t.Run("given a non-loopback http host, it warns that the token travels unencrypted", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		env.RouteAllTo(yt)
+		env.Stdin.WriteString(yt.Token)
+
+		if code := env.Run("auth", "login", "--host", "http://yt.example.test", "--with-token"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if !strings.Contains(env.Stderr.String(), "http://yt.example.test uses plain http") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+	})
+
+	t.Run("given a loopback http host, it does not warn", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		env.Stdin.WriteString(yt.Token)
+		if code := env.Run("auth", "login", "--host", yt.URL(), "--with-token"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if strings.Contains(env.Stderr.String(), "plain http") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+	})
+
+	t.Run("given a host saved as https, an http login is refused unless --allow-insecure-http", func(t *testing.T) {
+		env := cmdtest.New(t)
+		yt := cmdtest.NewFakeYouTrack(t, "")
+		env.RouteAllTo(yt)
+		cfg := env.Config()
+		cfg.SetHost("yt.example.test", config.HostEntry{URL: "https://yt.example.test", User: "jdoe", Storage: "keyring"})
+		if err := cfg.Save(); err != nil {
+			t.Fatal(err)
+		}
+
+		env.Stdin.WriteString(yt.Token)
+		if code := env.Run("auth", "login", "--host", "http://yt.example.test", "--with-token"); !env.IsUsageError(code) {
+			t.Fatalf("exit %d, want a usage error; stderr: %s", code, env.Stderr)
+		}
+		if len(yt.Requests()) != 0 {
+			t.Error("contacted the host before refusing")
+		}
+		if got := env.Config().Host("yt.example.test").URL; got != "https://yt.example.test" {
+			t.Errorf("saved URL changed to %q", got)
+		}
+
+		env.Reset()
+		env.Stdin.Reset()
+		env.Stdin.WriteString(yt.Token)
+		if code := env.Run("auth", "login", "--host", "http://yt.example.test", "--with-token", "--allow-insecure-http"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if got := env.Config().Host("yt.example.test").URL; got != "http://yt.example.test" {
+			t.Errorf("saved URL = %q", got)
 		}
 	})
 }
@@ -383,6 +444,9 @@ func TestStatus(t *testing.T) {
 		_ = json.Unmarshal(env.Stdout.Bytes(), &got)
 		if len(got) != 1 || !got[0].Active || got[0].TokenSource != "YTRACK_TOKEN" || !got[0].Valid {
 			t.Errorf("got %+v", got)
+		}
+		if !strings.Contains(env.Stderr.String(), "sending YTRACK_TOKEN to "+yt.Key()+", which is not a logged-in host") {
+			t.Errorf("no warning about an unknown host: %q", env.Stderr)
 		}
 	})
 }
