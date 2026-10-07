@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 
@@ -68,7 +69,7 @@ func (p *linePrompter) Input(prompt, defaultValue string) (string, error) {
 func (p *linePrompter) Password(prompt string) (string, error) {
 	fmt.Fprintf(p.out, "? %s ", prompt)
 	if f, ok := p.in.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
-		b, err := term.ReadPassword(int(f.Fd()))
+		b, err := p.readTerminalSecret(int(f.Fd()))
 		fmt.Fprintln(p.out)
 		if err != nil {
 			return "", err
@@ -80,6 +81,48 @@ func (p *linePrompter) Password(prompt string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(line), nil
+}
+
+// readTerminalSecret reads without echo. Ctrl-C would normally kill the
+// process with echo still off, so SIGINT is caught, the terminal state is
+// restored and the prompt is cancelled.
+func (p *linePrompter) readTerminalSecret(fd int) ([]byte, error) {
+	state, err := term.GetState(fd)
+	if err != nil {
+		return nil, err
+	}
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+	defer signal.Stop(interrupt)
+	return readHidden(
+		func() ([]byte, error) { return term.ReadPassword(fd) },
+		func() { _ = term.Restore(fd, state) },
+		interrupt,
+	)
+}
+
+// readHidden runs read until it returns or an interrupt arrives. On interrupt
+// it calls restore and returns clierr.ErrCancel; end of input also cancels.
+func readHidden(read func() ([]byte, error), restore func(), interrupt <-chan os.Signal) ([]byte, error) {
+	type result struct {
+		b   []byte
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		b, err := read()
+		done <- result{b, err}
+	}()
+	select {
+	case r := <-done:
+		if errors.Is(r.err, io.EOF) {
+			return nil, clierr.ErrCancel
+		}
+		return r.b, r.err
+	case <-interrupt:
+		restore()
+		return nil, clierr.ErrCancel
+	}
 }
 
 func (p *linePrompter) Select(prompt string, options []string, defaultIndex int) (int, error) {
