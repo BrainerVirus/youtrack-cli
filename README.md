@@ -4,7 +4,7 @@ An unofficial command-line interface for JetBrains YouTrack, in the style of
 `gh` and `glab`. Not affiliated with or endorsed by JetBrains.
 
 Status: early. This release covers authentication, the raw `ytrack api`
-command and reading and commenting on issues; work-item commands come next.
+command, reading and commenting on issues, and time tracking (work items).
 
 ## Install
 
@@ -68,6 +68,26 @@ for the table or the requested fields are fetched. In `issue list`, `-q` is
 The editor for `issue comment --editor` is `$YTRACK_EDITOR`, `$GIT_EDITOR`,
 `$VISUAL` or `$EDITOR`.
 
+## Time tracking
+
+```sh
+ytrack work-item list APP-123 --author me --since 2026-10-01
+ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
+ytrack work-item add APP-123 --duration 1.5h --date 2026-10-06 --type Development
+ytrack work-item add TEAM-1 --duration 30m --meeting        # text "Meetings"
+ytrack work-item edit APP-123 115-3 --duration 2h
+ytrack work-item delete APP-123 115-3 --yes
+```
+
+`--duration` takes `1h30m`, `1h 30m`, `90m`, `1.5h`, `2 hours 15 minutes` or
+a bare number of minutes. Days and weeks are refused (their length depends on
+the instance's work schedule). `--date auto` (the default) is today in your
+work timezone: `timezone: Europe/Madrid` in `config.yml` when set, otherwise
+the system timezone (`TZ`). YouTrack stores the day only, at midnight UTC.
+`--type` takes a work item type name from the project's time tracking
+settings; an unknown name lists the valid ones. `delete` asks first in a
+terminal and needs `--yes` otherwise.
+
 ## Raw API
 
 ```sh
@@ -95,11 +115,13 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   `YTRACK_DEBUG=1` (request log with credentials redacted, same as `--debug`),
   `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`.
 - Host precedence: `--host`, `YTRACK_HOST`, the default host. Token
-  precedence: `YTRACK_TOKEN`, then the stored token.
+  precedence: `YTRACK_TOKEN`, then the stored token. `YTRACK_TOKEN` goes to
+  a host named by `--host` or `YTRACK_HOST` without a warning (the CI setup),
+  and to a host taken from a pasted issue URL only when that host is logged in.
 
 Configuration lives in `~/.config/ytrack/` (`$XDG_CONFIG_HOME/ytrack`,
-`%AppData%\ytrack` on Windows): `config.yml` and `hosts.yml`, which never
-holds tokens.
+`%AppData%\ytrack` on Windows): `config.yml` (`browser`, `timezone`) and
+`hosts.yml`, which never holds tokens.
 
 Shell completion: `ytrack completion bash|zsh|fish|powershell`.
 

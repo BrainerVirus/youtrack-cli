@@ -131,6 +131,20 @@ func (c *Client) SendJSON(ctx context.Context, method, path string, body, v any)
 	return nil
 }
 
+// Delete sends DELETE path and discards a successful response body.
+func (c *Client) Delete(ctx context.Context, path string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.URL(path), http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	return CheckResponse(resp)
+}
+
 // authTransport adds the token only to requests inside the service URL: same
 // scheme, same host and port, and under its path prefix. Anything else, such
 // as a redirect target elsewhere, goes out without credentials.

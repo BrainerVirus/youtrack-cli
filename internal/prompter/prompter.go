@@ -24,6 +24,8 @@ type Prompter interface {
 	Password(prompt string) (string, error)
 	// Select returns the index of the chosen option.
 	Select(prompt string, options []string, defaultIndex int) (int, error)
+	// Confirm asks a yes/no question; an empty answer means no.
+	Confirm(prompt string) (bool, error)
 }
 
 type linePrompter struct {
@@ -140,5 +142,21 @@ func (p *linePrompter) Select(prompt string, options []string, defaultIndex int)
 			return n - 1, nil
 		}
 		fmt.Fprintf(p.out, "Enter a number between 1 and %d.\n", len(options))
+	}
+}
+
+func (p *linePrompter) Confirm(prompt string) (bool, error) {
+	for {
+		answer, err := p.Input(prompt+" (y/N)", "")
+		if err != nil {
+			return false, err
+		}
+		switch strings.ToLower(answer) {
+		case "y", "yes":
+			return true, nil
+		case "", "n", "no":
+			return false, nil
+		}
+		fmt.Fprintln(p.out, "Answer y or n.")
 	}
 }

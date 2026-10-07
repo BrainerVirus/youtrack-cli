@@ -35,6 +35,13 @@ type Request struct {
 //	                                with commentsCount; 404 with a YouTrack body if none
 //	GET  /api/issues/{id}/comments  Comments[idReadable], paged with $skip/$top
 //	POST /api/issues/{id}/comments  appends {"text"} to Comments and returns it
+//	GET  /api/issues/{id}/timeTracking/workItems         WorkItems[idReadable], paged
+//	POST /api/issues/{id}/timeTracking/workItems         creates a work item from
+//	                                {duration{minutes}, date, text, type{id}}; 400 for
+//	                                a missing duration or a type the project lacks
+//	GET|POST|DELETE /api/issues/{id}/timeTracking/workItems/{item}
+//	                                reads, updates (merging the body) or deletes one
+//	GET  /api/admin/projects/{id}/timeTrackingSettings   TimeTracking[project id]
 //	GET  /api/plain                 a text/plain body
 //	GET  /users/me                  the web token page (no auth; 404 if HubTokenPage)
 //
@@ -50,6 +57,10 @@ type FakeYouTrack struct {
 	Issues   []map[string]any
 	// Comments holds each issue's comments by readable ID, oldest first.
 	Comments map[string][]map[string]any
+	// WorkItems holds each issue's work items by readable ID.
+	WorkItems map[string][]map[string]any
+	// TimeTracking holds project time tracking settings by project ID.
+	TimeTracking map[string]map[string]any
 	// MaxTop caps $top like a server limit would (0 means no cap).
 	MaxTop int
 	// HubTokenPage makes the instance's token page 404, as on a Server
@@ -126,6 +137,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		yt.mu.Unlock()
 		writeProjected(w, r, 200, c)
 	})
+	yt.workItemRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = io.WriteString(w, "plain text")

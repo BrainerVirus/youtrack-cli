@@ -1,11 +1,17 @@
 {
-  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return. Types list the attributes ytrack requests in fields=, each with the entity types it may hold (empty for a scalar). internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schema.",
+  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return (empty when ytrack reads no body). Types list the attributes ytrack requests in fields=, each with the entity types it may hold (empty for a scalar). internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schema.",
   "endpoints": [
     {"method": "GET", "path": "/users/me", "query": ["fields"], "response": "User"},
     {"method": "GET", "path": "/issues", "query": ["fields", "query", "customFields", "$skip", "$top"], "response": "Issue"},
     {"method": "GET", "path": "/issues/{id}", "query": ["fields"], "response": "Issue"},
     {"method": "GET", "path": "/issues/{id}/comments", "query": ["fields", "$skip", "$top"], "response": "IssueComment"},
-    {"method": "POST", "path": "/issues/{id}/comments", "query": ["fields"], "response": "IssueComment"}
+    {"method": "POST", "path": "/issues/{id}/comments", "query": ["fields"], "response": "IssueComment"},
+    {"method": "GET", "path": "/issues/{id}/timeTracking/workItems", "query": ["fields", "$skip", "$top"], "response": "IssueWorkItem"},
+    {"method": "POST", "path": "/issues/{id}/timeTracking/workItems", "query": ["fields"], "response": "IssueWorkItem"},
+    {"method": "GET", "path": "/issues/{id}/timeTracking/workItems/{issueWorkItemId}", "query": ["fields"], "response": "IssueWorkItem"},
+    {"method": "POST", "path": "/issues/{id}/timeTracking/workItems/{issueWorkItemId}", "query": ["fields"], "response": "IssueWorkItem"},
+    {"method": "DELETE", "path": "/issues/{id}/timeTracking/workItems/{issueWorkItemId}", "query": [], "response": ""},
+    {"method": "GET", "path": "/admin/projects/{id}/timeTrackingSettings", "query": ["fields"], "response": "ProjectTimeTrackingSettings"}
   ],
   "types": {
     "Issue": {
@@ -31,7 +37,19 @@
       "deleted": [],
       "issue": ["Issue"]
     },
-    "Project": {"shortName": [], "name": []},
+    "IssueWorkItem": {
+      "id": [],
+      "date": [],
+      "duration": ["DurationValue"],
+      "author": ["User"],
+      "type": ["WorkItemType"],
+      "text": [],
+      "issue": ["Issue"]
+    },
+    "DurationValue": {"minutes": [], "presentation": []},
+    "WorkItemType": {"id": [], "name": []},
+    "ProjectTimeTrackingSettings": {"enabled": [], "workItemTypes": ["WorkItemType"]},
+    "Project": {"id": [], "shortName": [], "name": []},
     "User": {"login": [], "fullName": []},
     "Tag": {"name": []},
     "IssueCustomField": {

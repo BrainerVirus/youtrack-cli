@@ -47,6 +47,15 @@ func TestSelectRepromptsUntilTheAnswerIsInRange(t *testing.T) {
 	}
 }
 
+func TestConfirmIsNoUnlessTheAnswerIsYes(t *testing.T) {
+	for input, want := range map[string]bool{"y\n": true, "YES\n": true, "\n": false, "n\n": false, "maybe\ny\n": true} {
+		got, err := New(strings.NewReader(input), &bytes.Buffer{}).Confirm("Delete?")
+		if err != nil || got != want {
+			t.Errorf("Confirm(%q) = %v, %v; want %v", input, got, err, want)
+		}
+	}
+}
+
 func TestReadHidden(t *testing.T) {
 	t.Run("given Ctrl-C while reading, it restores the terminal and cancels", func(t *testing.T) {
 		block := make(chan struct{})

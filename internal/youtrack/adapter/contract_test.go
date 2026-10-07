@@ -12,6 +12,7 @@ import (
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
+	workitem "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/shared"
 )
 
 // contractFile is the hand-written list of the REST API surface ytrack uses.
@@ -104,14 +105,43 @@ func (c *contract) checkProjection(types []string, p cmdtest.Projection, path st
 	return problems
 }
 
+// checkBody reports attributes of a JSON request body that the endpoint's
+// entity does not have: ytrack writes only attributes it could read back.
+func (c *contract) checkBody(e endpoint, body string) []string {
+	var v any
+	if err := json.Unmarshal([]byte(body), &v); err != nil {
+		return []string{"not JSON: " + err.Error()}
+	}
+	m, ok := v.(map[string]any)
+	if !ok || e.Response == "" {
+		return []string{"unexpected body"}
+	}
+	return c.checkProjection([]string{e.Response}, bodyProjection(m), "")
+}
+
+// bodyProjection turns a JSON object into the projection of its attributes.
+func bodyProjection(m map[string]any) cmdtest.Projection {
+	p := cmdtest.Projection{}
+	for k, v := range m {
+		if sub, ok := v.(map[string]any); ok {
+			p[k] = bodyProjection(sub)
+		} else {
+			p[k] = nil
+		}
+	}
+	return p
+}
+
 func TestRequestsMatchTheContract(t *testing.T) {
 	c := loadContract(t)
 
 	env := cmdtest.New(t)
 	yt := cmdtest.NewFakeYouTrack(t, "")
 	yt.SeedSampleIssues()
+	yt.SeedSampleWorkItems()
 	env.Login(yt)
 	allIssue := strings.Join(shared.IssueFields, ",")
+	allWorkItem := strings.Join(workitem.Fields, ",")
 	runs := [][]string{
 		{"issue", "list", "-q", "#Unresolved", "--project", "NSR"},
 		{"issue", "list", "--json", allIssue},
@@ -119,11 +149,21 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"issue", "view", "NSR-40", "--comments"},
 		{"issue", "view", "NSR-40", "--json", allIssue + ",comments"},
 		{"issue", "comment", "NSR-40", "--body", "contract"},
+		{"work-item", "list", "NSR-40", "--author", "me", "--json", allWorkItem},
+		{"work-item", "add", "NSR-40", "--duration", "1h30m", "--type", "Testing", "--text", "contract", "--date", "2026-10-06"},
+		{"work-item", "edit", "NSR-40", "115-1", "--duration", "2h", "--type", "Documentation", "--text", "", "--date", "2026-10-05"},
+		{"work-item", "delete", "NSR-40", "115-2", "--yes"},
 	}
 	for _, args := range runs {
 		if code := env.Run(args...); code != 0 {
 			t.Fatalf("ytrack %s: exit %d: %s", strings.Join(args, " "), code, env.Stderr)
 		}
+	}
+	// The interactive delete reads the work item before asking.
+	env.Interactive()
+	env.Stdin.WriteString("y\n")
+	if code := env.Run("work-item", "delete", "NSR-40", "115-3"); code != 0 {
+		t.Fatalf("interactive delete: exit %d: %s", code, env.Stderr)
 	}
 
 	covered := map[string]bool{}
@@ -142,6 +182,11 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		for name := range q {
 			if !slices.Contains(e.Query, name) {
 				t.Errorf("%s %s: query parameter %q is not in the contract", e.Method, e.Path, name)
+			}
+		}
+		if r.Body != "" {
+			for _, p := range c.checkBody(e, r.Body) {
+				t.Errorf("%s %s body %s: %s", e.Method, e.Path, r.Body, p)
 			}
 		}
 		if fields := q.Get("fields"); fields != "" {
@@ -178,6 +223,9 @@ func TestContractCheckerCatchesMistakes(t *testing.T) {
 		if (want == "") != (got == "") || !strings.Contains(got, want) {
 			t.Errorf("fields=%s: problems %q, want %q", fields, got, want)
 		}
+	}
+	if got := c.checkBody(endpoint{Response: "IssueWorkItem"}, `{"duration":{"mins":5},"text":"x"}`); len(got) != 1 || !strings.Contains(got[0], "duration.mins is not an attribute") {
+		t.Errorf("a body with an unknown attribute: problems %q", got)
 	}
 	if _, ok := c.endpoint("DELETE", "/api/issues/NSR-1"); ok {
 		t.Error("an unlisted method matched")
