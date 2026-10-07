@@ -16,14 +16,29 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 )
 
+// JSONOption adjusts AddJSONFlags.
+type JSONOption func(*jsonOptions)
+
+type jsonOptions struct{ jqShorthand string }
+
+// WithoutJQShorthand leaves --jq without its -q shorthand, for commands
+// where -q means something else (issue list uses it for --query).
+func WithoutJQShorthand() JSONOption {
+	return func(o *jsonOptions) { o.jqShorthand = "" }
+}
+
 // AddJSONFlags adds --json <fields>, --jq and --template to cmd. After flag
 // parsing, *target is nil unless --json was given, in which case it holds an
 // exporter limited to the requested fields. Requesting a field outside
 // fields, or --jq/--template without --json, is a usage error.
-func AddJSONFlags(cmd *cobra.Command, target **output.Exporter, fields []string) {
+func AddJSONFlags(cmd *cobra.Command, target **output.Exporter, fields []string, opts ...JSONOption) {
+	o := jsonOptions{jqShorthand: "q"}
+	for _, opt := range opts {
+		opt(&o)
+	}
 	f := cmd.Flags()
 	f.StringSlice("json", nil, "Output JSON with the specified `fields`")
-	f.StringP("jq", "q", "", "Filter JSON output using a jq `expression`")
+	f.StringP("jq", o.jqShorthand, "", "Filter JSON output using a jq `expression`")
 	f.StringP("template", "t", "", "Format JSON output using a Go `template`")
 
 	sorted := slices.Clone(fields)

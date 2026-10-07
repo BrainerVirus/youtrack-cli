@@ -11,6 +11,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/api"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/version"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -23,6 +24,7 @@ Environment:
   YTRACK_DEBUG        set to 1 to log HTTP requests to stderr (credentials redacted)
   YTRACK_CONFIG_DIR   configuration directory (default ~/.config/ytrack)
   YTRACK_BROWSER      command used to open URLs
+  YTRACK_EDITOR       editor for writing text (then GIT_EDITOR, VISUAL, EDITOR)
   NO_COLOR            disable color output
 
 Exit codes:
@@ -38,6 +40,8 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		Example: `  $ ytrack auth login
+  $ ytrack issue list -q 'project: APP for: me #Unresolved'
+  $ ytrack issue view APP-123 --comments
   $ ytrack api /users/me --fields login,fullName
   $ ytrack api /issues --paginate --fields idReadable,summary --jq '.[].idReadable'`,
 	}
@@ -55,6 +59,7 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 	})
 
 	cmd.AddCommand(auth.NewCmdAuth(f))
+	cmd.AddCommand(issue.NewCmdIssue(f))
 	cmd.AddCommand(api.NewCmdAPI(f))
 	cmd.AddCommand(version.NewCmdVersion(f))
 	return cmd

@@ -3,8 +3,8 @@
 An unofficial command-line interface for JetBrains YouTrack, in the style of
 `gh` and `glab`. Not affiliated with or endorsed by JetBrains.
 
-Status: early. This release covers authentication and the raw `ytrack api`
-command; issue and work-item commands come next.
+Status: early. This release covers authentication, the raw `ytrack api`
+command and reading and commenting on issues; work-item commands come next.
 
 ## Install
 
@@ -47,6 +47,24 @@ ytrack auth token         # print the token (only on request)
 ytrack auth logout
 ```
 
+## Issues
+
+```sh
+ytrack issue list -q 'project: APP for: me #Unresolved'      # native query syntax
+ytrack issue list --project APP --assignee me --state Open --sort 'updated desc'
+ytrack issue list -q '#Unresolved' --json idReadable,summary,state,url
+ytrack issue view APP-123 --comments
+ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --web
+ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
+git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
+```
+
+`--json` with no fields lists the available ones. Only the attributes needed
+for the table or the requested fields are fetched. In `issue list`, `-q` is
+`--query`; use `--jq` for jq. `--limit` defaults to 30; `--limit 0` lists all.
+The editor for `issue comment --editor` is `$YTRACK_EDITOR`, `$GIT_EDITOR`,
+`$VISUAL` or `$EDITOR`.
+
 ## Raw API
 
 ```sh
@@ -72,7 +90,7 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   4 authentication required.
 - Environment: `YTRACK_HOST`, `YTRACK_TOKEN` (runtime override, never saved),
   `YTRACK_DEBUG=1` (request log with credentials redacted, same as `--debug`),
-  `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`.
+  `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`.
 - Host precedence: `--host`, `YTRACK_HOST`, the default host. Token
   precedence: `YTRACK_TOKEN`, then the stored token.
 

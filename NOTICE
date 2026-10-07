@@ -43,4 +43,4 @@ Go module dependencies (used as libraries, under their own licenses):
   github.com/cli/go-gh/v2 (MIT), github.com/cli/browser (BSD-2-Clause),
   github.com/spf13/cobra (Apache-2.0), github.com/zalando/go-keyring (MIT),
   github.com/itchyny/gojq (MIT, via go-gh), gopkg.in/yaml.v3 (MIT, Apache-2.0),
-  golang.org/x/term (BSD-3-Clause).
+  golang.org/x/term (BSD-3-Clause), github.com/google/shlex (Apache-2.0).

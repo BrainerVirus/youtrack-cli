@@ -39,7 +39,7 @@ type Env struct {
 func New(t *testing.T) *Env {
 	t.Helper()
 	dir := t.TempDir()
-	for _, k := range []string{"YTRACK_HOST", "YTRACK_TOKEN", "YTRACK_DEBUG", "YTRACK_BROWSER"} {
+	for _, k := range []string{"YTRACK_HOST", "YTRACK_TOKEN", "YTRACK_DEBUG", "YTRACK_BROWSER", "YTRACK_EDITOR"} {
 		t.Setenv(k, "")
 	}
 	t.Setenv("YTRACK_CONFIG_DIR", dir)
