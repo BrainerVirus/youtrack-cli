@@ -38,6 +38,8 @@ type FakeYouTrack struct {
 	Login    string
 	FullName string
 	Issues   []map[string]any
+	// MaxTop caps $top like a server limit would (0 means no cap).
+	MaxTop int
 	// HubTokenPage makes the instance's token page 404, as on a Server
 	// install with an external Hub.
 	HubTokenPage bool
@@ -60,6 +62,9 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		top := 42
 		if v := q.Get("$top"); v != "" {
 			top, _ = strconv.Atoi(v)
+		}
+		if yt.MaxTop > 0 {
+			top = min(top, yt.MaxTop)
 		}
 		items := []map[string]any{}
 		for i := skip; i < len(yt.Issues) && i < skip+top; i++ {

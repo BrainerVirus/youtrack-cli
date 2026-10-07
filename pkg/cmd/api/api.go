@@ -35,6 +35,7 @@ type options struct {
 	input       string
 	fields      string
 	paginate    bool
+	slurp       bool
 	jq          string
 	template    string
 	silent      bool
@@ -62,8 +63,14 @@ from a file ("@-" from stdin). Keys nest: -F 'project[id]=0-0'. Parameters go
 in the query string for GET and in a JSON body otherwise. Passing parameters
 switches the default method from GET to POST.
 
---paginate follows YouTrack's $skip/$top paging until a short page and prints
-all items as one JSON array.`,
+--paginate follows YouTrack's $skip/$top paging and prints all items as one
+JSON array (--slurp is accepted for gh compatibility; it is the default). It
+stops at an empty page or at a page shorter than both the requested $top and
+the first page, so a server-side cap on $top does not end paging early. --jq
+and --template apply to the merged array.
+
+With --include, the status line and headers are printed to stdout even when
+the request fails; the error itself still goes to stderr.`,
 		Example: `  $ ytrack api /users/me --fields login,fullName
   $ ytrack api /issues -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
   $ ytrack api /issues --fields idReadable --jq '.[].idReadable'
@@ -82,6 +89,12 @@ all items as one JSON array.`,
 			if opts.paginate && opts.method != http.MethodGet {
 				return clierr.FlagErrorf("--paginate only works with GET requests")
 			}
+			if opts.slurp && !opts.paginate {
+				return clierr.FlagErrorf("--slurp requires --paginate")
+			}
+			if opts.input == "-" && readsStdin(opts.magicFields) {
+				return clierr.FlagErrorf("--input - and a -F value of @- cannot both read standard input")
+			}
 			return run(cmd, f, opts)
 		},
 	}
@@ -93,6 +106,7 @@ all items as one JSON array.`,
 	fl.StringVar(&opts.input, "input", "", "The `file` to use as the request body (\"-\" for stdin)")
 	fl.StringVar(&opts.fields, "fields", "", "Set YouTrack's fields= query parameter to this `projection`")
 	fl.BoolVar(&opts.paginate, "paginate", false, "Fetch all pages with $skip/$top and print one JSON array")
+	fl.BoolVar(&opts.slurp, "slurp", false, "With --paginate, print one JSON array (the default; for gh compatibility)")
 	fl.StringVarP(&opts.jq, "jq", "q", "", "Filter the response with a jq `expression`")
 	fl.StringVarP(&opts.template, "template", "t", "", "Format the response with a Go `template`")
 	fl.BoolVar(&opts.silent, "silent", false, "Do not print the response body")
@@ -203,8 +217,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if isJSON(resp) || format != (output.Format{}) {
 			return output.WriteJSON(ios, resp.Body, format)
 		}
-		_, err = io.Copy(ios.Out, resp.Body)
-		return err
+		return output.Copy(ios, resp.Body)
 	}
 
 	items, err := paginate(rawQuery, send)
@@ -222,9 +235,10 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	return output.WriteJSON(ios, bytes.NewReader(merged), format)
 }
 
-// paginate requests pages with $skip/$top until one comes back short and
-// returns all items. $skip and $top already in the path set the start and
-// page size.
+// paginate requests pages with $skip/$top and returns all items. It stops at
+// an empty page, or at a page shorter than both $top and the first page (a
+// server may cap $top below what was asked). $skip and $top already in the
+// path set the start and page size.
 func paginate(rawQuery string, send func(string) (*http.Response, error)) ([]json.RawMessage, error) {
 	skip, top := 0, DefaultPageSize
 	rest := make([]string, 0)
@@ -253,8 +267,9 @@ func paginate(rawQuery string, send func(string) (*http.Response, error)) ([]jso
 	}
 	base := strings.Join(rest, "&")
 
-	var all []json.RawMessage
-	for {
+	all := []json.RawMessage{}
+	limit := top // shrinks to the first page's size if the server caps $top
+	for first := true; ; first = false {
 		q := fmt.Sprintf("$skip=%d&$top=%d", skip, top)
 		if base != "" {
 			q = base + "&" + q
@@ -270,11 +285,23 @@ func paginate(rawQuery string, send func(string) (*http.Response, error)) ([]jso
 			return nil, errors.New("--paginate needs an endpoint that returns a JSON array")
 		}
 		all = append(all, page...)
-		if len(page) < top {
+		if len(page) == 0 || (!first && len(page) < limit) {
 			return all, nil
+		}
+		if first {
+			limit = min(top, len(page))
 		}
 		skip += len(page)
 	}
+}
+
+func readsStdin(magicFields []string) bool {
+	for _, f := range magicFields {
+		if _, v, ok := strings.Cut(f, "="); ok && v == "@-" {
+			return true
+		}
+	}
+	return false
 }
 
 var jsonContentType = regexp.MustCompile(`[/+]json(;|$)`)
@@ -288,10 +315,9 @@ func isJSON(resp *http.Response) bool {
 // "/api/issues". An absolute URL is accepted only on the configured host.
 func NormalizePath(p, serviceURL string) (path, rawQuery string, err error) {
 	if strings.Contains(p, "://") {
-		prefix := strings.TrimRight(serviceURL, "/")
-		rest, ok := strings.CutPrefix(p, prefix)
-		if !ok || (rest != "" && rest[0] != '/' && rest[0] != '?') {
-			return "", "", fmt.Errorf("URL %q is not on the configured host %s; pass a path such as /issues", p, prefix)
+		rest, err := relativeToService(p, serviceURL)
+		if err != nil {
+			return "", "", err
 		}
 		p = rest
 	}
@@ -306,6 +332,30 @@ func NormalizePath(p, serviceURL string) (path, rawQuery string, err error) {
 		}
 	}
 	return path, rawQuery, nil
+}
+
+// relativeToService strips the service URL from an absolute URL, comparing
+// scheme and host case-insensitively and the path prefix by segment. It fails
+// for URLs elsewhere, so the token is never sent to another origin.
+func relativeToService(raw, serviceURL string) (string, error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL %q: %w", raw, err)
+	}
+	base, err := url.Parse(serviceURL)
+	if err != nil {
+		return "", err
+	}
+	prefix := strings.TrimRight(base.Path, "/")
+	if !strings.EqualFold(u.Scheme, base.Scheme) || !strings.EqualFold(u.Host, base.Host) ||
+		(prefix != "" && u.Path != prefix && !strings.HasPrefix(u.Path, prefix+"/")) {
+		return "", fmt.Errorf("URL %q is not on the configured host %s; pass a path such as /issues", raw, serviceURL)
+	}
+	rest := strings.TrimPrefix(u.EscapedPath(), prefix)
+	if u.RawQuery != "" {
+		rest += "?" + u.RawQuery
+	}
+	return rest, nil
 }
 
 func hasParam(rawQuery, name string) bool {

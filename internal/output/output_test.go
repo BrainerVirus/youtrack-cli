@@ -106,3 +106,29 @@ func TestTable(t *testing.T) {
 		}
 	})
 }
+
+func TestCopy(t *testing.T) {
+	t.Run("on a terminal it ends the output with a newline", func(t *testing.T) {
+		ios, _, out, _ := iostreams.Test()
+		ios.SetStdoutTTY(true)
+		_ = Copy(ios, strings.NewReader(`{"a":1}`))
+		if out.String() != `{"a":1}`+"\n" {
+			t.Errorf("got %q", out)
+		}
+	})
+	t.Run("when piped it adds nothing", func(t *testing.T) {
+		ios, _, out, _ := iostreams.Test()
+		_ = Copy(ios, strings.NewReader(`{"a":1}`))
+		if out.String() != `{"a":1}` {
+			t.Errorf("got %q", out)
+		}
+	})
+	t.Run("on a terminal an empty body stays empty", func(t *testing.T) {
+		ios, _, out, _ := iostreams.Test()
+		ios.SetStdoutTTY(true)
+		_ = Copy(ios, strings.NewReader(""))
+		if out.Len() != 0 {
+			t.Errorf("got %q", out)
+		}
+	})
+}

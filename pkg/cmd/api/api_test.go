@@ -35,6 +35,7 @@ func TestNormalizePath(t *testing.T) {
 		{"/apiary", "/api/apiary", ""},
 		{"/issues?fields=id,summary,customFields(name,value(name))", "/api/issues", "fields=id,summary,customFields(name,value(name))"},
 		{base + "/api/issues?$top=5", "/api/issues", "$top=5"},
+		{"HTTPS://Tools.Acme.com/youtrack/issues", "/api/issues", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in+" becomes "+tt.wantPath, func(t *testing.T) {
@@ -46,7 +47,7 @@ func TestNormalizePath(t *testing.T) {
 	}
 
 	t.Run("an absolute URL on another host is rejected so the token is not sent there", func(t *testing.T) {
-		for _, in := range []string{"https://evil.example/api/issues", base + "evil/api/issues"} {
+		for _, in := range []string{"https://evil.example/api/issues", base + "evil/api/issues", "http://tools.acme.com/youtrack/api/issues", "https://tools.acme.com.evil.example/youtrack/api/issues"} {
 			if _, _, err := api.NormalizePath(in, base); err == nil {
 				t.Errorf("NormalizePath(%q) succeeded", in)
 			}
@@ -149,6 +150,28 @@ func TestAPIRequests(t *testing.T) {
 		}
 		if env.Stdout.String() != `{"summary":"from file"}` {
 			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given --input - and a -F value of @-, it is a usage error", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		before := len(yt.Requests())
+		if code := env.Run("api", "/issues", "--input", "-", "-F", "description=@-"); !env.IsUsageError(code) {
+			t.Fatalf("exit %d, want a usage error; stderr: %s", code, env.Stderr)
+		}
+		if len(yt.Requests()) != before {
+			t.Error("sent a request")
+		}
+	})
+
+	t.Run("given an absolute URL on the host in other letter case, it requests the path", func(t *testing.T) {
+		env, yt := loggedIn(t, "/youtrack")
+		abs := strings.Replace(yt.URL(), "http://", "HTTP://", 1) + "/api/users/me?fields=login"
+		if code := env.Run("api", abs); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if r := yt.LastRequest(t); r.Path != "/youtrack/api/users/me" || r.RawQuery != "fields=login" {
+			t.Errorf("got %s?%s", r.Path, r.RawQuery)
 		}
 	})
 
@@ -362,6 +385,46 @@ func TestAPIPaginate(t *testing.T) {
 		}
 		if env.Stdout.String() != "200\n" {
 			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given an empty collection, it prints an empty array, not null", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		if code := env.Run("api", "/issues", "--paginate"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if env.Stdout.String() != "[]\n" {
+			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given a server that caps $top below the page size, it still fetches everything", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.SeedIssues(100)
+		yt.MaxTop = 42
+		if code := env.Run("api", "/issues", "--paginate", "--jq", "length"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if env.Stdout.String() != "100\n" {
+			t.Errorf("stdout = %q, want all 100 issues", env.Stdout)
+		}
+	})
+
+	t.Run("given --slurp, it prints the same merged array", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.SeedIssues(3)
+		if code := env.Run("api", "/issues", "--paginate", "--slurp", "--jq", "length"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if env.Stdout.String() != "3\n" {
+			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given --slurp without --paginate, it is a usage error", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		if code := env.Run("api", "/issues", "--slurp"); !env.IsUsageError(code) {
+			t.Fatalf("exit %d, want a usage error; stderr: %s", code, env.Stderr)
 		}
 	})
 

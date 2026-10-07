@@ -49,9 +49,37 @@ func WriteJSON(ios *iostreams.IOStreams, r io.Reader, f Format) error {
 	case ios.ColorEnabled():
 		return jsonpretty.Format(w, r, "  ", true)
 	default:
-		_, err := io.Copy(w, r)
+		return Copy(ios, r)
+	}
+}
+
+// Copy writes r to ios.Out unchanged, adding a final newline on a terminal
+// when the content lacks one so the shell prompt starts on its own line.
+func Copy(ios *iostreams.IOStreams, r io.Reader) error {
+	lw := &lastByteWriter{w: ios.Out}
+	if _, err := io.Copy(lw, r); err != nil {
 		return err
 	}
+	if ios.IsStdoutTTY() && lw.n > 0 && lw.last != '\n' {
+		_, err := io.WriteString(ios.Out, "\n")
+		return err
+	}
+	return nil
+}
+
+type lastByteWriter struct {
+	w    io.Writer
+	n    int64
+	last byte
+}
+
+func (l *lastByteWriter) Write(p []byte) (int, error) {
+	n, err := l.w.Write(p)
+	if n > 0 {
+		l.n += int64(n)
+		l.last = p[n-1]
+	}
+	return n, err
 }
 
 // Exportable is implemented by results that can be projected onto a list of
