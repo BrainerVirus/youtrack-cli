@@ -92,3 +92,53 @@ func TestDir(t *testing.T) {
 		}
 	})
 }
+
+func TestStateDir(t *testing.T) {
+	t.Run("XDG_STATE_HOME is used when set", func(t *testing.T) {
+		t.Setenv("XDG_STATE_HOME", "/state")
+		if d, _ := StateDir(); d != filepath.Join("/state", "ytrack") {
+			t.Errorf("StateDir() = %q", d)
+		}
+	})
+	t.Run("without XDG_STATE_HOME it is under the home directory, or LocalAppData on Windows", func(t *testing.T) {
+		t.Setenv("XDG_STATE_HOME", "")
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("USERPROFILE", home)
+		t.Setenv("LocalAppData", filepath.Join(home, "AppData", "Local"))
+		want := filepath.Join(home, ".local", "state", "ytrack")
+		if runtime.GOOS == "windows" {
+			want = filepath.Join(home, "AppData", "Local", "ytrack")
+		}
+		if d, _ := StateDir(); d != want {
+			t.Errorf("StateDir() = %q, want %q", d, want)
+		}
+	})
+}
+
+func TestCheckUpdate(t *testing.T) {
+	for name, tc := range map[string]struct {
+		yml  string
+		want bool
+	}{
+		"given no config.yml, the update notice is on":        {"", true},
+		"given check_update: false, the update notice is off": {"check_update: false\n", false},
+		"given check_update: true, the update notice is on":   {"check_update: true\n", true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.yml != "" {
+				if err := os.WriteFile(filepath.Join(dir, "config.yml"), []byte(tc.yml), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c, err := LoadFrom(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := c.CheckUpdate(); got != tc.want {
+				t.Errorf("CheckUpdate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
