@@ -156,6 +156,21 @@ func TestAPIRequests(t *testing.T) {
 		}
 	})
 
+	t.Run("given --input - (stdin), it sends stdin as a JSON body", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		env.Stdin.WriteString(`{"summary":"from stdin"}`)
+		if code := env.Run("api", "-X", "POST", "/issues", "--input", "-"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		req := yt.LastRequest(t)
+		if req.Method != http.MethodPost || req.Body != `{"summary":"from stdin"}` {
+			t.Errorf("got %s %q", req.Method, req.Body)
+		}
+		if got := req.Header.Values("Content-Type"); len(got) != 1 || got[0] != "application/json" {
+			t.Errorf("Content-Type = %q, want application/json", got)
+		}
+	})
+
 	t.Run("given --input and -H Content-Type, the header wins", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
 		file := filepath.Join(t.TempDir(), "note.txt")

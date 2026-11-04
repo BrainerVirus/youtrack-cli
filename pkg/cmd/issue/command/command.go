@@ -157,11 +157,15 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	return nil
 }
 
-var htmlTag = regexp.MustCompile(`<[^>]*>`)
+// htmlTag matches a real tag only: "<" followed by a letter (start tag) or
+// "/" and a letter (end tag), so literal text such as "a < b > c" survives.
+var htmlTag = regexp.MustCompile(`</?[A-Za-z][^<>]*>`)
 
 // plainText renders YouTrack's HTML command description, such as
-// `Set Assignee <span class="bold">admin</span>`, as plain text: tags dropped
-// and entities decoded. --json keeps the description as YouTrack sent it.
+// `Set Assignee <span class="bold">admin</span>`, as plain text: tags dropped,
+// then entities decoded (so an escaped "&lt;b&gt;" stays as text). The caller
+// sanitizes the result, which removes control characters that entities such
+// as "&#27;" decode to. --json keeps the description as YouTrack sent it.
 func plainText(s string) string {
 	return html.UnescapeString(htmlTag.ReplaceAllString(s, ""))
 }
