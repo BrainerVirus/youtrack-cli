@@ -546,6 +546,70 @@ func TestIssueCommand(t *testing.T) {
 		}
 	})
 
+	t.Run("given several issues, one request applies the command to all of them", func(t *testing.T) {
+		env, yt := writable(t)
+		mustRun(t, env, "issue", "command", "NSR-40", "NSR-41", "State Open for me", "--json", "issue,issues,command,dryRun")
+		reqs := requests(yt, "POST", "/api/commands")
+		if len(reqs) != 1 || reqs[0].Body != `{"issues":[{"idReadable":"NSR-40"},{"idReadable":"NSR-41"}],"query":"State Open for me"}` {
+			t.Fatalf("requests = %+v", reqs)
+		}
+		for _, id := range []string{"NSR-40", "NSR-41"} {
+			if got := storedField(t, yt, id, "State"); got.(map[string]any)["name"] != "Open" {
+				t.Errorf("%s State = %v", id, got)
+			}
+		}
+		want := map[string]any{
+			"issue": "NSR-40", "command": "State Open for me", "dryRun": false,
+			"issues": []any{
+				map[string]any{"issue": "NSR-40", "url": yt.URL() + "/issue/NSR-40"},
+				map[string]any{"issue": "NSR-41", "url": yt.URL() + "/issue/NSR-41"},
+			},
+		}
+		if got := decodeJSON[map[string]any](t, env.Stdout.Bytes()); !reflect.DeepEqual(got, want) {
+			t.Errorf("stdout = %s", env.Stdout)
+		}
+	})
+
+	t.Run("given several issues without --json, it prints one line per issue", func(t *testing.T) {
+		env, yt := writable(t)
+		mustRun(t, env, "issue", "command", "NSR-40", yt.URL()+"/issue/NSR-41", "tag regression")
+		if got, want := env.Stdout.String(), "NSR-40\t"+yt.URL()+"/issue/NSR-40\nNSR-41\t"+yt.URL()+"/issue/NSR-41\n"; got != want {
+			t.Errorf("stdout = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("given several issues and --dry-run, it previews once and changes nothing", func(t *testing.T) {
+		env, yt := writable(t)
+		mustRun(t, env, "issue", "command", "NSR-40", "NSR-41", "State Open", "--dry-run")
+		if n := len(requests(yt, "POST", "/api/commands")); n != 0 {
+			t.Errorf("it applied the command (%d requests)", n)
+		}
+		assist := requests(yt, "POST", "/api/commands/assist")
+		if len(assist) != 1 || !strings.Contains(assist[0].Body, `"issues":[{"idReadable":"NSR-40"},{"idReadable":"NSR-41"}]`) {
+			t.Errorf("assist requests = %+v", assist)
+		}
+		if got := storedField(t, yt, "NSR-41", "State"); got.(map[string]any)["name"] != "Fixed" {
+			t.Errorf("NSR-41 State changed to %v in a dry run", got)
+		}
+	})
+
+	t.Run("given issue URLs on two hosts, it is a usage error without a request", func(t *testing.T) {
+		env, yt := writable(t)
+		if code := env.Run("issue", "command", yt.URL()+"/issue/NSR-40", "https://other.example/issue/NSR-41", "State Fixed"); !env.IsUsageError(code) {
+			t.Errorf("exit %d: %s", code, env.Stderr)
+		}
+		if n := len(requests(yt, "POST", "/api/commands")); n != 0 {
+			t.Errorf("requests = %d", n)
+		}
+	})
+
+	t.Run("given only a command, it is a usage error", func(t *testing.T) {
+		env, _ := writable(t)
+		if code := env.Run("issue", "command", "State Fixed"); !env.IsUsageError(code) {
+			t.Errorf("exit %d: %s", code, env.Stderr)
+		}
+	})
+
 	t.Run("given --dry-run with --silent, it is a usage error", func(t *testing.T) {
 		env, _ := writable(t)
 		if code := env.Run("issue", "command", "NSR-40", "State Fixed", "--dry-run", "--silent"); !env.IsUsageError(code) {

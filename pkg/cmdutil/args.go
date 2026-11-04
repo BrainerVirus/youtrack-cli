@@ -16,6 +16,16 @@ func ExactArgs(n int, msg string) cobra.PositionalArgs {
 	}
 }
 
+// MinimumArgs is cobra.MinimumNArgs returning a usage error with msg.
+func MinimumArgs(n int, msg string) cobra.PositionalArgs {
+	return func(_ *cobra.Command, args []string) error {
+		if len(args) < n {
+			return clierr.FlagErrorf("%s", msg)
+		}
+		return nil
+	}
+}
+
 // NoArgs rejects positional arguments with a usage error.
 func NoArgs(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {

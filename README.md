@@ -4,7 +4,8 @@ An unofficial command-line interface for JetBrains YouTrack, in the style of
 `gh` and `glab`. Not affiliated with or endorsed by JetBrains.
 
 Status: early. This release covers authentication, the raw `ytrack api`
-command, reading and commenting on issues, and time tracking (work items).
+command, reading, creating, editing and commenting on issues, YouTrack
+commands on one or many issues, and time tracking (work items).
 
 ## Install
 
@@ -120,6 +121,25 @@ for the table or the requested fields are fetched. In `issue list`, `-q` is
 `--query`; use `--jq` for jq. `--limit` defaults to 30; `--limit 0` lists all.
 The editor for `issue comment --editor` is `$YTRACK_EDITOR`, `$GIT_EDITOR`,
 `$VISUAL` or `$EDITOR`.
+
+### Commands
+
+```sh
+ytrack issue create --project APP --summary 'Login fails on Safari'
+ytrack issue edit APP-123 --summary 'Login fails on Safari 18' --field 'Priority=Critical'
+ytrack issue command APP-123 'State In Progress for me'
+ytrack issue command APP-123 APP-124 APP-130 'Assignee me' --dry-run   # preview only
+ytrack issue command APP-123 APP-124 'tag regression' --json issues,commands
+```
+
+`issue command` takes YouTrack's own [command
+language](https://www.jetbrains.com/help/youtrack/cloud/commands.html). The
+last argument is the command and every argument before it is an issue; all of
+them change in one request. `--dry-run` asks YouTrack how it parses the
+command and changes nothing (exit 1 when a part is not understood);
+`--comment` adds a comment with the change and `--silent` skips
+notifications. `--json` reports `issue`, `url`, `issues` (every issue with its
+URL), `command`, `dryRun` and `commands` (the parsed parts).
 
 ## Time tracking
 
