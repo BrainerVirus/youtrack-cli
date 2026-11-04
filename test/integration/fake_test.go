@@ -151,7 +151,7 @@ func (f *fakeInstance) localizeCommand(w http.ResponseWriter, r *http.Request) b
 		if word, _, _ := strings.Cut(query, " "); strings.EqualFold(word, "for") {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			_, _ = io.WriteString(w, `{"error":"bad_request","error_description":"Comando desconocido: for"}`)
+			_, _ = io.WriteString(w, `{"error":"bad_request","error_description":"Comando desconocido: for"}`) //nolint:misspell // YouTrack's real Spanish error text
 			return false
 		}
 		if login, ok := strings.CutPrefix(query, "Assignee "); ok {

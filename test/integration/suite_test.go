@@ -30,7 +30,7 @@ type suite struct {
 
 // assignToMe is the command the suite applies. It names the field rather
 // than using the "for" keyword, which YouTrack localizes (a Spanish
-// instance answers "Comando desconocido: for").
+// instance answers with its localized unknown-command error for `for`).
 const assignToMe = "Assignee me"
 
 // stepTimeout bounds one ytrack invocation.
