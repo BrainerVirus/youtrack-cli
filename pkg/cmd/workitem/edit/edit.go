@@ -43,7 +43,7 @@ JSON fields:
 		Example: `  $ ytrack work-item edit APP-123 115-3 --duration 2h
   $ ytrack work-item edit APP-123 115-3 --date 2026-10-06 --text 'Pairing on the fix'
   $ ytrack work-item edit APP-123 115-3 --type Testing`,
-		Args: cmdutil.ExactArgs(2, "expected an issue ID or URL and a work item ID, e.g. APP-123 115-3"),
+		Args:              cmdutil.ExactArgs(2, "expected an issue ID or URL and a work item ID, e.g. APP-123 115-3"),
 		ValidArgsFunction: issueshared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := issueshared.ParseRef(args[0])

@@ -60,7 +60,7 @@ JSON fields:
 		Example: `  $ ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
   $ git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
   $ ytrack issue comment APP-123 --editor`,
-		Args: cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
+		Args:              cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
 		ValidArgsFunction: shared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := shared.ParseRef(args[0])

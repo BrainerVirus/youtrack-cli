@@ -32,7 +32,7 @@ you named. In a terminal it then shows the item and asks before deleting
 it; otherwise --yes is required.`,
 		Example: `  $ ytrack work-item delete APP-123 115-3
   $ ytrack work-item delete APP-123 115-3 --yes`,
-		Args: cmdutil.ExactArgs(2, "expected an issue ID or URL and a work item ID, e.g. APP-123 115-3"),
+		Args:              cmdutil.ExactArgs(2, "expected an issue ID or URL and a work item ID, e.g. APP-123 115-3"),
 		ValidArgsFunction: issueshared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := issueshared.ParseRef(args[0])

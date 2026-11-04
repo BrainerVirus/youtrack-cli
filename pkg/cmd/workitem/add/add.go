@@ -57,7 +57,7 @@ JSON fields:
   $ ytrack work-item add APP-123 --duration 45m --date 2026-10-06 --type Development
   $ ytrack work-item add TEAM-1 --duration 30m --meeting
   $ ytrack work-item add APP-123 --duration 1.5h --json id,date,duration`,
-		Args: cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
+		Args:              cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
 		ValidArgsFunction: issueshared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := issueshared.ParseRef(args[0])

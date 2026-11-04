@@ -57,7 +57,7 @@ JSON fields:
 		Example: `  $ ytrack issue view APP-123
   $ ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments
   $ ytrack issue view APP-123 --json summary,state,comments --jq '.comments | length'`,
-		Args: cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
+		Args:              cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
 		ValidArgsFunction: shared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := shared.ParseRef(args[0])
