@@ -250,7 +250,7 @@ func VerifyBundle(bundleJSON, artifact []byte, root *TrustedRoot, id Identity) e
 	}
 	var b sigstoreBundle
 	if err := json.Unmarshal(bundleJSON, &b); err != nil {
-		return fmt.Errorf("%w: invalid bundle: %v", errSignature, err)
+		return fmt.Errorf("%w: invalid bundle: %w", errSignature, err)
 	}
 	if !strings.HasPrefix(b.MediaType, "application/vnd.dev.sigstore.bundle") {
 		return fmt.Errorf("%w: not a Sigstore bundle", errSignature)
@@ -269,7 +269,7 @@ func VerifyBundle(bundleJSON, artifact []byte, root *TrustedRoot, id Identity) e
 	}
 	cert, err := x509.ParseCertificate(certDER)
 	if err != nil {
-		return fmt.Errorf("%w: certificate: %v", errSignature, err)
+		return fmt.Errorf("%w: certificate: %w", errSignature, err)
 	}
 	digest := sha256.Sum256(artifact)
 	sig := b.MessageSignature.Signature
@@ -295,14 +295,14 @@ func VerifyBundle(bundleJSON, artifact []byte, root *TrustedRoot, id Identity) e
 		logErr = err
 	}
 	if logErr != nil {
-		return fmt.Errorf("%w: transparency log: %v", errSignature, logErr)
+		return fmt.Errorf("%w: transparency log: %w", errSignature, logErr)
 	}
 
 	if err := verifyChain(cert, root, signedAt); err != nil {
-		return fmt.Errorf("%w: certificate: %v", errSignature, err)
+		return fmt.Errorf("%w: certificate: %w", errSignature, err)
 	}
 	if err := checkIdentity(cert, id); err != nil {
-		return fmt.Errorf("%w: %v", errSignature, err)
+		return fmt.Errorf("%w: %w", errSignature, err)
 	}
 
 	pub, ok := cert.PublicKey.(*ecdsa.PublicKey)
@@ -373,7 +373,7 @@ func verifyTlogEntry(e *tlogEntry, root *TrustedRoot, cert *x509.Certificate, si
 }
 
 func verifyChain(cert *x509.Certificate, root *TrustedRoot, at time.Time) error {
-	var lastErr error = errors.New("no Fulcio CA was active at the signing time")
+	lastErr := errors.New("no Fulcio CA was active at the signing time")
 	for _, ca := range root.CAs {
 		if !within(at, ca.Start, ca.End) {
 			continue

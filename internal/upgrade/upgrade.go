@@ -61,22 +61,22 @@ func (d *Downloader) Binary(ctx context.Context, rel *update.Release) ([]byte, e
 		return nil, err
 	}
 	if err := VerifyBundle(sig, sums, d.Root, d.Identity); err != nil {
-		return nil, fmt.Errorf("%w: %s: %v", ErrRefused, checksums.Name, err)
+		return nil, fmt.Errorf("%w: %s: %w", ErrRefused, checksums.Name, err)
 	}
 	want, err := ExpectedSHA256(sums, archiveName)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrRefused, err)
+		return nil, fmt.Errorf("%w: %w", ErrRefused, err)
 	}
 	data, err := d.fetch(ctx, archive, maxArchive)
 	if err != nil {
 		return nil, err
 	}
 	if err := CheckSHA256(data, want); err != nil {
-		return nil, fmt.Errorf("%w: %s: %v", ErrRefused, archiveName, err)
+		return nil, fmt.Errorf("%w: %s: %w", ErrRefused, archiveName, err)
 	}
 	bin, err := ExtractBinary(data, archiveName)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrRefused, err)
+		return nil, fmt.Errorf("%w: %w", ErrRefused, err)
 	}
 	return bin, nil
 }

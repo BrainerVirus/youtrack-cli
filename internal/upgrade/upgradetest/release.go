@@ -233,21 +233,21 @@ func WriteDir(t *testing.T, dir string, s *Sigstore, releases ...*Release) {
 		}
 		for name, data := range rel.Assets(t, s) {
 			p := filepath.Join(dir, "download", rel.Tag(), name)
-			if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(p, data, 0o644); err != nil {
+			if err := os.WriteFile(p, data, 0o600); err != nil {
 				t.Fatal(err)
 			}
 		}
 	}
 	if latest != nil {
 		p := filepath.Join(dir, "api", "releases", "latest")
-		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
 			t.Fatal(err)
 		}
 		b, _ := json.MarshalIndent(map[string]any{"tag_name": latest.Tag(), "prerelease": false}, "", "  ")
-		if err := os.WriteFile(p, b, 0o644); err != nil {
+		if err := os.WriteFile(p, b, 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
