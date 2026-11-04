@@ -102,12 +102,16 @@ prerelease) exists, for example:
 A new release of ytrack is available: 0.2.0 → 0.3.0; run `ytrack upgrade` (https://github.com/BrainerVirus/youtrack-cli/releases/tag/v0.3.0)
 ```
 
-It asks GitHub at most once every 24 hours, in the background while the
-command runs (a slow answer delays exit by at most 3 seconds), and records
-the check in `state.yml` in the state directory: `$XDG_STATE_HOME/ytrack`,
-else `%LOCALAPPDATA%\ytrack` on Windows, else `~/.local/state/ytrack`. A failed
-check also counts, so an offline machine asks once a day. It makes no
-request and prints nothing:
+The notice comes from the release cached in `state.yml` in the state
+directory (`$XDG_STATE_HOME/ytrack`, else `%LOCALAPPDATA%\ytrack` on Windows,
+else `~/.local/state/ytrack`), so printing it costs nothing, and each release
+is announced at most once every 24 hours. ytrack refreshes that cache from
+GitHub at most once every 24 hours, in the background while the command runs.
+A refresh still in flight 300 ms after the command finishes is abandoned
+(and retried next run), so a slow or unreachable server never delays the exit
+by more than that. A failed check also counts, so an offline machine asks once
+a day; it keeps the release cached before it. It makes no request and prints
+nothing:
 
 - in CI (`CI`, `BUILD_NUMBER` or `RUN_ID` set);
 - when stderr is not a terminal;

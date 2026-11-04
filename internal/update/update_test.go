@@ -116,3 +116,48 @@ func TestCheckDaily(t *testing.T) {
 		}
 	})
 }
+
+func TestPending(t *testing.T) {
+	now := time.Date(2026, 11, 4, 12, 0, 0, 0, time.UTC)
+	state := filepath.Join(t.TempDir(), "state.yml")
+
+	if n := update.Pending(state, "1.0.0", now); n != nil {
+		t.Fatalf("no state: notice = %+v", n)
+	}
+	if err := update.WriteState(state, update.State{CheckedAt: now, LatestVersion: "1.1.0", LatestURL: "u"}); err != nil {
+		t.Fatal(err)
+	}
+	if n := update.Pending(state, "1.1.0", now); n != nil {
+		t.Errorf("current is the latest: notice = %+v", n)
+	}
+	n := update.Pending(state, "1.0.0", now)
+	if n == nil || n.Latest != "1.1.0" || n.URL != "u" {
+		t.Fatalf("notice = %+v", n)
+	}
+	update.MarkNotified(state, "1.1.0", now)
+	if n := update.Pending(state, "1.0.0", now.Add(23*time.Hour)); n != nil {
+		t.Errorf("within 24h of the last notice: %+v", n)
+	}
+	if n := update.Pending(state, "1.0.0", now.Add(25*time.Hour)); n == nil {
+		t.Error("after 24h: no notice")
+	}
+	if s := update.ReadState(state); s.LatestVersion != "1.1.0" || !s.CheckedAt.Equal(now) {
+		t.Errorf("MarkNotified changed the cached check: %+v", s)
+	}
+}
+
+func TestCheckDailyKeepsTheCacheOnFailure(t *testing.T) {
+	now := time.Date(2026, 11, 4, 12, 0, 0, 0, time.UTC)
+	srv := upgradetest.NewServer(t, upgradetest.NewSigstore(t)) // latest is 404
+	c := &update.Client{HTTP: srv.Client(), APIURL: srv.URL}
+	state := filepath.Join(t.TempDir(), "state.yml")
+	if err := update.WriteState(state, update.State{CheckedAt: now.Add(-48 * time.Hour), LatestVersion: "1.1.0"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := update.CheckDaily(context.Background(), c, state, "1.0.0", now); err == nil {
+		t.Fatal("want an error")
+	}
+	if s := update.ReadState(state); s.LatestVersion != "1.1.0" || !s.CheckedAt.Equal(now) {
+		t.Errorf("state = %+v, want the cached 1.1.0 checked now", s)
+	}
+}
