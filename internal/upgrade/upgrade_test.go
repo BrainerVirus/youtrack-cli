@@ -3,12 +3,11 @@ package upgrade_test
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -22,27 +21,31 @@ var checksums = []byte("0123  ytrack_1.0.0_linux_amd64.tar.gz\n")
 
 func TestVerifyBundle(t *testing.T) {
 	s := upgradetest.NewSigstore(t)
-	root := s.Root()
+	trust := s.Trust()
 
-	t.Run("given a bundle signed by the release workflow, it verifies", func(t *testing.T) {
-		b := s.Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer)
-		if err := upgrade.VerifyBundle(b, checksums, root, upgrade.ReleaseIdentity); err != nil {
-			t.Fatal(err)
-		}
-	})
+	for name, sign := range map[string]func([]byte, string, string) []byte{
+		"a Rekor entry and a signed timestamp":      s.Sign,
+		"a Rekor entry only (cosign with Rekor v1)": s.SignTlogOnly,
+	} {
+		t.Run("given a release workflow signature with "+name+", it verifies", func(t *testing.T) {
+			if err := upgrade.VerifyBundle(sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer), checksums, trust); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 
 	t.Run("given a manual rerun signed from main, it verifies", func(t *testing.T) {
 		subject := "https://github.com/BrainerVirus/youtrack-cli/.github/workflows/release.yml@refs/heads/main"
-		b := s.Sign(checksums, subject, upgradetest.GitHubIssuer)
-		if err := upgrade.VerifyBundle(b, checksums, root, upgrade.ReleaseIdentity); err != nil {
+		if err := upgrade.VerifyBundle(s.Sign(checksums, subject, upgradetest.GitHubIssuer), checksums, trust); err != nil {
 			t.Fatal(err)
 		}
 	})
 
+	good := func() []byte { return s.Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer) }
 	refused := map[string]struct {
 		bundle   func() []byte
 		artifact []byte
-		root     *upgrade.TrustedRoot
+		trust    *upgrade.Trust
 	}{
 		"another repository's workflow": {
 			bundle: func() []byte {
@@ -60,26 +63,19 @@ func TestVerifyBundle(t *testing.T) {
 			},
 		},
 		"another OIDC issuer": {
-			bundle: func() []byte {
-				return s.Sign(checksums, upgradetest.ReleaseSubject, "https://accounts.example.com")
-			},
+			bundle: func() []byte { return s.Sign(checksums, upgradetest.ReleaseSubject, "https://accounts.example.com") },
 		},
-		"a changed file": {
-			bundle:   func() []byte { return s.Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer) },
-			artifact: append([]byte("x"), checksums...),
-		},
-		"an untrusted Sigstore": {
-			bundle: func() []byte {
-				return upgradetest.NewSigstore(t).Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer)
-			},
-		},
-		"the real public-good root for a fake CA": {
-			bundle: func() []byte { return s.Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer) },
-			root:   mustPublicGood(t),
+		"a changed file": {bundle: good, artifact: append([]byte("x"), checksums...)},
+		"an untrusted Sigstore": {bundle: func() []byte {
+			return upgradetest.NewSigstore(t).Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer)
+		}},
+		"the SCT check on, for certificates without SCTs": {
+			bundle: good,
+			trust:  &upgrade.Trust{Material: trust.Material, Identity: upgrade.ReleaseIdentity},
 		},
 		"a tampered log entry": {
 			bundle: func() []byte {
-				return editBundle(t, s.Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer), func(b map[string]any) {
+				return editBundle(t, good(), func(b map[string]any) {
 					e := b["verificationMaterial"].(map[string]any)["tlogEntries"].([]any)[0].(map[string]any)
 					e["logIndex"] = "1"
 				})
@@ -87,17 +83,16 @@ func TestVerifyBundle(t *testing.T) {
 		},
 		"no log entry": {
 			bundle: func() []byte {
-				return editBundle(t, s.Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer), func(b map[string]any) {
-					b["verificationMaterial"].(map[string]any)["tlogEntries"] = []any{}
+				return editBundle(t, good(), func(b map[string]any) {
+					delete(b["verificationMaterial"].(map[string]any), "tlogEntries")
 				})
 			},
 		},
 		"a swapped signature": {
 			bundle: func() []byte {
-				other := s.Sign([]byte("other"), upgradetest.ReleaseSubject, upgradetest.GitHubIssuer)
-				return editBundle(t, s.Sign(checksums, upgradetest.ReleaseSubject, upgradetest.GitHubIssuer), func(b map[string]any) {
-					var o map[string]any
-					_ = json.Unmarshal(other, &o)
+				var o map[string]any
+				_ = json.Unmarshal(s.Sign([]byte("other"), upgradetest.ReleaseSubject, upgradetest.GitHubIssuer), &o)
+				return editBundle(t, good(), func(b map[string]any) {
 					b["messageSignature"].(map[string]any)["signature"] = o["messageSignature"].(map[string]any)["signature"]
 				})
 			},
@@ -110,29 +105,17 @@ func TestVerifyBundle(t *testing.T) {
 			if artifact == nil {
 				artifact = checksums
 			}
-			r := tc.root
-			if r == nil {
-				r = root
+			tr := trust
+			if tc.trust != nil {
+				tr = *tc.trust
 			}
-			err := upgrade.VerifyBundle(tc.bundle(), artifact, r, upgrade.ReleaseIdentity)
+			err := upgrade.VerifyBundle(tc.bundle(), artifact, tr)
 			if err == nil {
 				t.Fatal("verified, want an error")
 			}
 			t.Log(err)
 		})
 	}
-}
-
-func mustPublicGood(t *testing.T) *upgrade.TrustedRoot {
-	t.Helper()
-	r, err := upgrade.PublicGoodRoot()
-	if err != nil {
-		t.Fatalf("embedded trusted root: %v", err)
-	}
-	if len(r.CAs) == 0 || len(r.Logs) != 1 {
-		t.Fatalf("embedded trusted root has %d CAs and %d Rekor v1 logs", len(r.CAs), len(r.Logs))
-	}
-	return r
 }
 
 func editBundle(t *testing.T, b []byte, edit func(map[string]any)) []byte {
@@ -160,7 +143,7 @@ func TestReleaseIdentityAcceptsOnlyReleaseRefs(t *testing.T) {
 		"refs/pull/1/merge":      false,
 		"refs/tags/v1.2.3\nmore": false,
 	} {
-		if got := upgrade.ReleaseIdentity.Subject.MatchString(wf + ref); got != want {
+		if got := regexp.MustCompile(upgrade.ReleaseIdentity.SubjectRegexp).MatchString(wf + ref); got != want {
 			t.Errorf("%s: match = %v, want %v", ref, got, want)
 		}
 	}
@@ -188,7 +171,7 @@ func TestChecksums(t *testing.T) {
 func TestDownloaderBinary(t *testing.T) {
 	s := upgradetest.NewSigstore(t)
 	newDownloader := func(srv *upgradetest.Server, goos, goarch string) *upgrade.Downloader {
-		return &upgrade.Downloader{HTTP: srv.Client(), Root: s.Root(), Identity: upgrade.ReleaseIdentity, GOOS: goos, GOARCH: goarch}
+		return &upgrade.Downloader{HTTP: srv.Client(), Trust: s.Trust(), GOOS: goos, GOARCH: goarch}
 	}
 	release := func(t *testing.T, srv *upgradetest.Server) *update.Release {
 		t.Helper()
@@ -277,19 +260,4 @@ func TestReplaceExecutable(t *testing.T) {
 			t.Fatal("want an error")
 		}
 	})
-}
-
-func TestEmbeddedRootHasSigstorePublicGood(t *testing.T) {
-	r := mustPublicGood(t)
-	// The Rekor v1 production log ID, as cosign bundles name it.
-	id, _ := base64.StdEncoding.DecodeString("wNI9atQGlz+VWfO6LRygH4QUfY/8W4RFwiT5i5WRgB0=")
-	found := false
-	for k := range r.Logs {
-		if k == hex.EncodeToString(id) {
-			found = true
-		}
-	}
-	if !found {
-		t.Errorf("rekor.sigstore.dev log key missing from %v", r.Logs)
-	}
 }

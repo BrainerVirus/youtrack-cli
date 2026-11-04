@@ -1,23 +1,18 @@
-// Package upgradetest provides a fake Sigstore (Fulcio CA and Rekor log) and
-// a fake GitHub release server for tests. Test-only.
+// Package upgradetest provides Sigstore bundles signed by sigstore-go's
+// virtual Sigstore and a fake GitHub release server for tests. Test-only.
 package upgradetest
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/sha256"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
-	"encoding/pem"
-	"math/big"
-	"net/url"
 	"testing"
-	"time"
+
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	protocommon "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
+	protorekor "github.com/sigstore/protobuf-specs/gen/pb-go/rekor/v1"
+	"github.com/sigstore/sigstore-go/pkg/bundle"
+	"github.com/sigstore/sigstore-go/pkg/testing/ca"
+	"github.com/sigstore/sigstore-go/pkg/tlog"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/upgrade"
 )
@@ -28,194 +23,138 @@ const ReleaseSubject = "https://github.com/BrainerVirus/youtrack-cli/.github/wor
 // GitHubIssuer is the GitHub Actions OIDC issuer.
 const GitHubIssuer = "https://token.actions.githubusercontent.com"
 
-// Sigstore is an in-memory Fulcio CA and Rekor log.
+// Sigstore is sigstore-go's in-memory Fulcio CA, Rekor log and timestamp
+// authority.
 type Sigstore struct {
-	t        *testing.T
-	rootKey  *ecdsa.PrivateKey
-	rootCert *x509.Certificate
-	interKey *ecdsa.PrivateKey
-	inter    *x509.Certificate
-	logKey   *ecdsa.PrivateKey
-	logID    []byte
-	Now      time.Time
+	t  *testing.T
+	VS *ca.VirtualSigstore
 }
 
-// NewSigstore returns a fake Sigstore whose clock is the current time.
+// NewSigstore returns a fresh virtual Sigstore.
 func NewSigstore(t *testing.T) *Sigstore {
 	t.Helper()
-	s := &Sigstore{t: t, Now: time.Now().Truncate(time.Second)}
-	s.rootKey, s.rootCert = s.ca("fake-sigstore", nil, nil)
-	s.interKey, s.inter = s.ca("fake-sigstore-intermediate", s.rootCert, s.rootKey)
-	s.logKey = s.key()
-	der, err := x509.MarshalPKIXPublicKey(&s.logKey.PublicKey)
+	vs, err := ca.NewVirtualSigstore()
 	if err != nil {
 		t.Fatal(err)
 	}
-	id := sha256.Sum256(der)
-	s.logID = id[:]
-	return s
+	return &Sigstore{t: t, VS: vs}
 }
 
-func (s *Sigstore) key() *ecdsa.PrivateKey {
-	k, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	return k
+// Trust is what upgrade.VerifyBundle should check against for this
+// Sigstore: its trusted material and the release identity. Its certificates
+// carry no SCT, so the SCT check is off.
+func (s *Sigstore) Trust() upgrade.Trust {
+	return upgrade.Trust{Material: s.VS, Identity: upgrade.ReleaseIdentity, NoSCT: true}
 }
 
-func (s *Sigstore) ca(name string, parent *x509.Certificate, parentKey *ecdsa.PrivateKey) (*ecdsa.PrivateKey, *x509.Certificate) {
-	k := s.key()
-	tmpl := &x509.Certificate{
-		SerialNumber:          big.NewInt(time.Now().UnixNano()),
-		Subject:               pkix.Name{CommonName: name, Organization: []string{"sigstore.dev"}},
-		NotBefore:             s.Now.Add(-24 * time.Hour),
-		NotAfter:              s.Now.Add(365 * 24 * time.Hour),
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
-	if parent == nil {
-		parent, parentKey = tmpl, k
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, parent, &k.PublicKey, parentKey)
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	c, err := x509.ParseCertificate(der)
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	return k, c
-}
-
-// TrustedRoot returns the trusted_root.json document for this Sigstore.
-func (s *Sigstore) TrustedRoot() []byte {
-	der, _ := x509.MarshalPKIXPublicKey(&s.logKey.PublicKey)
-	start := s.Now.Add(-48 * time.Hour).UTC().Format(time.RFC3339)
-	doc := map[string]any{
-		"mediaType": "application/vnd.dev.sigstore.trustedroot+json;version=0.1",
-		"tlogs": []any{map[string]any{
-			"baseUrl":       "https://rekor.example",
-			"hashAlgorithm": "SHA2_256",
-			"publicKey": map[string]any{
-				"rawBytes":   base64.StdEncoding.EncodeToString(der),
-				"keyDetails": "PKIX_ECDSA_P256_SHA_256",
-				"validFor":   map[string]any{"start": start},
-			},
-			"logId": map[string]any{"keyId": base64.StdEncoding.EncodeToString(s.logID)},
-		}},
-		"certificateAuthorities": []any{map[string]any{
-			"uri": "https://fulcio.example",
-			"certChain": map[string]any{"certificates": []any{
-				map[string]any{"rawBytes": base64.StdEncoding.EncodeToString(s.inter.Raw)},
-				map[string]any{"rawBytes": base64.StdEncoding.EncodeToString(s.rootCert.Raw)},
-			}},
-			"validFor": map[string]any{"start": start},
-		}},
-	}
-	b, err := json.Marshal(doc)
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	return b
-}
-
-// Root returns the parsed trusted root for this Sigstore.
-func (s *Sigstore) Root() *upgrade.TrustedRoot {
-	r, err := upgrade.ParseTrustedRoot(s.TrustedRoot())
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	return r
-}
-
-// Sign returns a cosign-style keyless bundle (v0.3) signing artifact as the
-// workflow identity subject, issued by issuer.
+// Sign returns a Sigstore bundle (v0.3 JSON, as cosign sign-blob --bundle
+// writes it) signing artifact as subject, issued by issuer, with a Rekor
+// entry and an RFC 3161 timestamp.
 func (s *Sigstore) Sign(artifact []byte, subject, issuer string) []byte {
-	s.t.Helper()
-	leafKey := s.key()
-	u, err := url.Parse(subject)
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	issuerV2, err := asn1.MarshalWithParams(issuer, "utf8")
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	tmpl := &x509.Certificate{
-		SerialNumber: big.NewInt(time.Now().UnixNano()),
-		NotBefore:    s.Now.Add(-time.Minute),
-		NotAfter:     s.Now.Add(9 * time.Minute),
-		KeyUsage:     x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
-		URIs:         []*url.URL{u},
-		ExtraExtensions: []pkix.Extension{
-			{Id: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 1}, Value: []byte(issuer)},
-			{Id: asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 8}, Value: issuerV2},
-		},
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, s.inter, &leafKey.PublicKey, s.interKey)
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	digest := sha256.Sum256(artifact)
-	sig, err := ecdsa.SignASN1(rand.Reader, leafKey, digest[:])
-	if err != nil {
-		s.t.Fatal(err)
-	}
-
-	body, _ := json.Marshal(map[string]any{
-		"apiVersion": "0.0.1",
-		"kind":       "hashedrekord",
-		"spec": map[string]any{
-			"data": map[string]any{"hash": map[string]any{"algorithm": "sha256", "value": hex.EncodeToString(digest[:])}},
-			"signature": map[string]any{
-				"content":   base64.StdEncoding.EncodeToString(sig),
-				"publicKey": map[string]any{"content": base64.StdEncoding.EncodeToString(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))},
-			},
-		},
-	})
-	integrated, logIndex := s.Now.Unix(), int64(4242)
-	payload, _ := json.Marshal(map[string]any{
-		"body":           base64.StdEncoding.EncodeToString(body),
-		"integratedTime": integrated,
-		"logID":          hex.EncodeToString(s.logID),
-		"logIndex":       logIndex,
-	})
-	ph := sha256.Sum256(payload)
-	set, err := ecdsa.SignASN1(rand.Reader, s.logKey, ph[:])
-	if err != nil {
-		s.t.Fatal(err)
-	}
-
-	b, err := json.MarshalIndent(map[string]any{
-		"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json",
-		"verificationMaterial": map[string]any{
-			"certificate": map[string]any{"rawBytes": base64.StdEncoding.EncodeToString(der)},
-			"tlogEntries": []any{map[string]any{
-				"logIndex":          itoa(logIndex),
-				"logId":             map[string]any{"keyId": base64.StdEncoding.EncodeToString(s.logID)},
-				"kindVersion":       map[string]any{"kind": "hashedrekord", "version": "0.0.1"},
-				"integratedTime":    itoa(integrated),
-				"inclusionPromise":  map[string]any{"signedEntryTimestamp": base64.StdEncoding.EncodeToString(set)},
-				"canonicalizedBody": base64.StdEncoding.EncodeToString(body),
-			}},
-			"timestampVerificationData": map[string]any{},
-		},
-		"messageSignature": map[string]any{
-			"messageDigest": map[string]any{"algorithm": "SHA2_256", "digest": base64.StdEncoding.EncodeToString(digest[:])},
-			"signature":     base64.StdEncoding.EncodeToString(sig),
-		},
-	}, "", "  ")
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	return b
+	return s.sign(artifact, subject, issuer, true)
 }
 
-func itoa(n int64) string {
-	b, _ := json.Marshal(n)
-	return string(b)
+// SignTlogOnly is Sign without the RFC 3161 timestamp: the Rekor v1 signed
+// entry timestamp is the only trusted time.
+func (s *Sigstore) SignTlogOnly(artifact []byte, subject, issuer string) []byte {
+	return s.sign(artifact, subject, issuer, false)
+}
+
+func (s *Sigstore) sign(artifact []byte, subject, issuer string, withTSA bool) []byte {
+	s.t.Helper()
+	e, err := s.VS.Sign(subject, issuer, artifact)
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	vc, err := e.VerificationContent()
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	sc, err := e.SignatureContent()
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	entries, err := e.TlogEntries()
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	stamps, err := e.Timestamps()
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	cert := vc.(*bundle.Certificate).Certificate()
+	ms := sc.(*bundle.MessageSignature)
+
+	// The virtual Sigstore keeps the entry kind and the Rekor v1 inclusion
+	// promise (SET) outside its proto and makes no inclusion proof for
+	// message signatures. A bundle carries all three, so add them: the proof
+	// and its checkpoint from the virtual log (a one-entry tree, index 0) and
+	// a SET over that index, signed by the same virtual Rekor key.
+	tles := make([]*protorekor.TransparencyLogEntry, 0, len(entries))
+	for _, en := range entries {
+		tle := en.TransparencyLogEntry()
+		proof, err := s.VS.GetInclusionProof(tle.CanonicalizedBody)
+		if err != nil {
+			s.t.Fatal(err)
+		}
+		rootHash, err := hex.DecodeString(*proof.RootHash)
+		if err != nil {
+			s.t.Fatal(err)
+		}
+		hashes := make([][]byte, 0, len(proof.Hashes))
+		for _, h := range proof.Hashes {
+			b, err := hex.DecodeString(h)
+			if err != nil {
+				s.t.Fatal(err)
+			}
+			hashes = append(hashes, b)
+		}
+		tle.LogIndex = *proof.LogIndex
+		tle.InclusionProof = &protorekor.InclusionProof{
+			LogIndex:   *proof.LogIndex,
+			RootHash:   rootHash,
+			TreeSize:   *proof.TreeSize,
+			Hashes:     hashes,
+			Checkpoint: &protorekor.Checkpoint{Envelope: *proof.Checkpoint},
+		}
+		set, err := s.VS.RekorSignPayload(tlog.RekorPayload{
+			Body:           base64.StdEncoding.EncodeToString(tle.CanonicalizedBody),
+			IntegratedTime: tle.IntegratedTime,
+			LogIndex:       tle.LogIndex,
+			LogID:          hex.EncodeToString(tle.LogId.KeyId),
+		})
+		if err != nil {
+			s.t.Fatal(err)
+		}
+		tle.InclusionPromise = &protorekor.InclusionPromise{SignedEntryTimestamp: set}
+		tle.KindVersion = &protorekor.KindVersion{Kind: "hashedrekord", Version: "0.0.1"}
+		tles = append(tles, tle)
+	}
+	tvd := &protobundle.TimestampVerificationData{}
+	if withTSA {
+		for _, ts := range stamps {
+			tvd.Rfc3161Timestamps = append(tvd.Rfc3161Timestamps, &protocommon.RFC3161SignedTimestamp{SignedTimestamp: ts})
+		}
+	}
+	pb := &protobundle.Bundle{
+		MediaType: "application/vnd.dev.sigstore.bundle.v0.3+json",
+		VerificationMaterial: &protobundle.VerificationMaterial{
+			Content:                   &protobundle.VerificationMaterial_Certificate{Certificate: &protocommon.X509Certificate{RawBytes: cert.Raw}},
+			TlogEntries:               tles,
+			TimestampVerificationData: tvd,
+		},
+		Content: &protobundle.Bundle_MessageSignature{MessageSignature: &protocommon.MessageSignature{
+			MessageDigest: &protocommon.HashOutput{Algorithm: protocommon.HashAlgorithm_SHA2_256, Digest: ms.Digest()},
+			Signature:     ms.Signature(),
+		}},
+	}
+	b, err := bundle.NewBundle(pb)
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	out, err := b.MarshalJSON()
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	return out
 }

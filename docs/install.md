@@ -68,11 +68,15 @@ ytrack upgrade --version v0.3.0 # a given release (also older ones)
 ```
 
 `ytrack upgrade` downloads the checksums file and its bundle first and
-verifies the signature without cosign installed: the certificate must chain
-to Sigstore's public Fulcio CA (embedded in ytrack) at the time the public
-Rekor log recorded the signature, that log's signed entry timestamp must
-verify and match this signature, certificate and file, and the certificate
-must name the issuer and workflow identity above (a tag `vX.Y.Z` or `main`).
+verifies the signature with [sigstore-go](https://github.com/sigstore/sigstore-go),
+without cosign installed: the certificate must chain to Sigstore's public
+Fulcio CA at a time attested by the public Rekor log (v1 or v2) or a signed
+timestamp, carry a certificate transparency SCT, match the log entry, sign
+the checksums file's SHA-256, and name the issuer and workflow identity above
+(a tag `vX.Y.Z` or `main`). The trusted root comes from Sigstore's TUF
+repository, so key rotations need no ytrack release; its metadata is cached
+in `ytrack/sigstore-tuf` under the user cache directory (`~/.cache` on Linux,
+`~/Library/Caches` on macOS, `%LOCALAPPDATA%` on Windows).
 Then it downloads the archive, checks its SHA-256 against the verified
 checksums, writes the new binary next to the running one and renames it over
 it. On Windows the running `ytrack.exe` is first renamed to `ytrack.exe.old`,

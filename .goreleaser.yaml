@@ -52,9 +52,9 @@ checksum:
 # Keyless cosign signature of the checksums file, made with the release
 # workflow's GitHub OIDC identity (release.yml grants id-token: write and
 # installs cosign). `ytrack upgrade` refuses a release without a valid one;
-# install.sh and install.ps1 check it when cosign is installed.
-# --use-signing-config=false keeps the public Rekor v1 log, whose signed entry
-# timestamp internal/upgrade verifies; Rekor v2 entries are not accepted yet.
+# install.sh and install.ps1 check it when cosign is installed. cosign follows
+# Sigstore's public signing config (Rekor v1 or v2, timestamp authority);
+# internal/upgrade verifies with sigstore-go, which accepts either.
 signs:
   - id: cosign-keyless
     cmd: cosign
@@ -63,7 +63,6 @@ signs:
     args:
       - sign-blob
       - --bundle=${signature}
-      - --use-signing-config=false
       - --yes
       - ${artifact}
     output: true

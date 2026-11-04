@@ -29,8 +29,7 @@ var ErrRefused = errors.New("refusing to upgrade")
 // Downloader fetches and verifies release binaries.
 type Downloader struct {
 	HTTP      *http.Client
-	Root      *TrustedRoot
-	Identity  Identity
+	Trust     Trust
 	GOOS      string
 	GOARCH    string
 	UserAgent string
@@ -60,7 +59,7 @@ func (d *Downloader) Binary(ctx context.Context, rel *update.Release) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	if err := VerifyBundle(sig, sums, d.Root, d.Identity); err != nil {
+	if err := VerifyBundle(sig, sums, d.Trust); err != nil {
 		return nil, fmt.Errorf("%w: %s: %w", ErrRefused, checksums.Name, err)
 	}
 	want, err := ExpectedSHA256(sums, archiveName)

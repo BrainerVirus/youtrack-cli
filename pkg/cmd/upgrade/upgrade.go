@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/spf13/cobra"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/update"
@@ -21,9 +22,12 @@ import (
 
 // Options are the command's dependencies; tests replace them.
 type Options struct {
-	HTTP        *http.Client
-	APIURL      string
-	TrustedRoot func() (*upgrade.TrustedRoot, error)
+	HTTP   *http.Client
+	APIURL string
+	// TrustedRoot returns the Sigstore trusted material signatures must
+	// chain to; NoSCT is for test Sigstores only.
+	TrustedRoot func() (root.TrustedMaterial, error)
+	NoSCT       bool
 	// Executable returns the path of the running binary.
 	Executable func() (string, error)
 	GOOS       string
@@ -33,7 +37,7 @@ type Options struct {
 func defaults(f *cmdutil.Factory) *Options {
 	return &Options{
 		HTTP:        &http.Client{Transport: f.RoundTripper, Timeout: 5 * time.Minute},
-		TrustedRoot: upgrade.PublicGoodRoot,
+		TrustedRoot: upgrade.PublicGoodTrustedRoot,
 		Executable:  os.Executable,
 		GOOS:        runtime.GOOS,
 		GOARCH:      runtime.GOARCH,
@@ -130,13 +134,16 @@ func run(ctx context.Context, f *cmdutil.Factory, o *Options, check bool, versio
 		return nil
 	}
 
-	root, err := o.TrustedRoot()
+	material, err := o.TrustedRoot()
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w; %s was not changed", upgrade.ErrRefused, err, resolved)
 	}
 	d := &upgrade.Downloader{
-		HTTP: o.HTTP, Root: root, Identity: upgrade.ReleaseIdentity,
-		GOOS: o.GOOS, GOARCH: o.GOARCH, UserAgent: "ytrack/" + f.AppVersion,
+		HTTP:      o.HTTP,
+		Trust:     upgrade.Trust{Material: material, Identity: upgrade.ReleaseIdentity, NoSCT: o.NoSCT},
+		GOOS:      o.GOOS,
+		GOARCH:    o.GOARCH,
+		UserAgent: "ytrack/" + f.AppVersion,
 	}
 	fmt.Fprintf(errOut, "Downloading ytrack %s for %s/%s...\n", latest, o.GOOS, o.GOARCH)
 	bin, err := d.Binary(ctx, rel)

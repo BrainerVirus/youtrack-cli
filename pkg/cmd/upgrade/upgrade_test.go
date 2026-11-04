@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sigstore/sigstore-go/pkg/root"
+
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
-	"github.com/BrainerVirus/youtrack-cli/internal/upgrade"
 	"github.com/BrainerVirus/youtrack-cli/internal/upgrade/upgradetest"
 	cmdupgrade "github.com/BrainerVirus/youtrack-cli/pkg/cmd/upgrade"
 )
@@ -46,7 +47,8 @@ func (fx *fixture) run(t *testing.T, args ...string) error {
 	opts := &cmdupgrade.Options{
 		HTTP:        fx.srv.Client(),
 		APIURL:      fx.srv.URL,
-		TrustedRoot: func() (*upgrade.TrustedRoot, error) { return fx.sig.Root(), nil },
+		TrustedRoot: func() (root.TrustedMaterial, error) { return fx.sig.VS, nil },
+		NoSCT:       true, // the virtual Sigstore issues certificates without SCTs
 		Executable:  func() (string, error) { return fx.exe, nil },
 		GOOS:        "linux",
 		GOARCH:      "amd64",
