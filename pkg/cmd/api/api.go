@@ -63,6 +63,9 @@ from a file ("@-" from stdin). Keys nest: -F 'project[id]=0-0'. Parameters go
 in the query string for GET and in a JSON body otherwise. Passing parameters
 switches the default method from GET to POST.
 
+A request with a body (--input, or -f/-F on a method other than GET) is sent
+with "Content-Type: application/json" unless -H sets another Content-Type.
+
 --paginate follows YouTrack's $skip/$top paging and prints all items as one
 JSON array (--slurp is accepted for gh compatibility; it is the default). It
 stops at an empty page or at a page shorter than both the requested $top and
@@ -137,7 +140,6 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 
 	var body io.Reader
-	var bodyIsJSON bool
 	switch {
 	case opts.input != "":
 		b, err := readUserFile(opts.input, ios.In)
@@ -158,7 +160,6 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			return fmt.Errorf("encoding parameters: %w", err)
 		}
 		body = bytes.NewReader(b)
-		bodyIsJSON = true
 	}
 
 	headers := http.Header{}
@@ -169,7 +170,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		}
 		headers.Add(strings.TrimSpace(name), strings.TrimSpace(value))
 	}
-	if bodyIsJSON && headers.Get("Content-Type") == "" {
+	// YouTrack answers 415 to a body without a JSON content type; like gh api,
+	// default it for --input as well as -f/-F, and let -H override it.
+	if body != nil && headers.Get("Content-Type") == "" {
 		headers.Set("Content-Type", "application/json")
 	}
 

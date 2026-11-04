@@ -55,6 +55,8 @@ type Request struct {
 //	GET  /api/plain                 a text/plain body
 //	GET  /users/me                  the web token page (no auth; 404 if HubTokenPage)
 //
+// Like YouTrack, a request with a body that is not JSON is a 415.
+//
 // Like YouTrack, JSON responses keep only the attributes named in fields=
 // (plus $type), when fields= is given. Every /api route requires
 // "Authorization: Bearer <Token>".
@@ -80,6 +82,9 @@ type FakeYouTrack struct {
 	// HubTokenPage makes the instance's token page 404, as on a Server
 	// install with an external Hub.
 	HubTokenPage bool
+	// CommandHTML makes command previews describe each part in HTML, as
+	// YouTrack does: values HTML-escaped inside <span class="bold">.
+	CommandHTML bool
 
 	mu       sync.Mutex
 	requests []Request
@@ -165,6 +170,10 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		}
 		if r.Header.Get("Authorization") != "Bearer "+yt.Token {
 			writeJSON(w, 401, map[string]any{"error": "Unauthorized", "error_description": "You are not logged in."})
+			return
+		}
+		if r.ContentLength != 0 && r.Method != http.MethodGet && !strings.Contains(r.Header.Get("Content-Type"), "json") {
+			writeJSON(w, 415, map[string]any{"error": "Unsupported Media Type", "error_description": "HTTP 415 Unsupported Media Type"})
 			return
 		}
 		mux.ServeHTTP(w, r)

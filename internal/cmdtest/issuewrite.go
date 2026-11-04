@@ -3,6 +3,7 @@ package cmdtest
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"maps"
 	"net/http"
@@ -446,7 +447,11 @@ func (yt *FakeYouTrack) command(w http.ResponseWriter, r *http.Request, preview 
 	commands := make([]any, len(parts))
 	failed := false
 	for i, p := range parts {
-		commands[i] = map[string]any{"$type": "ParsedCommand", "description": p.description, "error": p.err, "delete": false}
+		desc := p.description
+		if yt.CommandHTML && p.html != "" {
+			desc = p.html
+		}
+		commands[i] = map[string]any{"$type": "ParsedCommand", "description": desc, "error": p.err, "delete": false}
 		failed = failed || p.err
 	}
 	if !preview {
@@ -475,8 +480,15 @@ func (yt *FakeYouTrack) command(w http.ResponseWriter, r *http.Request, preview 
 
 type commandPart struct {
 	description string
+	html        string // the description as YouTrack writes it (see CommandHTML)
 	err         bool
 	apply       func(is map[string]any)
+}
+
+// boldHTML renders a command part as YouTrack's preview does, e.g.
+// `Set Assignee <span class="bold">admin</span>`.
+func boldHTML(label, value string) string {
+	return label + ` <span class="bold">` + html.EscapeString(value) + "</span>"
 }
 
 var periodValue = regexp.MustCompile(`^(?i)(\d+[wdhm])+$`)
@@ -530,13 +542,13 @@ func (yt *FakeYouTrack) commandPart(kw, value string, defs []map[string]any) com
 		if login == "" {
 			return bad("for: missing user")
 		}
-		return commandPart{description: "Assignee: " + login, apply: func(is map[string]any) {
+		return commandPart{description: "Assignee: " + login, html: boldHTML("Set Assignee", login), apply: func(is map[string]any) {
 			setField(is, "Assignee", map[string]any{"$type": "SingleUserIssueCustomField", "name": "Assignee", "value": map[string]any{"$type": "User", "login": login, "fullName": login}})
 		}}
 	case "tag":
 		for _, t := range yt.Tags {
 			if strings.EqualFold(fmt.Sprint(t["name"]), value) {
-				return commandPart{description: "Add tag " + value, apply: func(is map[string]any) {
+				return commandPart{description: "Add tag " + value, html: boldHTML("Add tag", value), apply: func(is map[string]any) {
 					tags, _ := is["tags"].([]any)
 					is["tags"] = append(tags, maps.Clone(t))
 				}}
@@ -550,13 +562,13 @@ func (yt *FakeYouTrack) commandPart(kw, value string, defs []map[string]any) com
 		if !periodValue.MatchString(value) {
 			return bad(kw + ": invalid period " + value)
 		}
-		return commandPart{description: kw + ": " + value, apply: func(is map[string]any) {
+		return commandPart{description: kw + ": " + value, html: boldHTML("Set "+kw, value), apply: func(is map[string]any) {
 			setField(is, kw, map[string]any{"$type": "PeriodIssueCustomField", "name": kw, "value": map[string]any{"$type": "PeriodValue", "minutes": periodMinutes(value), "presentation": value}})
 		}}
 	}
 	for _, v := range bundleMembers(def, "values", "name") {
 		if strings.EqualFold(v, value) {
-			return commandPart{description: kw + ": " + v, apply: func(is map[string]any) {
+			return commandPart{description: kw + ": " + v, html: boldHTML("Set "+kw, v), apply: func(is map[string]any) {
 				setField(is, kw, map[string]any{"$type": def["issueType"], "name": kw, "value": map[string]any{"$type": "BundleElement", "name": v}})
 			}}
 		}
