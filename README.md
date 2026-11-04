@@ -24,7 +24,8 @@ irm https://raw.githubusercontent.com/BrainerVirus/youtrack-cli/main/install.ps1
 Both scripts pick the archive for your OS and CPU, check its SHA-256 against
 the release's checksums file, check that file's cosign signature when
 `cosign` is installed, and print a hint if the install directory is not on
-your `PATH`. `YTRACK_VERSION=v0.3.0` installs a given release and
+your `PATH`. `install.sh` also installs shell completions for zsh, bash or
+fish. `YTRACK_VERSION=v0.3.0` installs a given release and
 `YTRACK_INSTALL_DIR` changes the directory. See [docs/install.md](docs/install.md).
 
 Homebrew (macOS and Linux):
@@ -209,7 +210,12 @@ Configuration lives in `~/.config/ytrack/` (`$XDG_CONFIG_HOME/ytrack`,
 check keeps its state in `~/.local/state/ytrack/state.yml`
 (`$XDG_STATE_HOME/ytrack`, `%LOCALAPPDATA%\ytrack` on Windows).
 
-Shell completion: `ytrack completion bash|zsh|fish|powershell`.
+Shell completion: `install.sh` installs it for zsh, bash or fish (from
+`$SHELL`) and prints how to enable it; `install.ps1` prints the PowerShell
+profile line. Otherwise run `ytrack completion bash|zsh|fish|powershell`.
+Completion suggests commands, flags, `--json` fields, issue IDs (with their
+summaries) and `--project` names. See
+[docs/install.md](docs/install.md#shell-completions).
 
 ## Development
 

@@ -21,7 +21,8 @@ Neither needs a package manager, sudo or administrator rights. Each script:
 4. downloads `ytrack_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows) and
    stops unless its SHA-256 matches the line in the checksums file;
 5. copies the binary next to the target and renames it into place, then
-   prints how to add the directory to `PATH` if it is missing.
+   prints how to add the directory to `PATH` if it is missing;
+6. installs shell completions (below) and prints how to enable them.
 
 Environment:
 
@@ -29,12 +30,46 @@ Environment:
 | --- | --- |
 | `YTRACK_VERSION` | release tag to install, e.g. `v0.3.0` (default: latest) |
 | `YTRACK_INSTALL_DIR` | target directory |
+| `YTRACK_NO_COMPLETIONS` | `1` skips the shell completions |
 | `YTRACK_RELEASES_URL` | download root, default `https://github.com/BrainerVirus/youtrack-cli/releases` (files under `download/<tag>/`) |
 | `YTRACK_RELEASES_API_URL` | API root, default `https://api.github.com/repos/BrainerVirus/youtrack-cli` (reads `releases/latest`) |
 
 The last two exist for mirrors and for the scripts' tests (`scripts/install_test.go`
 runs both scripts against a fake release mirror; the PowerShell test runs where
 `pwsh` is installed).
+
+## Shell completions
+
+`install.sh` reads your login shell from `$SHELL` and copies the matching
+script from the release archive (no root needed):
+
+| Shell | Installed to | Enabling it |
+| --- | --- | --- |
+| zsh | the first writable `$fpath` directory under your home, else `${XDG_DATA_HOME:-~/.local/share}/zsh/site-functions/_ytrack` | in a `$fpath` dir: nothing. Otherwise add `fpath=(~/.local/share/zsh/site-functions $fpath)` and `autoload -Uz compinit && compinit` to `~/.zshrc`, before any other `compinit` |
+| bash | `${XDG_DATA_HOME:-~/.local/share}/bash-completion/completions/ytrack` | loaded by bash-completion (v2) in new shells; without it, add `. ~/.local/share/bash-completion/completions/ytrack` to `~/.bashrc` |
+| fish | `${XDG_CONFIG_HOME:-~/.config}/fish/completions/ytrack.fish` | nothing: fish loads it in new shells |
+
+The script prints the path it wrote and the enabling step. For another shell,
+or to install by hand, generate the script with `ytrack completion`:
+
+```sh
+ytrack completion zsh > ~/.local/share/zsh/site-functions/_ytrack
+ytrack completion bash > ~/.local/share/bash-completion/completions/ytrack
+ytrack completion fish > ~/.config/fish/completions/ytrack.fish
+```
+
+On Windows, `install.ps1` prints the line to add to your PowerShell profile
+(`$PROFILE`; create it with `New-Item -ItemType File -Force $PROFILE`):
+
+```powershell
+ytrack completion powershell | Out-String | Invoke-Expression
+```
+
+Completion covers commands and flags, `--json` field names, issue IDs (the 50
+most recently updated unresolved issues, narrowed by project once you type
+`APP-`, shown with their summaries) and `--project` short names. Issue and
+project suggestions ask the logged-in host and give up after 2 seconds; with
+no login they suggest nothing.
 
 ## Verifying a download
 

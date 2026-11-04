@@ -6,11 +6,13 @@
 #
 # It downloads the release archive for this OS and CPU, checks its SHA-256
 # against the release's checksums file, checks that file's cosign signature
-# when cosign is installed, and puts ytrack in ~/.local/bin.
+# when cosign is installed, puts ytrack in ~/.local/bin and installs shell
+# completions for your shell ($SHELL: zsh, bash or fish).
 #
 # Environment:
 #   YTRACK_VERSION      release tag to install, e.g. v0.3.0 (default: latest)
 #   YTRACK_INSTALL_DIR  target directory (default: ~/.local/bin)
+#   YTRACK_NO_COMPLETIONS=1  skip installing shell completions
 #   YTRACK_RELEASES_URL, YTRACK_RELEASES_API_URL
 #                       release download and API roots, for mirrors and tests
 #
@@ -72,6 +74,84 @@ detect_arch() {
 	esac
 }
 
+# zsh_fpath_dir prints the first directory in zsh's $fpath (as a
+# non-interactive zsh sees it) that is under $HOME and writable, if any.
+zsh_fpath_dir() {
+	command -v zsh >/dev/null 2>&1 || return 0
+	zsh -c 'print -rl -- $fpath' 2>/dev/null | while IFS= read -r d; do
+		case "$d" in
+		"$HOME"/*)
+			if [ -d "$d" ] && [ -w "$d" ]; then
+				printf '%s\n' "$d"
+				break
+			fi
+			;;
+		esac
+	done
+}
+
+# install_completions ARCHIVE DIR copies the completion script for the
+# user's shell from the release archive. It never fails the install.
+install_completions() {
+	[ "${YTRACK_NO_COMPLETIONS:-}" = 1 ] && return 0
+	shell_name="$(basename "${SHELL:-sh}")"
+	data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+	found_fpath=""
+	case "$shell_name" in
+	zsh)
+		file=_ytrack
+		found_fpath="$(zsh_fpath_dir)"
+		dest_dir="${found_fpath:-$data_home/zsh/site-functions}"
+		dest="$dest_dir/_ytrack"
+		;;
+	bash)
+		file=ytrack.bash
+		dest_dir="$data_home/bash-completion/completions"
+		dest="$dest_dir/ytrack"
+		;;
+	fish)
+		file=ytrack.fish
+		dest_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fish/completions"
+		dest="$dest_dir/ytrack.fish"
+		;;
+	*)
+		say ""
+		say "Shell completions: see 'ytrack completion --help' for $shell_name."
+		return 0
+		;;
+	esac
+	if ! tar -xzf "$1" -C "$2" "completions/$file" 2>/dev/null || [ ! -s "$2/completions/$file" ]; then
+		say ""
+		say "This release has no $shell_name completions; generate them with 'ytrack completion $shell_name'."
+		return 0
+	fi
+	if ! { mkdir -p "$dest_dir" && cp "$2/completions/$file" "$dest"; } 2>/dev/null; then
+		say ""
+		say "Could not write $dest; generate completions with 'ytrack completion $shell_name'."
+		return 0
+	fi
+	say ""
+	say "Installed $shell_name completions to $dest"
+	case "$shell_name" in
+	zsh)
+		if [ -n "$found_fpath" ]; then
+			say "That directory is on zsh's \$fpath, so new zsh sessions load them."
+		else
+			say "Enable them: add these lines to ~/.zshrc, before any other compinit call:"
+			say "  fpath=(\"$dest_dir\" \$fpath)"
+			say "  autoload -Uz compinit && compinit"
+		fi
+		;;
+	bash)
+		say "bash-completion loads them in new bash sessions. Without bash-completion, add to ~/.bashrc:"
+		say "  [ -r \"$dest\" ] && . \"$dest\""
+		;;
+	fish)
+		say "fish loads them in new fish sessions."
+		;;
+	esac
+}
+
 main() {
 	os="$(detect_os)"
 	arch="$(detect_arch "$os")"
@@ -124,6 +204,7 @@ main() {
 	mv -f "$install_dir/.ytrack.new" "$install_dir/ytrack"
 
 	say "Installed ytrack $version to $install_dir/ytrack"
+	install_completions "$tmp/$archive" "$tmp/x"
 	case ":${PATH:-}:" in
 	*":$install_dir:"*) ;;
 	*)

@@ -10,6 +10,7 @@
 # Environment:
 #   YTRACK_VERSION      release tag to install, e.g. v0.3.0 (default: latest)
 #   YTRACK_INSTALL_DIR  target directory (default: %LOCALAPPDATA%\Programs\ytrack)
+#   YTRACK_NO_COMPLETIONS=1  skip the shell completion instructions
 #   YTRACK_RELEASES_URL, YTRACK_RELEASES_API_URL
 #                       release download and API roots, for mirrors and tests
 #
@@ -127,6 +128,14 @@
             Write-Host "$installDir is not on your PATH. Add it for your user with:"
             Write-Host "  [Environment]::SetEnvironmentVariable('Path', `"$installDir;`" + [Environment]::GetEnvironmentVariable('Path', 'User'), 'User')"
             Write-Host 'then open a new terminal.'
+        }
+
+        if ($env:YTRACK_NO_COMPLETIONS -ne '1') {
+            Write-Host ''
+            Write-Host 'Shell completions for PowerShell: add this line to your profile ($PROFILE),'
+            Write-Host 'then open a new terminal:'
+            Write-Host '  ytrack completion powershell | Out-String | Invoke-Expression'
+            Write-Host 'To create the profile first: New-Item -ItemType File -Force $PROFILE'
         }
     } finally {
         Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue

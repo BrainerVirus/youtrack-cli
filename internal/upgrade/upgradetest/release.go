@@ -113,7 +113,13 @@ func archive(t *testing.T, name string, bin []byte) []byte {
 		name string
 		data []byte
 		mode int64
-	}{{"LICENSE", []byte("MIT\n"), 0o644}, {"completions/ytrack.bash", []byte("# ytrack\n"), 0o644}, {"ytrack", bin, 0o755}} {
+	}{
+		{"LICENSE", []byte("MIT\n"), 0o644},
+		{"completions/ytrack.bash", []byte("# ytrack bash\n"), 0o644},
+		{"completions/_ytrack", []byte("#compdef ytrack\n"), 0o644},
+		{"completions/ytrack.fish", []byte("# ytrack fish\n"), 0o644},
+		{"ytrack", bin, 0o755},
+	} {
 		if err := tw.WriteHeader(&tar.Header{Name: f.name, Mode: f.mode, Size: int64(len(f.data)), Typeflag: tar.TypeReg}); err != nil {
 			t.Fatal(err)
 		}
