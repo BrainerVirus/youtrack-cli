@@ -77,6 +77,7 @@ JSON fields:
 	fl := cmd.Flags()
 	fl.StringVarP(&opts.query, "query", "q", "", "YouTrack search `query`, sent as is")
 	fl.StringVarP(&opts.project, "project", "p", "", "Only issues in this `project` (short name or name)")
+	_ = cmd.RegisterFlagCompletionFunc("project", shared.CompleteProjects(f))
 	fl.StringVarP(&opts.assignee, "assignee", "a", "", "Only issues assigned to this `login` (\"me\" for yourself)")
 	fl.StringVarP(&opts.state, "state", "s", "", "Only issues in this `state`")
 	fl.StringVar(&opts.sort, "sort", "", "Sort by an `attribute`, optionally followed by asc or desc")

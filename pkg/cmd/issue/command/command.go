@@ -90,6 +90,7 @@ JSON fields:
   $ ytrack issue command APP-123 'State Fixed' --comment 'Fixed in 2026.3' --silent
   $ ytrack issue command APP-123 APP-124 APP-130 'Assignee me' --dry-run`,
 		Args: cmdutil.MinimumArgs(2, "expected one or more issue IDs or URLs and a command, e.g. APP-123 'State Fixed'"),
+		ValidArgsFunction: shared.CompleteIssues(f, -1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ids, query := args[:len(args)-1], args[len(args)-1]
 			var hostRef shared.Ref

@@ -73,6 +73,7 @@ JSON fields:
 	}
 	fl := cmd.Flags()
 	fl.StringVarP(&opts.project, "project", "p", "", "Project short name or name")
+	_ = cmd.RegisterFlagCompletionFunc("project", shared.CompleteProjects(f))
 	fl.StringVarP(&opts.summary, "summary", "s", "", "Issue summary (title)")
 	opts.description.Add(cmd)
 	fl.StringArrayVarP(&opts.fields, "field", "f", nil, "Set a custom field: \"Name=Value\" (repeatable)")

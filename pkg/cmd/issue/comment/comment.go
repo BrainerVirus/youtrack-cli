@@ -61,6 +61,7 @@ JSON fields:
   $ git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
   $ ytrack issue comment APP-123 --editor`,
 		Args: cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
+		ValidArgsFunction: shared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := shared.ParseRef(args[0])
 			if err != nil {

@@ -54,6 +54,7 @@ JSON fields:
   $ ytrack issue edit APP-123 --editor
   $ ytrack issue edit APP-123 --add-tag backend --remove-tag triage --assignee me`,
 		Args: cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
+		ValidArgsFunction: shared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := shared.ParseRef(args[0])
 			if err != nil {
