@@ -47,7 +47,7 @@ func TestSkillDriftCatchesBogusNames(t *testing.T) {
 	tree := commandTree(t)
 	for text, want := range map[string]string{
 		"Run `ytrack issue lst APP-1`.":                    `unknown command "lst" in "ytrack issue"`,
-		"```sh\nytrack isue view APP-1\n```":                `unknown command "isue" in "ytrack"`,
+		"```sh\nytrack isue view APP-1\n```":               `unknown command "isue" in "ytrack"`,
 		"Run `ytrack issue view APP-1 --hostname x`.":      `unknown flag --hostname for "ytrack issue view"`,
 		"Run `ytrack work-item add APP-1 -z 1h`.":          `unknown flag -z for "ytrack work-item add"`,
 		"```sh\nytrack issue list --json id --bogus\n```":  `unknown flag --bogus for "ytrack issue list"`,

@@ -195,10 +195,8 @@ func resolveTarget(path string) (dir string, exists bool, err error) {
 }
 
 // writeTree copies the embedded skill into dir, with skillMD as SKILL.md.
+// dir is os.MkdirTemp's, so the skill directory itself is private (0700).
 func writeTree(dir string, skillMD []byte) error {
-	if err := os.Chmod(dir, 0o750); err != nil {
-		return err
-	}
 	src := Files()
 	return fs.WalkDir(src, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || p == "." {
