@@ -49,6 +49,24 @@ checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
   algorithm: sha256
 
+# Keyless cosign signature of the checksums file, made with the release
+# workflow's GitHub OIDC identity (release.yml grants id-token: write and
+# installs cosign). `ytrack upgrade` refuses a release without a valid one;
+# install.sh and install.ps1 check it when cosign is installed. cosign follows
+# Sigstore's public signing config (Rekor v1 or v2, timestamp authority);
+# internal/upgrade verifies with sigstore-go, which accepts either.
+signs:
+  - id: cosign-keyless
+    cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - --bundle=${signature}
+      - --yes
+      - ${artifact}
+    output: true
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
@@ -74,8 +92,9 @@ changelog:
       - '^Merge '
 
 # Homebrew cask in BrainerVirus/homebrew-tap (`brew install brainervirus/tap/ytrack`).
-# Publishing needs HOMEBREW_TAP_GITHUB_TOKEN (a PAT with contents:write on the tap);
-# without it the cask is still generated but not pushed, and the release goes ahead.
+# Optional: publishing needs HOMEBREW_TAP_GITHUB_TOKEN (a PAT with contents:write
+# on the tap). Without it skip_upload is true: the cask is generated but not
+# pushed, and the release (archives, checksums, signature) goes ahead.
 homebrew_casks:
   - name: ytrack
     ids: [ytrack]
@@ -110,4 +129,14 @@ release:
     name: youtrack-cli
   prerelease: auto
   footer: |
-    Verify a download: `sha256sum --check --ignore-missing ytrack_{{ .Version }}_checksums.txt`
+    Install or upgrade: `ytrack upgrade`, or see the README for `install.sh` and `install.ps1`.
+
+    Verify a download: `sha256sum --check --ignore-missing ytrack_{{ .Version }}_checksums.txt`.
+    The checksums file is signed with cosign keyless by this repository's release workflow:
+
+    ```sh
+    cosign verify-blob --bundle ytrack_{{ .Version }}_checksums.txt.sigstore.json \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      --certificate-identity https://github.com/BrainerVirus/youtrack-cli/.github/workflows/release.yml@refs/tags/{{ .Tag }} \
+      ytrack_{{ .Version }}_checksums.txt
+    ```

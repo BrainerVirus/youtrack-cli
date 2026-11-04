@@ -13,6 +13,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/api"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/upgrade"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/version"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
@@ -27,6 +28,7 @@ Environment:
   YTRACK_CONFIG_DIR   configuration directory (default ~/.config/ytrack)
   YTRACK_BROWSER      command used to open URLs
   YTRACK_EDITOR       editor for writing text (then GIT_EDITOR, VISUAL, EDITOR)
+  YTRACK_NO_UPDATE_NOTIFIER  set to 1 to turn off the daily new-release notice
   NO_COLOR            disable color output
 
 Exit codes:
@@ -66,6 +68,7 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 	cmd.AddCommand(workitem.NewCmdWorkItem(f))
 	cmd.AddCommand(api.NewCmdAPI(f))
 	cmd.AddCommand(version.NewCmdVersion(f))
+	cmd.AddCommand(upgrade.NewCmdUpgrade(f, nil))
 	return cmd
 }
 
@@ -74,7 +77,12 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 func Execute(f *cmdutil.Factory, args []string) clierr.ExitCode {
 	cmd := NewCmdRoot(f)
 	cmd.SetArgs(args)
+	notice := &updateNotice{f: f}
+	// Runs once the command and its flags are parsed, so help and usage
+	// errors never check, and --json is known.
+	cmd.PersistentPreRun = func(c *cobra.Command, _ []string) { notice.start(c) }
 	ran, err := cmd.ExecuteC()
+	defer notice.print()
 	if err == nil {
 		return clierr.ExitOK
 	}

@@ -47,6 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # create the GitHub release and upload assets
+      id-token: write # cosign keyless: sign the checksums with this workflow's OIDC identity
     steps:
       - uses: actions/checkout@v7
         with:
@@ -61,6 +62,13 @@ jobs:
       # the step that holds HOMEBREW_TAP_GITHUB_TOKEN.
       - name: Generate shell completions
         run: make completions
+      # goreleaser's `signs` runs cosign on the checksums file. The certificate
+      # identity is https://github.com/BrainerVirus/youtrack-cli/.github/workflows/release.yml@<ref>
+      # (issuer https://token.actions.githubusercontent.com), which
+      # internal/upgrade.ReleaseIdentity and the install scripts pin.
+      - uses: sigstore/cosign-installer@v4
+        with:
+          cosign-release: v3.1.1
       - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
@@ -68,5 +76,6 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional: without it the Homebrew cask is not pushed (see .goreleaser.yaml).
+          # Optional: when the secret is absent this is empty and goreleaser skips
+          # the Homebrew cask upload (skip_upload in .goreleaser.yaml).
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}

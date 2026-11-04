@@ -5,6 +5,8 @@
 //
 // The directory is $YTRACK_CONFIG_DIR, else $XDG_CONFIG_HOME/ytrack, else
 // %AppData%/ytrack on Windows, else ~/.config/ytrack.
+//
+// Machine state that is not configuration (the update check) lives in StateDir.
 package config
 
 import (
@@ -43,6 +45,8 @@ type preferences struct {
 	// Timezone is the IANA zone that decides today's date for work items
 	// (`work-item add --date auto`); empty means the process timezone.
 	Timezone string `yaml:"timezone,omitempty"`
+	// CheckUpdate false turns off the daily new-release notice; nil means on.
+	CheckUpdate *bool `yaml:"check_update,omitempty"`
 }
 
 type hostsDoc struct {
@@ -77,6 +81,25 @@ func Dir() (string, error) {
 	return filepath.Join(home, ".config", "ytrack"), nil
 }
 
+// StateDir returns the directory for state ytrack keeps between runs:
+// $XDG_STATE_HOME/ytrack, else %LocalAppData%/ytrack on Windows, else
+// ~/.local/state/ytrack.
+func StateDir() (string, error) {
+	if d := os.Getenv("XDG_STATE_HOME"); d != "" {
+		return filepath.Join(d, "ytrack"), nil
+	}
+	if runtime.GOOS == "windows" {
+		if d := os.Getenv("LocalAppData"); d != "" {
+			return filepath.Join(d, "ytrack"), nil
+		}
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("cannot locate the state directory: %w", err)
+	}
+	return filepath.Join(home, ".local", "state", "ytrack"), nil
+}
+
 // Load reads the configuration from Dir. Missing files mean empty config.
 func Load() (*Config, error) {
 	dir, err := Dir()
@@ -109,6 +132,12 @@ func (c *Config) Browser() string { return c.prefs.Browser }
 
 // Timezone returns the configured work timezone, or "".
 func (c *Config) Timezone() string { return c.prefs.Timezone }
+
+// CheckUpdate reports whether the new-release notice is on (`check_update`
+// in config.yml, default true).
+func (c *Config) CheckUpdate() bool {
+	return c.prefs.CheckUpdate == nil || *c.prefs.CheckUpdate
+}
 
 // DefaultHost returns the key of the default host, or "".
 func (c *Config) DefaultHost() string { return c.hosts.DefaultHost }

@@ -8,6 +8,24 @@ command, reading and commenting on issues, and time tracking (work items).
 
 ## Install
 
+Linux and macOS, no package manager or sudo needed (installs to `~/.local/bin`):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/BrainerVirus/youtrack-cli/main/install.sh | sh
+```
+
+Windows (PowerShell; installs to `%LOCALAPPDATA%\Programs\ytrack`):
+
+```powershell
+irm https://raw.githubusercontent.com/BrainerVirus/youtrack-cli/main/install.ps1 | iex
+```
+
+Both scripts pick the archive for your OS and CPU, check its SHA-256 against
+the release's checksums file, check that file's cosign signature when
+`cosign` is installed, and print a hint if the install directory is not on
+your `PATH`. `YTRACK_VERSION=v0.3.0` installs a given release and
+`YTRACK_INSTALL_DIR` changes the directory. See [docs/install.md](docs/install.md).
+
 Homebrew (macOS and Linux):
 
 ```sh
@@ -23,20 +41,31 @@ go install github.com/BrainerVirus/youtrack-cli/cmd/ytrack@latest
 Or download an archive for your platform (Linux, macOS, Windows; amd64 or
 arm64) from the [releases page](https://github.com/BrainerVirus/youtrack-cli/releases),
 unpack it and put `ytrack` on your `PATH`. Archives also contain shell
-completions for bash, zsh and fish.
-
-Each release has a `ytrack_<version>_checksums.txt` with SHA-256 sums. Check a
-download before unpacking it:
-
-```sh
-sha256sum --check --ignore-missing ytrack_0.1.0_checksums.txt     # Linux
-shasum -a 256 --check --ignore-missing ytrack_0.1.0_checksums.txt # macOS
-```
-
-On Windows, compare `Get-FileHash ytrack_0.1.0_windows_amd64.zip` with the
-line in the checksums file.
+completions for bash, zsh and fish. Each release has a
+`ytrack_<version>_checksums.txt` with SHA-256 sums, signed with cosign by the
+release workflow; [docs/install.md](docs/install.md#verifying-a-download)
+shows how to check both.
 
 Or build from a clone with `make build` (binary in `bin/ytrack`).
+
+## Upgrade
+
+```sh
+ytrack upgrade                 # to the latest release
+ytrack upgrade --check         # only say whether a newer release exists
+ytrack upgrade --version v0.3.0
+```
+
+`ytrack upgrade` replaces the running binary only after the release's
+checksums file passes a cosign keyless signature check pinned to this
+repository's release workflow and the archive matches its SHA-256; any
+mismatch refuses and changes nothing. If Homebrew, Scoop or WinGet installed
+ytrack, it prints that package manager's upgrade command instead.
+
+Once a day, after a command, ytrack tells you on stderr when a newer release
+exists. It stays quiet in CI, when stderr is not a terminal and under `--json`;
+turn it off with `YTRACK_NO_UPDATE_NOTIFIER=1` or `check_update: false` in
+`config.yml`. Details: [docs/install.md](docs/install.md#upgrades).
 
 ## Log in
 
@@ -137,15 +166,18 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   4 authentication required.
 - Environment: `YTRACK_HOST`, `YTRACK_TOKEN` (runtime override, never saved),
   `YTRACK_DEBUG=1` (request log with credentials redacted, same as `--debug`),
-  `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`.
+  `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`,
+  `YTRACK_NO_UPDATE_NOTIFIER=1` (no new-release notice).
 - Host precedence: `--host`, `YTRACK_HOST`, the default host. Token
   precedence: `YTRACK_TOKEN`, then the stored token. `YTRACK_TOKEN` goes to
   a host named by `--host` or `YTRACK_HOST` without a warning (the CI setup),
   and to a host taken from a pasted issue URL only when that host is logged in.
 
 Configuration lives in `~/.config/ytrack/` (`$XDG_CONFIG_HOME/ytrack`,
-`%AppData%\ytrack` on Windows): `config.yml` (`browser`, `timezone`) and
-`hosts.yml`, which never holds tokens.
+`%AppData%\ytrack` on Windows): `config.yml` (`browser`, `timezone`,
+`check_update`) and `hosts.yml`, which never holds tokens. The daily update
+check keeps its state in `~/.local/state/ytrack/state.yml`
+(`$XDG_STATE_HOME/ytrack`, `%LOCALAPPDATA%\ytrack` on Windows).
 
 Shell completion: `ytrack completion bash|zsh|fish|powershell`.
 
@@ -158,9 +190,11 @@ make snapshot              # local release dry run into dist/ (needs goreleaser 
 
 Releases: from an up-to-date `main`, run `make release VERSION=v0.1.0`. It
 runs the tests, tags `main` and pushes the tag; the `Release` workflow then
-builds the archives with goreleaser, publishes the GitHub release with a
-changelog grouped from the conventional commit titles, and updates the
-Homebrew cask.
+builds the archives with goreleaser, signs the checksums file with cosign
+keyless (the workflow's GitHub OIDC identity), publishes the GitHub release
+with a changelog grouped from the conventional commit titles, and updates the
+Homebrew cask when the `HOMEBREW_TAP_GITHUB_TOKEN` secret is set (the upload
+is skipped without it).
 
 The REST surface ytrack relies on is listed by hand in
 `api/contract/youtrack-contract.json`, derived from JetBrains' public
