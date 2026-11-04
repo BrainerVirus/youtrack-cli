@@ -47,5 +47,5 @@ func (b *lazyBrowser) Browse(url string) error {
 	if launcher == "" {
 		launcher = os.Getenv("BROWSER")
 	}
-	return browser.New(launcher, b.f.IOStreams.ErrOut, b.f.IOStreams.ErrOut).Browse(url)
+	return browser.Quiet(launcher).Browse(url)
 }
