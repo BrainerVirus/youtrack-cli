@@ -4,7 +4,8 @@ An unofficial command-line interface for JetBrains YouTrack, in the style of
 `gh` and `glab`. Not affiliated with or endorsed by JetBrains.
 
 Status: early. This release covers authentication, the raw `ytrack api`
-command, reading and commenting on issues, and time tracking (work items).
+command, reading, creating, editing and commenting on issues, YouTrack
+commands on one or many issues, and time tracking (work items).
 
 ## Install
 
@@ -23,7 +24,8 @@ irm https://raw.githubusercontent.com/BrainerVirus/youtrack-cli/main/install.ps1
 Both scripts pick the archive for your OS and CPU, check its SHA-256 against
 the release's checksums file, check that file's cosign signature when
 `cosign` is installed, and print a hint if the install directory is not on
-your `PATH`. `YTRACK_VERSION=v0.3.0` installs a given release and
+your `PATH`. `install.sh` also installs shell completions for zsh, bash or
+fish. `YTRACK_VERSION=v0.3.0` installs a given release and
 `YTRACK_INSTALL_DIR` changes the directory. See [docs/install.md](docs/install.md).
 
 Homebrew (macOS and Linux):
@@ -47,6 +49,11 @@ release workflow; [docs/install.md](docs/install.md#verifying-a-download)
 shows how to check both.
 
 Or build from a clone with `make build` (binary in `bin/ytrack`).
+
+More: [docs/install.md](docs/install.md) covers the install scripts and their
+options, [verifying a download](docs/install.md#verifying-a-download),
+[upgrades](docs/install.md#upgrades) and the
+[new-release notice](docs/install.md#new-release-notice).
 
 ## Upgrade
 
@@ -121,6 +128,25 @@ for the table or the requested fields are fetched. In `issue list`, `-q` is
 The editor for `issue comment --editor` is `$YTRACK_EDITOR`, `$GIT_EDITOR`,
 `$VISUAL` or `$EDITOR`.
 
+### Commands
+
+```sh
+ytrack issue create --project APP --summary 'Login fails on Safari'
+ytrack issue edit APP-123 --summary 'Login fails on Safari 18' --field 'Priority=Critical'
+ytrack issue command APP-123 'State In Progress for me'
+ytrack issue command APP-123 APP-124 APP-130 'Assignee me' --dry-run   # preview only
+ytrack issue command APP-123 APP-124 'tag regression' --json issues,commands
+```
+
+`issue command` takes YouTrack's own [command
+language](https://www.jetbrains.com/help/youtrack/cloud/commands.html). The
+last argument is the command and every argument before it is an issue; all of
+them change in one request. `--dry-run` asks YouTrack how it parses the
+command and changes nothing (exit 1 when a part is not understood);
+`--comment` adds a comment with the change and `--silent` skips
+notifications. `--json` reports `issue`, `url`, `issues` (every issue with its
+URL), `command`, `dryRun` and `commands` (the parsed parts).
+
 ## Time tracking
 
 ```sh
@@ -159,8 +185,13 @@ refused. Plain-http hosts other than localhost trigger a warning. See
 
 ## Scripting
 
-- Data goes to stdout; errors and prompts to stderr. No color or prompts when
-  output is not a terminal (`NO_COLOR` also disables color).
+- Data goes to stdout; errors and prompts to stderr. On a terminal, help and
+  output are colored: issue IDs, commands and flags in an accent color,
+  summaries and headings bold, states and priorities by meaning (resolved
+  green, open or in progress yellow, critical red), errors red with the
+  command to run in bold. Color is off when the stream is not a terminal,
+  under `NO_COLOR`, `TERM=dumb`, `--json` or the `--no-color` flag; no
+  prompts when output is not a terminal.
 - `--json <fields>` (where offered), `--jq` and `--template` follow `gh`.
 - Exit codes: 0 success, 1 failure (including usage errors), 2 cancelled,
   4 authentication required.
@@ -179,14 +210,26 @@ Configuration lives in `~/.config/ytrack/` (`$XDG_CONFIG_HOME/ytrack`,
 check keeps its state in `~/.local/state/ytrack/state.yml`
 (`$XDG_STATE_HOME/ytrack`, `%LOCALAPPDATA%\ytrack` on Windows).
 
-Shell completion: `ytrack completion bash|zsh|fish|powershell`.
+Shell completion: `install.sh` installs it for zsh, bash or fish (from
+`$SHELL`) and prints how to enable it; `install.ps1` prints the PowerShell
+profile line. Otherwise run `ytrack completion bash|zsh|fish|powershell`.
+Completion suggests commands, flags, `--json` fields, issue IDs (with their
+summaries) and `--project` names. See
+[docs/install.md](docs/install.md#shell-completions).
 
 ## Development
 
 ```sh
 make build test lint
 make snapshot              # local release dry run into dist/ (needs goreleaser v2)
+make it YTRACK_IT_PROJECT=<short>   # opt-in suite against your own YouTrack instance
 ```
+
+`make it` runs the real-instance suite with the session from
+`ytrack auth login` against a personal scratch project: it creates issues
+prefixed `ytrack-it`, works on them and deletes them, and refuses hosts other
+than `*.youtrack.cloud` unless you allow one. See [docs/integration-tests.md](docs/integration-tests.md) before
+running it.
 
 Releases: from an up-to-date `main`, run `make release VERSION=v0.1.0`. It
 runs the tests, tags `main` and pushes the tag; the `Release` workflow then
@@ -195,6 +238,12 @@ keyless (the workflow's GitHub OIDC identity), publishes the GitHub release
 with a changelog grouped from the conventional commit titles, and updates the
 Homebrew cask when the `HOMEBREW_TAP_GITHUB_TOKEN` secret is set (the upload
 is skipped without it).
+
+To rerun a release, dispatch the workflow from the tag itself, never from a
+branch: `gh workflow run release.yml --ref v0.1.0 -f tag=v0.1.0`. The
+signature's identity is the ref the run was dispatched from, and
+`ytrack upgrade` and the install scripts accept only `refs/tags/vX.Y.Z[-pre]`;
+the workflow refuses a dispatch whose ref is not the tag it releases.
 
 The REST surface ytrack relies on is listed by hand in
 `api/contract/youtrack-contract.json`, derived from JetBrains' public

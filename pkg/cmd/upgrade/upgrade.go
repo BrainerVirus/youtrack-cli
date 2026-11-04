@@ -156,7 +156,7 @@ func run(ctx context.Context, f *cmdutil.Factory, o *Options, check bool, versio
 	if err := upgrade.ReplaceExecutable(resolved, bin); err != nil {
 		return fmt.Errorf("replacing %s: %w", resolved, err)
 	}
-	ok, _ := f.IOStreams.Symbols()
+	ok := f.IOStreams.ErrColorScheme().SuccessIcon()
 	fmt.Fprintf(errOut, "%s Upgraded ytrack %s to %s (%s)\n", ok, current, latest, resolved)
 	return nil
 }

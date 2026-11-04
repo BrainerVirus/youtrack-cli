@@ -10,6 +10,7 @@
 # Environment:
 #   YTRACK_VERSION      release tag to install, e.g. v0.3.0 (default: latest)
 #   YTRACK_INSTALL_DIR  target directory (default: %LOCALAPPDATA%\Programs\ytrack)
+#   YTRACK_NO_COMPLETIONS=1  skip the shell completion instructions
 #   YTRACK_RELEASES_URL, YTRACK_RELEASES_API_URL
 #                       release download and API roots, for mirrors and tests
 #
@@ -25,7 +26,7 @@
     $apiUrl = if ($env:YTRACK_RELEASES_API_URL) { $env:YTRACK_RELEASES_API_URL } else { "https://api.github.com/repos/$repo" }
     $installDir = if ($env:YTRACK_INSTALL_DIR) { $env:YTRACK_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\ytrack' }
     $signerIssuer = 'https://token.actions.githubusercontent.com'
-    $signerIdentity = '^https://github\.com/BrainerVirus/youtrack-cli/\.github/workflows/release\.yml@refs/(tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?|heads/main)$'
+    $signerIdentity = '^https://github\.com/BrainerVirus/youtrack-cli/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
 
     function Fail([string]$msg) { throw "ytrack install: $msg" }
 
@@ -127,6 +128,14 @@
             Write-Host "$installDir is not on your PATH. Add it for your user with:"
             Write-Host "  [Environment]::SetEnvironmentVariable('Path', `"$installDir;`" + [Environment]::GetEnvironmentVariable('Path', 'User'), 'User')"
             Write-Host 'then open a new terminal.'
+        }
+
+        if ($env:YTRACK_NO_COMPLETIONS -ne '1') {
+            Write-Host ''
+            Write-Host 'Shell completions for PowerShell: add this line to your profile ($PROFILE),'
+            Write-Host 'then open a new terminal:'
+            Write-Host '  ytrack completion powershell | Out-String | Invoke-Expression'
+            Write-Host 'To create the profile first: New-Item -ItemType File -Force $PROFILE'
         }
     } finally {
         Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue

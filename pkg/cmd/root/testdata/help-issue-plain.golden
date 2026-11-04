@@ -1,0 +1,23 @@
+Work with YouTrack issues
+
+Usage:
+  ytrack issue <command> [flags]
+  ytrack issue [command]
+
+Available Commands:
+  command     Apply a YouTrack command to one or more issues
+  comment     Add a comment to an issue
+  create      Create an issue
+  edit        Edit an issue
+  list        List issues
+  view        Show an issue
+
+Flags:
+  -h, --help   help for issue
+
+Global Flags:
+      --debug       Log HTTP requests to stderr with credentials redacted
+      --host host   YouTrack host or service URL to use
+      --no-color    Disable color output
+
+Use "ytrack issue [command] --help" for more information about a command.

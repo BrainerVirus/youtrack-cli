@@ -45,7 +45,7 @@ host given with --host. The token itself is not revoked in YouTrack.`,
 			if err := cfg.Save(); err != nil {
 				return err
 			}
-			ok, _ := f.IOStreams.Symbols()
+			ok := f.IOStreams.ErrColorScheme().SuccessIcon()
 			fmt.Fprintf(f.IOStreams.ErrOut, "%s Logged out of %s\n", ok, host.Key)
 			if os.Getenv("YTRACK_TOKEN") != "" {
 				fmt.Fprintln(f.IOStreams.ErrOut, "! YTRACK_TOKEN is still set and will keep being used.")

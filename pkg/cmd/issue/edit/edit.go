@@ -53,7 +53,8 @@ JSON fields:
   $ ytrack issue edit APP-123 --field Priority=Critical --field 'Fix versions=2026.3,2026.4'
   $ ytrack issue edit APP-123 --editor
   $ ytrack issue edit APP-123 --add-tag backend --remove-tag triage --assignee me`,
-		Args: cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
+		Args:              cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
+		ValidArgsFunction: shared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ref, err := shared.ParseRef(args[0])
 			if err != nil {
@@ -194,7 +195,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	fmt.Fprintf(ios.Out, "%s\t%s\n", issue.IDReadable, shared.IssueURL(host, issue.IDReadable))
 	if ios.IsStderrTTY() {
-		fmt.Fprintf(ios.ErrOut, "Updated %s (%s): %s\n", issue.IDReadable, output.SanitizeCell(strings.Join(changed, ", ")), output.SanitizeCell(issue.Summary))
+		fmt.Fprintf(ios.ErrOut, "%s Updated %s (%s): %s\n", ios.ErrColorScheme().SuccessIcon(), issue.IDReadable, output.SanitizeCell(strings.Join(changed, ", ")), output.SanitizeCell(issue.Summary))
 	}
 	return nil
 }

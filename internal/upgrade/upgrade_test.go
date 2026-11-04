@@ -34,8 +34,8 @@ func TestVerifyBundle(t *testing.T) {
 		})
 	}
 
-	t.Run("given a manual rerun signed from main, it verifies", func(t *testing.T) {
-		subject := "https://github.com/BrainerVirus/youtrack-cli/.github/workflows/release.yml@refs/heads/main"
+	t.Run("given a release workflow signature for refs/tags/v1.2.3, it verifies", func(t *testing.T) {
+		subject := "https://github.com/BrainerVirus/youtrack-cli/.github/workflows/release.yml@refs/tags/v1.2.3"
 		if err := upgrade.VerifyBundle(s.Sign(checksums, subject, upgradetest.GitHubIssuer), checksums, trust); err != nil {
 			t.Fatal(err)
 		}
@@ -55,6 +55,11 @@ func TestVerifyBundle(t *testing.T) {
 		"another workflow of this repository": {
 			bundle: func() []byte {
 				return s.Sign(checksums, "https://github.com/BrainerVirus/youtrack-cli/.github/workflows/ci.yml@refs/heads/main", upgradetest.GitHubIssuer)
+			},
+		},
+		"a run dispatched from main": {
+			bundle: func() []byte {
+				return s.Sign(checksums, "https://github.com/BrainerVirus/youtrack-cli/.github/workflows/release.yml@refs/heads/main", upgradetest.GitHubIssuer)
 			},
 		},
 		"a feature branch": {
@@ -137,7 +142,7 @@ func TestReleaseIdentityAcceptsOnlyReleaseRefs(t *testing.T) {
 	for ref, want := range map[string]bool{
 		"refs/tags/v1.2.3":       true,
 		"refs/tags/v1.2.3-rc.1":  true,
-		"refs/heads/main":        true,
+		"refs/heads/main":        false,
 		"refs/tags/latest":       false,
 		"refs/heads/main-evil":   false,
 		"refs/pull/1/merge":      false,

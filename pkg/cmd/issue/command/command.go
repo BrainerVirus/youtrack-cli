@@ -18,10 +18,10 @@ import (
 )
 
 // Fields lists the --json fields of issue command.
-var Fields = []string{"issue", "url", "command", "dryRun", "commands"}
+var Fields = []string{"issue", "url", "issues", "command", "dryRun", "commands"}
 
 type options struct {
-	ref      shared.Ref
+	refs     []shared.Ref
 	query    string
 	comment  string
 	silent   bool
@@ -29,15 +29,23 @@ type options struct {
 	exporter *output.Exporter
 }
 
+type target struct{ Issue, URL string }
+
 type result struct {
-	Issue, URL, Command string
-	DryRun              bool
-	Commands            []adapter.ParsedCommand
+	Issues   []target
+	Command  string
+	DryRun   bool
+	Commands []adapter.ParsedCommand
 }
 
 func (r result) ExportData(fields []string) map[string]any {
+	issues := make([]map[string]any, len(r.Issues))
+	for i, t := range r.Issues {
+		issues[i] = map[string]any{"issue": t.Issue, "url": t.URL}
+	}
 	all := map[string]any{
-		"issue": r.Issue, "url": r.URL, "command": r.Command, "dryRun": r.DryRun,
+		"issue": r.Issues[0].Issue, "url": r.Issues[0].URL, "issues": issues,
+		"command": r.Command, "dryRun": r.DryRun,
 		"commands": shared.ParsedCommands(r.Commands),
 	}
 	out := make(map[string]any, len(fields))
@@ -51,46 +59,62 @@ func (r result) ExportData(fields []string) map[string]any {
 func NewCmdCommand(f *cmdutil.Factory) *cobra.Command {
 	opts := &options{}
 	cmd := &cobra.Command{
-		Use:   "command {<id> | <url>} <command>",
-		Short: "Apply a YouTrack command to an issue",
+		Use:   "command {<id> | <url>}... <command>",
+		Short: "Apply a YouTrack command to one or more issues",
 		Long: `Apply a YouTrack command, such as "State In Progress for me" or
-"Priority Critical tag regression", to an issue, as the command dialog in
-YouTrack does. The command language is YouTrack's own; see
+"Priority Critical tag regression", to one or more issues, as the command
+dialog in YouTrack does. The last argument is the command; every argument
+before it is an issue, and all of them change in one request. The command
+language is YouTrack's own; see
 https://www.jetbrains.com/help/youtrack/cloud/commands.html.
 
---dry-run asks YouTrack how it parses the command for this issue and prints
+--dry-run asks YouTrack how it parses the command for these issues and prints
 each part without changing anything; it exits 1 when a part is not
-understood. --comment adds a comment along with the change; the comment is visible to
-everyone who can see the issue. --silent
-applies the change without sending notifications.
+understood. --comment adds a comment along with the change; the comment is
+visible to everyone who can see the issue. --silent applies the change
+without sending notifications.
 
-An issue URL must be on a logged-in host, or named with --host.
+An issue URL must be on a logged-in host, or named with --host; issue URLs
+in one call must share a host.
 
 JSON fields:
-  issue     the issue as given
-  url       issue web URL
+  issue     the first issue as given
+  url       the first issue's web URL
+  issues    [{issue, url}]: every issue, in the order given
   command   the command text
   dryRun    true when nothing was applied
   commands  [{description, error}]: the parts YouTrack parsed; description
             is as YouTrack sent it, which may be HTML`,
 		Example: `  $ ytrack issue command APP-123 'State In Progress for me'
   $ ytrack issue command APP-123 'Priority Critical' --dry-run
-  $ ytrack issue command APP-123 'State Fixed' --comment 'Fixed in 2026.3' --silent`,
-		Args: cmdutil.ExactArgs(2, "expected an issue ID or URL and a command, e.g. APP-123 'State Fixed'"),
+  $ ytrack issue command APP-123 'State Fixed' --comment 'Fixed in 2026.3' --silent
+  $ ytrack issue command APP-123 APP-124 APP-130 'Assignee me' --dry-run`,
+		Args:              cmdutil.MinimumArgs(2, "expected one or more issue IDs or URLs and a command, e.g. APP-123 'State Fixed'"),
+		ValidArgsFunction: shared.CompleteIssues(f, -1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ref, err := shared.ParseRef(args[0])
-			if err != nil {
-				return err
+			ids, query := args[:len(args)-1], args[len(args)-1]
+			var hostRef shared.Ref
+			for _, arg := range ids {
+				ref, err := shared.ParseRef(arg)
+				if err != nil {
+					return err
+				}
+				if ref.ServiceURL != "" {
+					if hostRef.ServiceURL != "" && !strings.EqualFold(strings.TrimRight(hostRef.ServiceURL, "/"), strings.TrimRight(ref.ServiceURL, "/")) {
+						return clierr.FlagErrorf("issue URLs on different hosts (%s, %s); run one command per host", hostRef.ServiceURL, ref.ServiceURL)
+					}
+					hostRef = ref
+				}
+				opts.refs = append(opts.refs, ref)
 			}
-			opts.ref = ref
-			opts.query = strings.TrimSpace(args[1])
+			opts.query = strings.TrimSpace(query)
 			if opts.query == "" {
 				return clierr.FlagErrorf("the command is empty")
 			}
 			if opts.dryRun && (opts.silent || cmd.Flags().Changed("comment")) {
 				return clierr.FlagErrorf("`--dry-run` applies nothing, so `--comment` and `--silent` do not apply")
 			}
-			if err := shared.UseRefHostForWrite(f, ref); err != nil {
+			if err := shared.UseRefHostForWrite(f, hostRef); err != nil {
 				return err
 			}
 			return run(cmd, f, opts)
@@ -111,15 +135,20 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	if err != nil {
 		return err
 	}
-	id := opts.ref.ID
-	c := adapter.Command{Query: opts.query, IssueIDs: []string{id}, Comment: opts.comment, Silent: opts.silent}
-	res := result{Issue: id, URL: shared.IssueURL(host, id), Command: opts.query, DryRun: opts.dryRun}
+	ids := make([]string, len(opts.refs))
+	res := result{Command: opts.query, DryRun: opts.dryRun}
+	for i, ref := range opts.refs {
+		ids[i] = ref.ID
+		res.Issues = append(res.Issues, target{Issue: ref.ID, URL: shared.IssueURL(host, ref.ID)})
+	}
+	idList := strings.Join(ids, ", ")
+	c := adapter.Command{Query: opts.query, IssueIDs: ids, Comment: opts.comment, Silent: opts.silent}
 	if opts.dryRun {
 		if res.Commands, err = adapter.PreviewCommand(ctx, client, c); err != nil {
-			return shared.NotFound(err, id, host)
+			return shared.NotFound(err, idList, host)
 		}
 	} else if res.Commands, err = adapter.ApplyCommand(ctx, client, c); err != nil {
-		return shared.NotFound(err, id, host)
+		return shared.NotFound(err, idList, host)
 	}
 
 	switch {
@@ -136,9 +165,11 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			fmt.Fprintf(ios.Out, "%s%s\n", prefix, output.SanitizeCell(plainText(p.Description)))
 		}
 	default:
-		fmt.Fprintf(ios.Out, "%s\t%s\n", id, res.URL)
+		for _, t := range res.Issues {
+			fmt.Fprintf(ios.Out, "%s\t%s\n", t.Issue, t.URL)
+		}
 		if ios.IsStderrTTY() {
-			fmt.Fprintf(ios.ErrOut, "Applied %q to %s\n", output.SanitizeCell(opts.query), id)
+			fmt.Fprintf(ios.ErrOut, "%s Applied %q to %s\n", ios.ErrColorScheme().SuccessIcon(), output.SanitizeCell(opts.query), idList)
 		}
 	}
 	if opts.dryRun {
@@ -151,17 +182,21 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			}
 		}
 		if opts.exporter == nil && ios.IsStderrTTY() {
-			fmt.Fprintf(ios.ErrOut, "Dry run: nothing was applied to %s\n", id)
+			fmt.Fprintf(ios.ErrOut, "Dry run: nothing was applied to %s\n", idList)
 		}
 	}
 	return nil
 }
 
-var htmlTag = regexp.MustCompile(`<[^>]*>`)
+// htmlTag matches a real tag only: "<" followed by a letter (start tag) or
+// "/" and a letter (end tag), so literal text such as "a < b > c" survives.
+var htmlTag = regexp.MustCompile(`</?[A-Za-z][^<>]*>`)
 
 // plainText renders YouTrack's HTML command description, such as
-// `Set Assignee <span class="bold">admin</span>`, as plain text: tags dropped
-// and entities decoded. --json keeps the description as YouTrack sent it.
+// `Set Assignee <span class="bold">admin</span>`, as plain text: tags dropped,
+// then entities decoded (so an escaped "&lt;b&gt;" stays as text). The caller
+// sanitizes the result, which removes control characters that entities such
+// as "&#27;" decode to. --json keeps the description as YouTrack sent it.
 func plainText(s string) string {
 	return html.UnescapeString(htmlTag.ReplaceAllString(s, ""))
 }

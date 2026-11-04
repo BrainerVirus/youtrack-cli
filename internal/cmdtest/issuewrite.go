@@ -451,6 +451,9 @@ func (yt *FakeYouTrack) command(w http.ResponseWriter, r *http.Request, preview 
 		if yt.CommandHTML && p.html != "" {
 			desc = p.html
 		}
+		if i < len(yt.CommandDescriptions) {
+			desc = yt.CommandDescriptions[i]
+		}
 		commands[i] = map[string]any{"$type": "ParsedCommand", "description": desc, "error": p.err, "delete": false}
 		failed = failed || p.err
 	}

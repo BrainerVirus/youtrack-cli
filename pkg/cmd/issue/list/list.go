@@ -77,6 +77,7 @@ JSON fields:
 	fl := cmd.Flags()
 	fl.StringVarP(&opts.query, "query", "q", "", "YouTrack search `query`, sent as is")
 	fl.StringVarP(&opts.project, "project", "p", "", "Only issues in this `project` (short name or name)")
+	_ = cmd.RegisterFlagCompletionFunc("project", shared.CompleteProjects(f))
 	fl.StringVarP(&opts.assignee, "assignee", "a", "", "Only issues assigned to this `login` (\"me\" for yourself)")
 	fl.StringVarP(&opts.state, "state", "s", "", "Only issues in this `state`")
 	fl.StringVar(&opts.sort, "sort", "", "Sort by an `attribute`, optionally followed by asc or desc")
@@ -113,7 +114,8 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, query string) er
 		return nil
 	}
 	tbl := output.NewTable(ios, "id", "summary", "state", "priority", "assignee", "updated")
-	now := time.Now()
+	cs := ios.ColorScheme()
+	now := f.Clock()
 	for _, is := range issues {
 		assignee := ""
 		if u := is.Assignee(); u != nil {
@@ -127,7 +129,16 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, query string) er
 				updated = is.Updated.Format(time.RFC3339)
 			}
 		}
-		tbl.Row(is.IDReadable, is.Summary, is.State(), is.Priority(), assignee, updated)
+		state := is.State()
+		resolved := is.Resolved != nil
+		tbl.StyledRow(
+			output.Cell{Text: is.IDReadable, Style: cs.Accent},
+			output.Cell{Text: is.Summary, Style: cs.Bold},
+			output.Cell{Text: state, Style: func(s string) string { return cs.State(s, resolved) }},
+			output.Cell{Text: is.Priority(), Style: cs.Priority},
+			output.Cell{Text: assignee},
+			output.Cell{Text: updated, Style: cs.Dim},
+		)
 	}
 	return tbl.Render()
 }

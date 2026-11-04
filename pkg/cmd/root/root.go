@@ -29,7 +29,7 @@ Environment:
   YTRACK_BROWSER      command used to open URLs
   YTRACK_EDITOR       editor for writing text (then GIT_EDITOR, VISUAL, EDITOR)
   YTRACK_NO_UPDATE_NOTIFIER  set to 1 to turn off the daily new-release notice
-  NO_COLOR            disable color output
+  NO_COLOR            disable color output (as do --no-color and TERM=dumb)
 
 Exit codes:
   0 success, 1 failure (including usage errors), 2 cancelled, 4 authentication required`
@@ -58,6 +58,8 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 	pf := cmd.PersistentFlags()
 	pf.StringVar(&f.HostFlag, "host", "", "YouTrack `host` or service URL to use")
 	pf.BoolVar(&f.Debug, "debug", false, "Log HTTP requests to stderr with credentials redacted")
+	pf.Bool("no-color", false, "Disable color output")
+	cmd.SetHelpFunc(helpFunc(f.IOStreams))
 
 	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return clierr.FlagErrorWrap(err)
@@ -75,6 +77,9 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 // Execute runs the command tree with args, prints any error to stderr and
 // returns the exit code.
 func Execute(f *cmdutil.Factory, args []string) clierr.ExitCode {
+	if colorOff(args) {
+		f.IOStreams.DisableColor()
+	}
 	cmd := NewCmdRoot(f)
 	cmd.SetArgs(args)
 	notice := &updateNotice{f: f}
@@ -94,8 +99,23 @@ func Execute(f *cmdutil.Factory, args []string) clierr.ExitCode {
 	return clierr.Code(err)
 }
 
+// colorOff reports whether args turn color off: --no-color, or --json, whose
+// output is for programs. Checked before parsing so help and errors honour it.
+func colorOff(args []string) bool {
+	for _, a := range args {
+		switch {
+		case a == "--":
+			return false
+		case a == "--no-color", a == "--no-color=true", a == "--json", strings.HasPrefix(a, "--json="):
+			return true
+		}
+	}
+	return false
+}
+
 func printError(f *cmdutil.Factory, cmd *cobra.Command, err error) {
 	w := f.IOStreams.ErrOut
+	cs := f.IOStreams.ErrColorScheme()
 	switch {
 	case errors.Is(err, clierr.ErrSilent):
 		return
@@ -103,8 +123,8 @@ func printError(f *cmdutil.Factory, cmd *cobra.Command, err error) {
 		fmt.Fprintln(w, "cancelled")
 		return
 	}
-	fmt.Fprintf(w, "ytrack: %s\n", output.SanitizeText(err.Error()))
+	fmt.Fprintln(w, cs.Error("ytrack: "+output.SanitizeText(err.Error())))
 	if _, ok := errors.AsType[*clierr.FlagError](err); ok && cmd != nil {
-		fmt.Fprintf(w, "Run '%s --help' for usage.\n", cmd.CommandPath())
+		fmt.Fprintf(w, "Run '%s' for usage.\n", cs.Bold(cmd.CommandPath()+" --help"))
 	}
 }

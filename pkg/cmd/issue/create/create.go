@@ -73,6 +73,7 @@ JSON fields:
 	}
 	fl := cmd.Flags()
 	fl.StringVarP(&opts.project, "project", "p", "", "Project short name or name")
+	_ = cmd.RegisterFlagCompletionFunc("project", shared.CompleteProjects(f))
 	fl.StringVarP(&opts.summary, "summary", "s", "", "Issue summary (title)")
 	opts.description.Add(cmd)
 	fl.StringArrayVarP(&opts.fields, "field", "f", nil, "Set a custom field: \"Name=Value\" (repeatable)")
@@ -148,7 +149,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	fmt.Fprintf(ios.Out, "%s\t%s\n", issue.IDReadable, shared.IssueURL(host, issue.IDReadable))
 	if ios.IsStderrTTY() {
-		fmt.Fprintf(ios.ErrOut, "Created %s: %s\n", issue.IDReadable, output.SanitizeCell(issue.Summary))
+		fmt.Fprintf(ios.ErrOut, "%s Created %s: %s\n", ios.ErrColorScheme().SuccessIcon(), issue.IDReadable, output.SanitizeCell(issue.Summary))
 	}
 	return nil
 }

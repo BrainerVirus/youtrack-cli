@@ -1,0 +1,7 @@
+<bold>ID   </>  <bold>DATE      </>  <bold>DURATION</>  <bold>AUTHOR</>  <bold>TYPE       </>  <bold>TEXT</>
+<dim>115-1</>  <accent>2026-09-30</>  <bold>1h 30m  </>  jdoe    <dim>Development</>  Traced the lost return URL
+<dim>115-2</>  <accent>2026-10-01</>  <bold>30m     </>  jroe    <dim>           </>  Meetings
+<dim>115-3</>  <accent>2026-10-05</>  <bold>1d      </>  jdoe    <dim>Testing    </>  
+--- stderr
+
+3 work items, <bold>10h</> in total

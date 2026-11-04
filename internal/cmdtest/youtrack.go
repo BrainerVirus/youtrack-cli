@@ -85,6 +85,9 @@ type FakeYouTrack struct {
 	// CommandHTML makes command previews describe each part in HTML, as
 	// YouTrack does: values HTML-escaped inside <span class="bold">.
 	CommandHTML bool
+	// CommandDescriptions, when set, replaces the description of each parsed
+	// command part, in order, exactly as given (for hostile previews).
+	CommandDescriptions []string
 
 	mu       sync.Mutex
 	requests []Request

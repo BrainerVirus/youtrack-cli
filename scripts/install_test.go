@@ -79,6 +79,11 @@ func runInstallSh(t *testing.T, srv *httptest.Server, osName, machine string, co
 	cmd.Env = append(os.Environ(),
 		"HOME="+r.home,
 		"PATH="+path,
+		// Completions follow $SHELL and the XDG dirs; tests choose them.
+		"SHELL=/bin/sh",
+		"XDG_DATA_HOME=",
+		"XDG_CONFIG_HOME=",
+		"YTRACK_NO_COMPLETIONS=",
 		"YTRACK_VERSION=",
 		"YTRACK_INSTALL_DIR=",
 		"YTRACK_RELEASES_URL="+srv.URL,
@@ -211,6 +216,118 @@ func TestInstallSh(t *testing.T) {
 	})
 }
 
+func TestInstallShCompletions(t *testing.T) {
+	srv, _ := mirror(t)
+	// fakeZsh is a zsh whose $fpath is /usr/share/zsh/functions plus, when
+	// withHomeDir is set, ~/.zfunc.
+	fakeZsh := func(t *testing.T, withHomeDir bool) string {
+		dir := t.TempDir()
+		body := `printf '%s\n' /usr/share/zsh/functions`
+		if withHomeDir {
+			body += ` "$HOME/.zfunc"`
+		}
+		writeExe(t, filepath.Join(dir, "zsh"), body)
+		return "PATH+=" + dir
+	}
+	read := func(t *testing.T, path string) string {
+		t.Helper()
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("completion not installed: %v", err)
+		}
+		return string(b)
+	}
+
+	t.Run("given zsh, it installs _ytrack in the XDG site-functions dir and says how to add it to $fpath", func(t *testing.T) {
+		r := runInstallSh(t, srv, "Linux", "x86_64", -1, "SHELL=/usr/bin/zsh", fakeZsh(t, false))
+		if r.err != nil {
+			t.Fatalf("%v: %s", r.err, r.stderr)
+		}
+		dest := filepath.Join(r.home, ".local", "share", "zsh", "site-functions", "_ytrack")
+		if got := read(t, dest); got != "#compdef ytrack\n" {
+			t.Errorf("_ytrack = %q", got)
+		}
+		for _, want := range []string{"Installed zsh completions to " + dest, `fpath=("` + filepath.Dir(dest) + `" $fpath)`, "compinit"} {
+			if !strings.Contains(r.stderr, want) {
+				t.Errorf("stderr lacks %q:\n%s", want, r.stderr)
+			}
+		}
+	})
+
+	t.Run("given zsh with a writable $fpath dir under $HOME, it installs there", func(t *testing.T) {
+		zsh := fakeZsh(t, true)
+		home := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(home, ".zfunc"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		r := runInstallSh(t, srv, "Linux", "x86_64", -1, "SHELL=/bin/zsh", zsh, "HOME="+home)
+		if r.err != nil {
+			t.Fatalf("%v: %s", r.err, r.stderr)
+		}
+		read(t, filepath.Join(home, ".zfunc", "_ytrack"))
+		if !strings.Contains(r.stderr, "new zsh sessions load them") {
+			t.Errorf("stderr = %s", r.stderr)
+		}
+	})
+
+	t.Run("given bash, it installs into bash-completion's user dir", func(t *testing.T) {
+		r := runInstallSh(t, srv, "Linux", "x86_64", -1, "SHELL=/bin/bash")
+		if r.err != nil {
+			t.Fatalf("%v: %s", r.err, r.stderr)
+		}
+		dest := filepath.Join(r.home, ".local", "share", "bash-completion", "completions", "ytrack")
+		if got := read(t, dest); got != "# ytrack bash\n" {
+			t.Errorf("ytrack = %q", got)
+		}
+		if !strings.Contains(r.stderr, "Installed bash completions to "+dest) || !strings.Contains(r.stderr, "~/.bashrc") {
+			t.Errorf("stderr = %s", r.stderr)
+		}
+	})
+
+	t.Run("given fish, it installs into ~/.config/fish/completions", func(t *testing.T) {
+		r := runInstallSh(t, srv, "Darwin", "arm64", -1, "SHELL=/opt/homebrew/bin/fish")
+		if r.err != nil {
+			t.Fatalf("%v: %s", r.err, r.stderr)
+		}
+		dest := filepath.Join(r.home, ".config", "fish", "completions", "ytrack.fish")
+		if got := read(t, dest); got != "# ytrack fish\n" {
+			t.Errorf("ytrack.fish = %q", got)
+		}
+		if !strings.Contains(r.stderr, "fish loads them") {
+			t.Errorf("stderr = %s", r.stderr)
+		}
+	})
+
+	t.Run("given XDG_DATA_HOME, bash completions go there", func(t *testing.T) {
+		data := t.TempDir()
+		r := runInstallSh(t, srv, "Linux", "x86_64", -1, "SHELL=/bin/bash", "XDG_DATA_HOME="+data)
+		if r.err != nil {
+			t.Fatalf("%v: %s", r.err, r.stderr)
+		}
+		read(t, filepath.Join(data, "bash-completion", "completions", "ytrack"))
+	})
+
+	t.Run("given YTRACK_NO_COMPLETIONS=1, it installs none", func(t *testing.T) {
+		r := runInstallSh(t, srv, "Linux", "x86_64", -1, "SHELL=/bin/bash", "YTRACK_NO_COMPLETIONS=1")
+		if r.err != nil {
+			t.Fatalf("%v: %s", r.err, r.stderr)
+		}
+		if _, err := os.Stat(filepath.Join(r.home, ".local", "share", "bash-completion")); err == nil {
+			t.Error("completions were installed")
+		}
+	})
+
+	t.Run("given another shell, it points at ytrack completion", func(t *testing.T) {
+		r := runInstallSh(t, srv, "Linux", "x86_64", -1, "SHELL=/bin/tcsh")
+		if r.err != nil {
+			t.Fatalf("%v: %s", r.err, r.stderr)
+		}
+		if !strings.Contains(r.stderr, "ytrack completion --help") {
+			t.Errorf("stderr = %s", r.stderr)
+		}
+	})
+}
+
 func TestInstallShRefusesAWrongChecksum(t *testing.T) {
 	srv, _ := mirror(t, &upgradetest.Release{Version: "1.1.0", WrongChecksums: true})
 	r := runInstallSh(t, srv, "Linux", "x86_64", -1)
@@ -265,6 +382,9 @@ func TestInstallPs1(t *testing.T) {
 		}
 		if !strings.Contains(out, "is not on your PATH") {
 			t.Errorf("no PATH hint: %s", out)
+		}
+		if !strings.Contains(out, "ytrack completion powershell | Out-String | Invoke-Expression") {
+			t.Errorf("no PowerShell completion instructions: %s", out)
 		}
 	})
 

@@ -1,0 +1,50 @@
+Add a work item (spent time) to an issue and print its ID.
+
+--duration takes hours and minutes: 1h30m, 1h 30m, 90m, 1.5h,
+"2 hours 15 minutes", or a bare number of minutes (90). Days and weeks are
+not accepted because their length depends on the YouTrack work schedule.
+
+--date auto (the default) is today in your work timezone: the timezone
+setting in config.yml (an IANA zone such as Europe/Madrid) when set,
+otherwise the system timezone (TZ). YouTrack stores the day only.
+
+--type takes a work item type name from the project's time tracking
+settings (case is ignored); an unknown name lists the valid ones.
+
+--meeting logs meeting time: the text defaults to "Meetings", as in workit.
+Any --text or --type you give still applies.
+
+<bold>JSON fields:</>
+  id        work item ID, e.g. 115-3
+  date      day of the work, YYYY-MM-DD
+  duration  {minutes, presentation}, e.g. {"minutes": 90, "presentation": "1h 30m"}
+  author    {login, fullName}
+  type      work item type name, or null
+  text      description
+  issue     readable ID of the issue
+  url       issue web URL
+
+<bold>Usage:</>
+  <accent>ytrack work-item add</> {<issue-id> | <url>} --duration <duration> [flags]
+
+<bold>Examples:</>
+  <dim>$</> <accent>ytrack work-item add APP-123 --duration 1h30m --text 'Code review'</>
+  <dim>$</> <accent>ytrack work-item add APP-123 --duration 45m --date 2026-10-06 --type Development</>
+  <dim>$</> <accent>ytrack work-item add TEAM-1 --duration 30m --meeting</>
+  <dim>$</> <accent>ytrack work-item add APP-123 --duration 1.5h --json id,date,duration</>
+
+<bold>Flags:</>
+      <accent>--date</><dim> string</>         Day of the work: auto (today) or YYYY-MM-DD (default "auto")
+  <accent>-d, --duration</><dim> string</>     Time spent, e.g. 1h30m, 90m or 1.5h
+  <accent>-h, --help</>                help for add
+  <accent>-q, --jq</><dim> expression</>       Filter JSON output using a jq expression
+      <accent>--json</><dim> fields</>         Output JSON with the specified fields
+      <accent>--meeting</>             Log meeting time (text defaults to "Meetings")
+  <accent>-t, --template</><dim> template</>   Format JSON output using a Go template
+      <accent>--text</><dim> string</>         Description of the work
+      <accent>--type</><dim> name</>           Work item type name, e.g. Development
+
+<bold>Global Flags:</>
+      <accent>--debug</>       Log HTTP requests to stderr with credentials redacted
+      <accent>--host</><dim> host</>   YouTrack host or service URL to use
+      <accent>--no-color</>    Disable color output
