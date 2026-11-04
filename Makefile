@@ -4,13 +4,20 @@ DATE    ?= $(shell date -u +%Y-%m-%d)
 PKG     := github.com/BrainerVirus/youtrack-cli/internal/build
 LDFLAGS := -s -w -X $(PKG).Version=$(VERSION) -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE)
 
-.PHONY: build test lint fmt vet clean release snapshot completions
+.PHONY: build test it lint fmt vet clean release snapshot completions
 
 build:
 	go build -trimpath -ldflags "$(LDFLAGS)" -o bin/ytrack ./cmd/ytrack
 
 test:
 	go test -race ./...
+
+# Opt-in real-instance suite against your personal YouTrack Cloud instance,
+# using the session from `ytrack auth login`: make it YTRACK_IT_PROJECT=<short name>
+# It creates issues prefixed "ytrack-it <run id>" and deletes them. See docs/integration-tests.md.
+it: build
+	YTRACK_IT=1 YTRACK_IT_BIN="$(CURDIR)/bin/ytrack" YTRACK_IT_PROJECT="$(YTRACK_IT_PROJECT)" \
+		go test -count=1 -v -run '^TestIntegration$$' ./test/integration/
 
 vet:
 	go vet ./...
