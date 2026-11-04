@@ -49,6 +49,11 @@ shows how to check both.
 
 Or build from a clone with `make build` (binary in `bin/ytrack`).
 
+More: [docs/install.md](docs/install.md) covers the install scripts and their
+options, [verifying a download](docs/install.md#verifying-a-download),
+[upgrades](docs/install.md#upgrades) and the
+[new-release notice](docs/install.md#new-release-notice).
+
 ## Upgrade
 
 ```sh
@@ -206,7 +211,14 @@ Shell completion: `ytrack completion bash|zsh|fish|powershell`.
 ```sh
 make build test lint
 make snapshot              # local release dry run into dist/ (needs goreleaser v2)
+make it YTRACK_IT_PROJECT=<short>   # opt-in suite against your own YouTrack instance
 ```
+
+`make it` runs the real-instance suite with the session from
+`ytrack auth login` against a personal scratch project: it creates issues
+prefixed `ytrack-it`, works on them and deletes them, and refuses hosts other
+than `*.youtrack.cloud` unless you allow one. See [docs/integration-tests.md](docs/integration-tests.md) before
+running it.
 
 Releases: from an up-to-date `main`, run `make release VERSION=v0.1.0`. It
 runs the tests, tags `main` and pushes the tag; the `Release` workflow then
