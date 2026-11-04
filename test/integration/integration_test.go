@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -30,10 +31,19 @@ func TestIntegration(t *testing.T) {
 // buildYtrack builds the ytrack binary into a temp dir and returns its path.
 func buildYtrack(t *testing.T) string {
 	t.Helper()
-	bin := filepath.Join(t.TempDir(), "ytrack")
+	bin := filepath.Join(t.TempDir(), exeName("ytrack"))
 	out, err := exec.Command("go", "build", "-o", bin, "github.com/BrainerVirus/youtrack-cli/cmd/ytrack").CombinedOutput()
 	if err != nil {
 		t.Fatalf("building ytrack: %v\n%s", err, out)
 	}
 	return bin
+}
+
+// exeName adds the executable suffix the OS needs: go build -o writes the
+// name as given, and Windows runs only names ending in .exe.
+func exeName(name string) string {
+	if runtime.GOOS == "windows" {
+		return name + ".exe"
+	}
+	return name
 }

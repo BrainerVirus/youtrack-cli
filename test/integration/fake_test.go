@@ -46,7 +46,7 @@ func sharedYtrack(t *testing.T) string {
 		if binErr != nil {
 			return
 		}
-		binPath = filepath.Join(binDir, "ytrack")
+		binPath = filepath.Join(binDir, exeName("ytrack"))
 		out, err := exec.Command("go", "build", "-o", binPath, "github.com/BrainerVirus/youtrack-cli/cmd/ytrack").CombinedOutput()
 		if err != nil {
 			binErr = fmt.Errorf("building ytrack: %w\n%s", err, out)
@@ -82,7 +82,10 @@ type fakeInstance struct {
 	deleted   []string
 }
 
-func newFakeInstance(t *testing.T) *fakeInstance {
+// newFakeInstance starts the fake. Each setup runs before the server
+// starts (to set failBefore or failAfter), since the server's handler runs
+// on its own goroutines and the fields must not change while it serves.
+func newFakeInstance(t *testing.T, setup ...func(*fakeInstance)) *fakeInstance {
 	t.Helper()
 	yt := cmdtest.NewFakeYouTrack(t, "")
 	yt.SeedSampleProjects()
@@ -90,6 +93,9 @@ func newFakeInstance(t *testing.T) *fakeInstance {
 	yt.Issues = nil
 	yt.WorkItems = map[string][]map[string]any{}
 	f := &fakeInstance{yt: yt}
+	for _, fn := range setup {
+		fn(f)
+	}
 	inner := yt.Server.Config.Handler
 	f.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
@@ -164,6 +170,13 @@ func (f *fakeInstance) localizeCommand(w http.ResponseWriter, r *http.Request) b
 	return true
 }
 
+// deletedIssues lists the issues the run deleted.
+func (f *fakeInstance) deletedIssues() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Clone(f.deleted)
+}
+
 // leftovers lists what the run left on the fake.
 func (f *fakeInstance) leftovers() []string {
 	f.mu.Lock()
@@ -216,8 +229,8 @@ func TestSuiteAgainstFakeServer(t *testing.T) {
 	if left := f.leftovers(); len(left) != 0 {
 		t.Errorf("the run left %v", left)
 	}
-	if len(f.deleted) != 1 {
-		t.Errorf("deleted issues %v, want the one the run created", f.deleted)
+	if len(f.deletedIssues()) != 1 {
+		t.Errorf("deleted issues %v, want the one the run created", f.deletedIssues())
 	}
 	// Every command path reached the server.
 	seen := map[string]bool{}
@@ -246,10 +259,11 @@ func TestSuiteAgainstFakeServer(t *testing.T) {
 
 func TestSuiteCleansUpWhenAStepFails(t *testing.T) {
 	skipShort(t)
-	f := newFakeInstance(t)
-	f.failBefore = func(r *http.Request) bool {
-		return r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comments")
-	}
+	f := newFakeInstance(t, func(f *fakeInstance) {
+		f.failBefore = func(r *http.Request) bool {
+			return r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comments")
+		}
+	})
 
 	err := f.runAgainst(t)
 
@@ -263,10 +277,11 @@ func TestSuiteCleansUpWhenAStepFails(t *testing.T) {
 
 func TestSuiteCleansUpAWorkItemStepFailure(t *testing.T) {
 	skipShort(t)
-	f := newFakeInstance(t)
-	f.failBefore = func(r *http.Request) bool {
-		return r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "/workItems/")
-	}
+	f := newFakeInstance(t, func(f *fakeInstance) {
+		f.failBefore = func(r *http.Request) bool {
+			return r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "/workItems/")
+		}
+	})
 
 	err := f.runAgainst(t)
 
@@ -280,18 +295,19 @@ func TestSuiteCleansUpAWorkItemStepFailure(t *testing.T) {
 
 func TestSuiteSweepsAnIssueWhoseCreateResponseWasLost(t *testing.T) {
 	skipShort(t)
-	f := newFakeInstance(t)
-	f.failAfter = func(r *http.Request) bool {
-		return r.Method == http.MethodPost && r.URL.Path == "/api/issues"
-	}
+	f := newFakeInstance(t, func(f *fakeInstance) {
+		f.failAfter = func(r *http.Request) bool {
+			return r.Method == http.MethodPost && r.URL.Path == "/api/issues"
+		}
+	})
 
 	err := f.runAgainst(t)
 
 	if err == nil || !strings.Contains(err.Error(), "issue create") {
 		t.Fatalf("error %v, want the failing issue create step", err)
 	}
-	if len(f.deleted) != 1 {
-		t.Errorf("deleted %v, want the issue the lost create made", f.deleted)
+	if len(f.deletedIssues()) != 1 {
+		t.Errorf("deleted %v, want the issue the lost create made", f.deletedIssues())
 	}
 	if left := f.leftovers(); len(left) != 0 {
 		t.Errorf("the failed run left %v", left)
@@ -300,10 +316,11 @@ func TestSuiteSweepsAnIssueWhoseCreateResponseWasLost(t *testing.T) {
 
 func TestSuiteReportsACleanupFailure(t *testing.T) {
 	skipShort(t)
-	f := newFakeInstance(t)
-	f.failBefore = func(r *http.Request) bool {
-		return r.Method == http.MethodGet && r.URL.Path == "/api/issues" && strings.Contains(r.URL.RawQuery, "created")
-	}
+	f := newFakeInstance(t, func(f *fakeInstance) {
+		f.failBefore = func(r *http.Request) bool {
+			return r.Method == http.MethodGet && r.URL.Path == "/api/issues" && strings.Contains(r.URL.RawQuery, "created")
+		}
+	})
 
 	err := f.runAgainst(t)
 
