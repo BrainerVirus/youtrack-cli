@@ -4,6 +4,8 @@ package command
 import (
 	"errors"
 	"fmt"
+	"html"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -69,7 +71,8 @@ JSON fields:
   url       issue web URL
   command   the command text
   dryRun    true when nothing was applied
-  commands  [{description, error}]: the parts YouTrack parsed`,
+  commands  [{description, error}]: the parts YouTrack parsed; description
+            is as YouTrack sent it, which may be HTML`,
 		Example: `  $ ytrack issue command APP-123 'State In Progress for me'
   $ ytrack issue command APP-123 'Priority Critical' --dry-run
   $ ytrack issue command APP-123 'State Fixed' --comment 'Fixed in 2026.3' --silent`,
@@ -130,7 +133,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			if p.Error {
 				prefix = "! "
 			}
-			fmt.Fprintf(ios.Out, "%s%s\n", prefix, output.SanitizeCell(p.Description))
+			fmt.Fprintf(ios.Out, "%s%s\n", prefix, output.SanitizeCell(plainText(p.Description)))
 		}
 	default:
 		fmt.Fprintf(ios.Out, "%s\t%s\n", id, res.URL)
@@ -152,4 +155,13 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		}
 	}
 	return nil
+}
+
+var htmlTag = regexp.MustCompile(`<[^>]*>`)
+
+// plainText renders YouTrack's HTML command description, such as
+// `Set Assignee <span class="bold">admin</span>`, as plain text: tags dropped
+// and entities decoded. --json keeps the description as YouTrack sent it.
+func plainText(s string) string {
+	return html.UnescapeString(htmlTag.ReplaceAllString(s, ""))
 }
