@@ -1,7 +1,10 @@
 package integration
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -95,6 +98,9 @@ func newFakeInstance(t *testing.T) *fakeInstance {
 			f.deleteIssue(w, r)
 			return
 		}
+		if strings.HasPrefix(r.URL.Path, "/api/commands") && !f.localizeCommand(w, r) {
+			return
+		}
 		if f.failBefore != nil && f.failBefore(r) {
 			http.Error(w, `{"error":"server_error","error_description":"injected failure"}`, http.StatusInternalServerError)
 			return
@@ -127,6 +133,35 @@ func (f *fakeInstance) deleteIssue(w http.ResponseWriter, r *http.Request) {
 	delete(f.yt.WorkItems, readable)
 	f.deleted = append(f.deleted, readable)
 	w.WriteHeader(http.StatusOK)
+}
+
+// localizeCommand makes the fake behave like a non-English instance: the
+// "for" keyword is unknown, and "Assignee <login>" (a field name, which works
+// on every locale) is applied as cmdtest's fake understands it. It answers
+// and returns false for a rejected command.
+func (f *fakeInstance) localizeCommand(w http.ResponseWriter, r *http.Request) bool {
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return false
+	}
+	var body map[string]any
+	if err := json.Unmarshal(raw, &body); err == nil {
+		query, _ := body["query"].(string)
+		if word, _, _ := strings.Cut(query, " "); strings.EqualFold(word, "for") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = io.WriteString(w, `{"error":"bad_request","error_description":"Comando desconocido: for"}`)
+			return false
+		}
+		if login, ok := strings.CutPrefix(query, "Assignee "); ok {
+			body["query"] = "for " + login
+			raw, _ = json.Marshal(body)
+		}
+	}
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	r.ContentLength = int64(len(raw))
+	return true
 }
 
 // leftovers lists what the run left on the fake.

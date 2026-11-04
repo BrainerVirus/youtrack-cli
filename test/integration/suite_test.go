@@ -28,6 +28,11 @@ type suite struct {
 	deleted map[string]bool
 }
 
+// assignToMe is the command the suite applies. It names the field rather
+// than using the "for" keyword, which YouTrack localizes (a Spanish
+// instance answers "Comando desconocido: for").
+const assignToMe = "Assignee me"
+
 // stepTimeout bounds one ytrack invocation.
 const stepTimeout = 2 * time.Minute
 
@@ -147,11 +152,12 @@ func (s *suite) steps() error {
 		return fmt.Errorf("issue comment: %q not among the comments of %s", commentText, id)
 	}
 
-	// issue command: preview, then apply.
-	if _, err := s.ytrack("issue", "command", id, "for me", "--dry-run"); err != nil {
+	// issue command: preview, then apply. Command keywords such as "for"
+	// are localized with the instance's language; a field name is not.
+	if _, err := s.ytrack("issue", "command", id, assignToMe, "--dry-run"); err != nil {
 		return fmt.Errorf("issue command --dry-run: %w", err)
 	}
-	if _, err := s.ytrack("issue", "command", id, "for me", "--silent"); err != nil {
+	if _, err := s.ytrack("issue", "command", id, assignToMe, "--silent"); err != nil {
 		return fmt.Errorf("issue command: %w", err)
 	}
 	var assigned struct{ Assignee *struct{ Login string } }
@@ -159,7 +165,7 @@ func (s *suite) steps() error {
 		return fmt.Errorf("issue view assignee: %w", err)
 	}
 	if assigned.Assignee == nil || assigned.Assignee.Login != login {
-		return fmt.Errorf("issue command 'for me': assignee %+v, want %s", assigned.Assignee, login)
+		return fmt.Errorf("issue command %q: assignee %+v, want %s", assignToMe, assigned.Assignee, login)
 	}
 
 	return s.workItemSteps(id)

@@ -9,8 +9,9 @@ contact a YouTrack server.
 
 1. Create a free personal YouTrack Cloud instance (`<name>.youtrack.cloud`)
    with a personal account, and a scratch project in it. The project needs an
-   Assignee field and time tracking enabled (the default project template
-   has both).
+   Assignee field and **time tracking enabled** (project settings, Time
+   Tracking). A project created through the REST API starts with time
+   tracking off, and the work-item steps then fail.
 2. Log in to it once: `ytrack auth login --host <name>.youtrack.cloud`. The
    token goes to the OS keyring. If you have other hosts, make the personal
    one the default (`ytrack auth switch`) or name it with `YTRACK_IT_HOST`.
@@ -64,8 +65,11 @@ with `--host`, so other logged-in hosts are not contacted):
 3. `issue view` and `issue list` find it.
 4. `issue edit` changes summary and description; `issue view` confirms.
 5. `issue comment` adds a comment; `issue view --json comments` shows it.
-6. `issue command <id> 'for me' --dry-run`, then applied with `--silent`;
-   the assignee becomes you.
+6. `issue command <id> 'Assignee me' --dry-run`, then applied with
+   `--silent`; the assignee becomes you. The command uses the field name, not
+   a keyword such as `for`: YouTrack localizes command keywords with the
+   instance's language (a Spanish instance answers "Comando desconocido:
+   for"), while field names work on every locale.
 7. `work-item add` (30m), `list`, `edit` (45m) and `delete`.
 
 The run id is a UTC timestamp plus random hex, e.g. `20261104-153000-a1b2c3`.
