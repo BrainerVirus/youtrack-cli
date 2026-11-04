@@ -3,6 +3,7 @@ package browser
 
 import (
 	"io"
+	"os"
 
 	clibrowser "github.com/cli/browser"
 	ghbrowser "github.com/cli/go-gh/v2/pkg/browser"
@@ -23,6 +24,28 @@ func New(launcher string, stdout, stderr io.Writer) Browser {
 	clibrowser.Stdout = stdout
 	clibrowser.Stderr = stderr
 	return systemBrowser{}
+}
+
+// Quiet returns a Browser that discards the browser's own output. A browser
+// launched from a terminal prints its diagnostics there (Chrome's "Sandbox:
+// CanCreateUserNamespace() clone() failure", GTK warnings), and during `auth
+// login` that lands in the middle of the token prompt. Failure to launch is
+// still returned as an error.
+//
+// The sink is a real file (os.DevNull), never io.Discard: for a non-file
+// writer exec copies through a pipe and waits for every holder of it to exit,
+// and the browser inherits that pipe and keeps running.
+func Quiet(launcher string) Browser { return quietBrowser{launcher: launcher} }
+
+type quietBrowser struct{ launcher string }
+
+func (q quietBrowser) Browse(url string) error {
+	sink, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		return New(q.launcher, os.Stderr, os.Stderr).Browse(url)
+	}
+	defer sink.Close()
+	return New(q.launcher, sink, sink).Browse(url)
 }
 
 type systemBrowser struct{}
