@@ -20,12 +20,13 @@ type Identity struct {
 }
 
 // ReleaseIdentity is the release workflow of this repository on GitHub
-// Actions: a tag push signs with refs/tags/vX.Y.Z, a manual rerun with the
-// branch it was dispatched from, main.
+// Actions, run for a release tag: a tag push signs with refs/tags/vX.Y.Z, and
+// a manual rerun must be dispatched from that tag (never from a branch), so
+// it signs with the same ref.
 var ReleaseIdentity = Identity{
 	Issuer: "https://token.actions.githubusercontent.com",
 	SubjectRegexp: `^https://github\.com/BrainerVirus/youtrack-cli/\.github/workflows/release\.yml@refs/` +
-		`(tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?|heads/main)$`,
+		`tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$`,
 }
 
 // Trust is what a release signature must verify against.

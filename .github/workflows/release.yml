@@ -1,7 +1,10 @@
 name: Release
 
 # Builds and publishes a GitHub release with goreleaser when a v* tag is pushed
-# (`make release VERSION=vX.Y.Z`). workflow_dispatch re-runs it for an existing tag.
+# (`make release VERSION=vX.Y.Z`). workflow_dispatch re-runs it for an existing tag
+# and must be dispatched from that tag (`gh workflow run release.yml --ref vX.Y.Z
+# -f tag=vX.Y.Z`): the signing identity is the dispatch ref, and ytrack upgrade
+# and the install scripts accept only refs/tags/vX.Y.Z[-pre].
 on:
   push:
     tags: ["v*"]
@@ -26,9 +29,14 @@ jobs:
       - name: Check the tag name
         env:
           TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          REF: ${{ github.ref }}
         run: |
           if ! printf '%s\n' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
             echo "::error::'$TAG' is not a release tag (vX.Y.Z or vX.Y.Z-pre)"
+            exit 1
+          fi
+          if [ "$REF" != "refs/tags/$TAG" ]; then
+            echo "::error::dispatch the release from its tag: gh workflow run release.yml --ref $TAG -f tag=$TAG (got $REF)"
             exit 1
           fi
       - uses: actions/checkout@v7

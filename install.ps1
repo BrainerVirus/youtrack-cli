@@ -25,7 +25,7 @@
     $apiUrl = if ($env:YTRACK_RELEASES_API_URL) { $env:YTRACK_RELEASES_API_URL } else { "https://api.github.com/repos/$repo" }
     $installDir = if ($env:YTRACK_INSTALL_DIR) { $env:YTRACK_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\ytrack' }
     $signerIssuer = 'https://token.actions.githubusercontent.com'
-    $signerIdentity = '^https://github\.com/BrainerVirus/youtrack-cli/\.github/workflows/release\.yml@refs/(tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?|heads/main)$'
+    $signerIdentity = '^https://github\.com/BrainerVirus/youtrack-cli/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
 
     function Fail([string]$msg) { throw "ytrack install: $msg" }
 

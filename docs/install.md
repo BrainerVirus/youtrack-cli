@@ -44,7 +44,8 @@ cosign keyless signature made in GitHub Actions by `.github/workflows/release.ym
 
 - OIDC issuer: `https://token.actions.githubusercontent.com`
 - certificate identity: `https://github.com/BrainerVirus/youtrack-cli/.github/workflows/release.yml@refs/tags/<tag>`
-  (`@refs/heads/main` for a manual rerun of the workflow)
+  (only release tags: a manual rerun of the workflow is dispatched from the tag, so it signs
+  with the same identity; `ytrack upgrade` and the install scripts refuse any branch ref)
 
 ```sh
 cosign verify-blob \

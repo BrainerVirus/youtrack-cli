@@ -196,6 +196,12 @@ with a changelog grouped from the conventional commit titles, and updates the
 Homebrew cask when the `HOMEBREW_TAP_GITHUB_TOKEN` secret is set (the upload
 is skipped without it).
 
+To rerun a release, dispatch the workflow from the tag itself, never from a
+branch: `gh workflow run release.yml --ref v0.1.0 -f tag=v0.1.0`. The
+signature's identity is the ref the run was dispatched from, and
+`ytrack upgrade` and the install scripts accept only `refs/tags/vX.Y.Z[-pre]`;
+the workflow refuses a dispatch whose ref is not the tag it releases.
+
 The REST surface ytrack relies on is listed by hand in
 `api/contract/youtrack-contract.json`, derived from JetBrains' public
 [YouTrack REST API docs](https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html).

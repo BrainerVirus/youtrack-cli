@@ -22,7 +22,7 @@ releases_url="${YTRACK_RELEASES_URL:-https://github.com/$repo/releases}"
 api_url="${YTRACK_RELEASES_API_URL:-https://api.github.com/repos/$repo}"
 install_dir="${YTRACK_INSTALL_DIR:-$HOME/.local/bin}"
 signer_issuer="https://token.actions.githubusercontent.com"
-signer_identity='^https://github\.com/BrainerVirus/youtrack-cli/\.github/workflows/release\.yml@refs/(tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?|heads/main)$'
+signer_identity='^https://github\.com/BrainerVirus/youtrack-cli/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
 
 say() { printf '%s\n' "$*" >&2; }
 fail() {
