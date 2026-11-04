@@ -2,3 +2,5 @@
 **/testdata/*.golden text eol=lf
 # Signed release fixtures are verified byte for byte (digest and signature).
 internal/upgrade/testdata/** -text
+# The embedded agent skill ships byte-identical on every platform.
+skills/** text eol=lf
