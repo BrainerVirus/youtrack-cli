@@ -1,0 +1,23 @@
+Work with YouTrack issues
+
+<bold>Usage:</>
+  <accent>ytrack issue</> <command> [flags]
+  <accent>ytrack issue</> [command]
+
+<bold>Available Commands:</>
+  <accent>command    </> Apply a YouTrack command to one or more issues
+  <accent>comment    </> Add a comment to an issue
+  <accent>create     </> Create an issue
+  <accent>edit       </> Edit an issue
+  <accent>list       </> List issues
+  <accent>view       </> Show an issue
+
+<bold>Flags:</>
+  <accent>-h, --help</>   help for issue
+
+<bold>Global Flags:</>
+      <accent>--debug</>       Log HTTP requests to stderr with credentials redacted
+      <accent>--host</><dim> host</>   YouTrack host or service URL to use
+      <accent>--no-color</>    Disable color output
+
+<dim>Use "ytrack issue [command] --help" for more information about a command.</>

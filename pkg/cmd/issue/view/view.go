@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
+	"github.com/BrainerVirus/youtrack-cli/internal/iostreams"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
@@ -148,7 +149,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			return err
 		}
 	}
-	p := printer{w: f.IOStreams.Out, tty: f.IOStreams.IsStdoutTTY(), now: time.Now()}
+	p := printer{w: f.IOStreams.Out, tty: f.IOStreams.IsStdoutTTY(), cs: f.IOStreams.ColorScheme(), now: f.Clock()}
 	p.issue(shared.Issue{Issue: issue, Host: host}, opts.comments, comments)
 	return nil
 }
@@ -156,6 +157,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 type printer struct {
 	w   io.Writer
 	tty bool
+	cs  *iostreams.ColorScheme
 	now time.Time
 }
 
@@ -171,9 +173,22 @@ func (p printer) time(t time.Time) string {
 
 // kv prints one "Key: value" line; both are sanitized onto one line.
 func (p printer) kv(key, value string) {
-	if value != "" {
-		fmt.Fprintf(p.w, "%-11s %s\n", output.SanitizeCell(key)+":", output.SanitizeCell(value))
+	p.styledKV(key, value, nil)
+}
+
+// styledKV prints "Key:" padded and dim, then the value, styled when style
+// is set. Both are sanitized before styling.
+func (p printer) styledKV(key, value string, style func(string) string) {
+	if value == "" {
+		return
 	}
+	label := output.SanitizeCell(key) + ":"
+	pad := strings.Repeat(" ", max(0, 11-len([]rune(label))))
+	v := output.SanitizeCell(value)
+	if style != nil {
+		v = style(v)
+	}
+	fmt.Fprintf(p.w, "%s%s %s\n", p.cs.Dim(label), pad, v)
 }
 
 func userString(u *adapter.User) string {
@@ -187,7 +202,7 @@ func userString(u *adapter.User) string {
 }
 
 func (p printer) issue(is shared.Issue, showComments bool, comments []adapter.Comment) {
-	fmt.Fprintf(p.w, "%s: %s\n", output.SanitizeCell(is.IDReadable), output.SanitizeCell(is.Summary))
+	fmt.Fprintf(p.w, "%s: %s\n", p.cs.Accent(output.SanitizeCell(is.IDReadable)), p.cs.Bold(output.SanitizeCell(is.Summary)))
 	if is.Project != nil {
 		project := is.Project.ShortName
 		if is.Project.Name != "" && is.Project.Name != project {
@@ -204,10 +219,17 @@ func (p printer) issue(is shared.Issue, showComments bool, comments []adapter.Co
 	p.kv("Tags", strings.Join(is.Tags, ", "))
 	for _, cf := range is.CustomFields {
 		value := cf.String()
-		if cf.Name == adapter.AssigneeField {
+		var style func(string) string
+		switch cf.Name {
+		case adapter.AssigneeField:
 			value = userString(is.Assignee())
+		case "State":
+			resolved := is.Resolved != nil
+			style = func(s string) string { return p.cs.State(s, resolved) }
+		case "Priority":
+			style = p.cs.Priority
 		}
-		p.kv(cf.Name, value)
+		p.styledKV(cf.Name, value, style)
 	}
 
 	fmt.Fprintln(p.w)
@@ -220,9 +242,9 @@ func (p printer) issue(is shared.Issue, showComments bool, comments []adapter.Co
 
 	switch {
 	case showComments && len(comments) > 0:
-		fmt.Fprintf(p.w, "Comments (latest %d of %d):\n", len(comments), is.CommentsCount)
+		fmt.Fprintln(p.w, p.cs.Bold(fmt.Sprintf("Comments (latest %d of %d):", len(comments), is.CommentsCount)))
 		for _, c := range comments {
-			fmt.Fprintf(p.w, "\n%s • %s\n", output.SanitizeCell(userString(c.Author)), p.time(c.Created))
+			fmt.Fprintf(p.w, "\n%s • %s\n", p.cs.Bold(output.SanitizeCell(userString(c.Author))), p.cs.Dim(p.time(c.Created)))
 			fmt.Fprintln(p.w, text.Indent(strings.TrimSpace(output.SanitizeText(c.Text)), "  "))
 		}
 		fmt.Fprintln(p.w)
@@ -231,5 +253,5 @@ func (p printer) issue(is shared.Issue, showComments bool, comments []adapter.Co
 	case is.CommentsCount > 0:
 		fmt.Fprintf(p.w, "%s; use --comments to view them.\n", text.Pluralize(is.CommentsCount, "comment"))
 	}
-	fmt.Fprintf(p.w, "View this issue on YouTrack: %s\n", shared.IssueURL(is.Host, is.IDReadable))
+	fmt.Fprintf(p.w, "%s %s\n", p.cs.Dim("View this issue on YouTrack:"), shared.IssueURL(is.Host, is.IDReadable))
 }

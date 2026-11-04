@@ -1,0 +1,36 @@
+<accent>NSR-40</>: <bold>Login redirect drops the return URL</>
+<dim>Project:</>    NSR (Nightshift)
+<dim>Reporter:</>   Jane Roe (jroe)
+<dim>Created:</>    about 16 days ago
+<dim>Updated:</>    about 1 day ago
+<dim>Tags:</>       backend, sso
+<dim>Priority:</>   <yellow>Major</>
+<dim>Type:</>       Bug
+<dim>State:</>      <yellow>In Progress</>
+<dim>Assignee:</>   John Doe (jdoe)
+<dim>Subsystem:</>  Auth, Web
+<dim>Fix versions:</> 2026.3
+<dim>Estimation:</> 1d 4h 30m
+<dim>Due Date:</>   2026-10-07
+<dim>Story points:</> 5
+<dim>Deployed:</>   2026-10-07T12:00:00Z
+<dim>Root cause:</> Session cookie set before redirect
+<dim>Sentiment:</>  {"$type":"Mood"}
+
+After SSO login the user lands on the dashboard.
+
+Expected: back to the page they came from.
+
+<bold>Comments (latest 3 of 3):</>
+
+<bold>Jane Roe (jroe)</> • <dim>about 3 days ago</>
+  Reproduced on staging.
+
+<bold>John Doe (jdoe)</> • <dim>about 1 day ago</>
+  The return URL is lost
+  in the SAML relay state.
+
+<bold>John Doe (jdoe)</> • <dim>about 1 day ago</>
+  Fix is up for review.
+
+<dim>View this issue on YouTrack:</> {{URL}}/issue/NSR-40

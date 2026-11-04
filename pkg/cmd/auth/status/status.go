@@ -183,7 +183,7 @@ func render(f *cmdutil.Factory, statuses []hostStatus) {
 		if i > 0 {
 			fmt.Fprintln(w)
 		}
-		fmt.Fprintln(w, s.Host)
+		fmt.Fprintln(w, f.IOStreams.ColorScheme().Bold(s.Host))
 		if s.State == StateOK {
 			name := s.Login
 			if s.FullName != "" && s.FullName != s.Login {

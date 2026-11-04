@@ -123,7 +123,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, ch adapter.WorkI
 	}
 	fmt.Fprintln(ios.Out, res.ID)
 	if ios.IsStderrTTY() {
-		fmt.Fprintf(ios.ErrOut, "Updated work item %s on %s: %s on %s\n", res.ID, res.Issue, res.Presentation(), res.Day())
+		fmt.Fprintf(ios.ErrOut, "%s Updated work item %s on %s: %s on %s\n", ios.ErrColorScheme().SuccessIcon(), res.ID, res.Issue, res.Presentation(), res.Day())
 	}
 	return nil
 }

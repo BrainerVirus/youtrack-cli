@@ -1,0 +1,44 @@
+An unofficial command-line interface for JetBrains YouTrack.
+
+<bold>Environment:</>
+  <accent>YTRACK_HOST</>         YouTrack service URL or host to use instead of the default host
+  <accent>YTRACK_TOKEN</>        token to use instead of stored credentials (applies to the active host)
+  <accent>YTRACK_DEBUG</>        set to 1 to log HTTP requests to stderr (credentials redacted)
+  <accent>YTRACK_CONFIG_DIR</>   configuration directory (default ~/.config/ytrack)
+  <accent>YTRACK_BROWSER</>      command used to open URLs
+  <accent>YTRACK_EDITOR</>       editor for writing text (then GIT_EDITOR, VISUAL, EDITOR)
+  <accent>YTRACK_NO_UPDATE_NOTIFIER</>  set to 1 to turn off the daily new-release notice
+  <accent>NO_COLOR</>            disable color output (as do --no-color and TERM=dumb)
+
+<bold>Exit codes:</>
+  0 success, 1 failure (including usage errors), 2 cancelled, 4 authentication required
+
+<bold>Usage:</>
+  <accent>ytrack</> [command]
+
+<bold>Examples:</>
+  <dim>$</> <accent>ytrack auth login</>
+  <dim>$</> <accent>ytrack issue list -q 'project: APP for: me #Unresolved'</>
+  <dim>$</> <accent>ytrack issue view APP-123 --comments</>
+  <dim>$</> <accent>ytrack work-item add APP-123 --duration 1h30m --text 'Code review'</>
+  <dim>$</> <accent>ytrack api /users/me --fields login,fullName</>
+  <dim>$</> <accent>ytrack api /issues --paginate --fields idReadable,summary --jq '.[].idReadable'</>
+
+<bold>Available Commands:</>
+  <accent>api        </> Make an authenticated YouTrack REST API request
+  <accent>auth       </> Authenticate ytrack with YouTrack hosts
+  <accent>completion </> Generate the autocompletion script for the specified shell
+  <accent>help       </> Help about any command
+  <accent>issue      </> Work with YouTrack issues
+  <accent>upgrade    </> Upgrade ytrack to the latest release
+  <accent>version    </> Show ytrack version information
+  <accent>work-item  </> Track time spent on issues
+
+<bold>Flags:</>
+      <accent>--debug</>       Log HTTP requests to stderr with credentials redacted
+  <accent>-h, --help</>        help for ytrack
+      <accent>--host</><dim> host</>   YouTrack host or service URL to use
+      <accent>--no-color</>    Disable color output
+  <accent>-v, --version</>     version for ytrack
+
+<dim>Use "ytrack [command] --help" for more information about a command.</>

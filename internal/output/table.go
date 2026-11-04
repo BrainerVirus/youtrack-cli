@@ -22,7 +22,7 @@ func NewTable(ios *iostreams.IOStreams, headers ...string) *Table {
 		for i, h := range headers {
 			upper[i] = strings.ToUpper(h)
 		}
-		tp.AddHeader(upper)
+		tp.AddHeader(upper, tableprinter.WithColor(ios.ColorScheme().Bold))
 	}
 	return &Table{tp}
 }
@@ -32,6 +32,25 @@ func NewTable(ios *iostreams.IOStreams, headers ...string) *Table {
 func (t *Table) Row(fields ...string) {
 	for _, f := range fields {
 		t.AddField(SanitizeCell(f))
+	}
+	t.EndRow()
+}
+
+// Cell is a table field with an optional style, applied after the field is
+// sanitized and fitted to its column (so escapes never count toward widths).
+type Cell struct {
+	Text  string
+	Style func(string) string
+}
+
+// StyledRow adds one row of cells, each sanitized like Row.
+func (t *Table) StyledRow(cells ...Cell) {
+	for _, c := range cells {
+		if c.Style != nil {
+			t.AddField(SanitizeCell(c.Text), tableprinter.WithColor(c.Style))
+		} else {
+			t.AddField(SanitizeCell(c.Text))
+		}
 	}
 	t.EndRow()
 }

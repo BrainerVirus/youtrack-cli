@@ -125,7 +125,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	fmt.Fprintln(ios.Out, res.ID)
 	if ios.IsStderrTTY() {
-		fmt.Fprintf(ios.ErrOut, "Logged %s on %s for %s: %s\n", res.Presentation(), res.Issue, res.Day(), issueshared.IssueURL(host, res.Issue))
+		fmt.Fprintf(ios.ErrOut, "%s Logged %s on %s for %s: %s\n", ios.ErrColorScheme().SuccessIcon(), res.Presentation(), res.Issue, res.Day(), issueshared.IssueURL(host, res.Issue))
 	}
 	return nil
 }

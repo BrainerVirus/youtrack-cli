@@ -1,0 +1,2 @@
+<red>ytrack: invalid issue "NOT AN ID": expected an ID such as APP-123 or an issue URL</>
+Run '<bold>ytrack issue view --help</>' for usage.

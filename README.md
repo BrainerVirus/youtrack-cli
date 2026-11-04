@@ -184,8 +184,13 @@ refused. Plain-http hosts other than localhost trigger a warning. See
 
 ## Scripting
 
-- Data goes to stdout; errors and prompts to stderr. No color or prompts when
-  output is not a terminal (`NO_COLOR` also disables color).
+- Data goes to stdout; errors and prompts to stderr. On a terminal, help and
+  output are colored: issue IDs, commands and flags in an accent color,
+  summaries and headings bold, states and priorities by meaning (resolved
+  green, open or in progress yellow, critical red), errors red with the
+  command to run in bold. Color is off when the stream is not a terminal,
+  under `NO_COLOR`, `TERM=dumb`, `--json` or the `--no-color` flag; no
+  prompts when output is not a terminal.
 - `--json <fields>` (where offered), `--jq` and `--template` follow `gh`.
 - Exit codes: 0 success, 1 failure (including usage errors), 2 cancelled,
   4 authentication required.

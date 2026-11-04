@@ -124,20 +124,28 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		return nil
 	}
 	tbl := output.NewTable(ios, "id", "date", "duration", "author", "type", "text")
+	cs := ios.ColorScheme()
 	total := 0
 	for _, w := range out {
 		login := ""
 		if w.Author != nil {
 			login = w.Author.Login
 		}
-		tbl.Row(w.ID, w.Day(), w.Presentation(), login, w.Type, w.Text)
+		tbl.StyledRow(
+			output.Cell{Text: w.ID, Style: cs.Dim},
+			output.Cell{Text: w.Day(), Style: cs.Accent},
+			output.Cell{Text: w.Presentation(), Style: cs.Bold},
+			output.Cell{Text: login},
+			output.Cell{Text: w.Type, Style: cs.Dim},
+			output.Cell{Text: w.Text},
+		)
 		total += w.Minutes
 	}
 	if err := tbl.Render(); err != nil {
 		return err
 	}
 	if ios.IsStdoutTTY() {
-		fmt.Fprintf(ios.ErrOut, "\n%d work items, %s in total\n", len(out), worktime.FormatMinutes(total))
+		fmt.Fprintf(ios.ErrOut, "\n%d work items, %s in total\n", len(out), ios.ErrColorScheme().Bold(worktime.FormatMinutes(total)))
 	}
 	return nil
 }

@@ -70,9 +70,9 @@ https://www.jetbrains.com/help/youtrack/cloud/commands.html.
 
 --dry-run asks YouTrack how it parses the command for these issues and prints
 each part without changing anything; it exits 1 when a part is not
-understood. --comment adds a comment along with the change; the comment is visible to
-everyone who can see the issue. --silent
-applies the change without sending notifications.
+understood. --comment adds a comment along with the change; the comment is
+visible to everyone who can see the issue. --silent applies the change
+without sending notifications.
 
 An issue URL must be on a logged-in host, or named with --host; issue URLs
 in one call must share a host.
@@ -168,7 +168,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			fmt.Fprintf(ios.Out, "%s\t%s\n", t.Issue, t.URL)
 		}
 		if ios.IsStderrTTY() {
-			fmt.Fprintf(ios.ErrOut, "Applied %q to %s\n", output.SanitizeCell(opts.query), idList)
+			fmt.Fprintf(ios.ErrOut, "%s Applied %q to %s\n", ios.ErrColorScheme().SuccessIcon(), output.SanitizeCell(opts.query), idList)
 		}
 	}
 	if opts.dryRun {

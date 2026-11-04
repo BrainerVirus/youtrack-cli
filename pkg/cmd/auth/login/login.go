@@ -124,7 +124,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		return err
 	}
 
-	ok, _ := ios.Symbols()
+	ok := ios.ErrColorScheme().SuccessIcon()
 	name := user.Login
 	if user.FullName != "" && user.FullName != user.Login {
 		name = fmt.Sprintf("%s (%s)", user.Login, user.FullName)

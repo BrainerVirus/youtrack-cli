@@ -58,7 +58,7 @@ otherwise choose from a list (interactive terminals only).`,
 			if err := cfg.Save(); err != nil {
 				return err
 			}
-			ok, _ := f.IOStreams.Symbols()
+			ok := f.IOStreams.ErrColorScheme().SuccessIcon()
 			fmt.Fprintf(f.IOStreams.ErrOut, "%s Default host is now %s\n", ok, target)
 			return nil
 		},

@@ -89,7 +89,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		return shared.NotFound(err, opts.ref.ID, opts.itemID, host)
 	}
 	if f.IOStreams.IsStderrTTY() {
-		fmt.Fprintf(f.IOStreams.ErrOut, "Deleted work item %s from %s\n", opts.itemID, opts.ref.ID)
+		fmt.Fprintf(f.IOStreams.ErrOut, "%s Deleted work item %s from %s\n", f.IOStreams.ErrColorScheme().SuccessIcon(), opts.itemID, opts.ref.ID)
 	}
 	return nil
 }

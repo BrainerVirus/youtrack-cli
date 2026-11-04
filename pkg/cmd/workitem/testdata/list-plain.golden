@@ -1,0 +1,7 @@
+ID     DATE        DURATION  AUTHOR  TYPE         TEXT
+115-1  2026-09-30  1h 30m    jdoe    Development  Traced the lost return URL
+115-2  2026-10-01  30m       jroe                 Meetings
+115-3  2026-10-05  1d        jdoe    Testing      
+--- stderr
+
+3 work items, 10h in total

@@ -1,0 +1,44 @@
+An unofficial command-line interface for JetBrains YouTrack.
+
+Environment:
+  YTRACK_HOST         YouTrack service URL or host to use instead of the default host
+  YTRACK_TOKEN        token to use instead of stored credentials (applies to the active host)
+  YTRACK_DEBUG        set to 1 to log HTTP requests to stderr (credentials redacted)
+  YTRACK_CONFIG_DIR   configuration directory (default ~/.config/ytrack)
+  YTRACK_BROWSER      command used to open URLs
+  YTRACK_EDITOR       editor for writing text (then GIT_EDITOR, VISUAL, EDITOR)
+  YTRACK_NO_UPDATE_NOTIFIER  set to 1 to turn off the daily new-release notice
+  NO_COLOR            disable color output (as do --no-color and TERM=dumb)
+
+Exit codes:
+  0 success, 1 failure (including usage errors), 2 cancelled, 4 authentication required
+
+Usage:
+  ytrack [command]
+
+Examples:
+  $ ytrack auth login
+  $ ytrack issue list -q 'project: APP for: me #Unresolved'
+  $ ytrack issue view APP-123 --comments
+  $ ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
+  $ ytrack api /users/me --fields login,fullName
+  $ ytrack api /issues --paginate --fields idReadable,summary --jq '.[].idReadable'
+
+Available Commands:
+  api         Make an authenticated YouTrack REST API request
+  auth        Authenticate ytrack with YouTrack hosts
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  issue       Work with YouTrack issues
+  upgrade     Upgrade ytrack to the latest release
+  version     Show ytrack version information
+  work-item   Track time spent on issues
+
+Flags:
+      --debug       Log HTTP requests to stderr with credentials redacted
+  -h, --help        help for ytrack
+      --host host   YouTrack host or service URL to use
+      --no-color    Disable color output
+  -v, --version     version for ytrack
+
+Use "ytrack [command] --help" for more information about a command.

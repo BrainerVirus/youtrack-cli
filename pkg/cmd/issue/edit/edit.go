@@ -194,7 +194,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	fmt.Fprintf(ios.Out, "%s\t%s\n", issue.IDReadable, shared.IssueURL(host, issue.IDReadable))
 	if ios.IsStderrTTY() {
-		fmt.Fprintf(ios.ErrOut, "Updated %s (%s): %s\n", issue.IDReadable, output.SanitizeCell(strings.Join(changed, ", ")), output.SanitizeCell(issue.Summary))
+		fmt.Fprintf(ios.ErrOut, "%s Updated %s (%s): %s\n", ios.ErrColorScheme().SuccessIcon(), issue.IDReadable, output.SanitizeCell(strings.Join(changed, ", ")), output.SanitizeCell(issue.Summary))
 	}
 	return nil
 }
