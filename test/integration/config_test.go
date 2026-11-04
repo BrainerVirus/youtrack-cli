@@ -11,11 +11,11 @@ import (
 
 // Environment variables the suite reads.
 const (
-	envEnable  = "YTRACK_IT"         // "1" runs the suite
-	envProject = "YTRACK_IT_PROJECT" // short name of the scratch project (required)
-	envHost    = "YTRACK_IT_HOST"    // overrides the logged-in default host
-	envToken   = "YTRACK_IT_TOKEN"   // overrides the stored token for that host
-	envBin     = "YTRACK_IT_BIN"     // a prebuilt ytrack binary (make it sets it)
+	envEnable  = "YTRACK_IT"            // "1" runs the suite
+	envProject = "YTRACK_IT_PROJECT"    // short name of the scratch project (required)
+	envHost    = "YTRACK_IT_HOST"       // overrides the logged-in default host
+	envToken   = "YTRACK_IT_TOKEN"      // overrides the stored token for that host
+	envBin     = "YTRACK_IT_BIN"        // a prebuilt ytrack binary (make it sets it)
 	envAllow   = "YTRACK_IT_ALLOW_HOST" // allows one host outside *.youtrack.cloud
 )
 
