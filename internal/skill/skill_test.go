@@ -172,6 +172,30 @@ func TestInstall(t *testing.T) {
 		})
 	}
 
+	t.Run("given the new copy fails to move into place, it restores the earlier skill", func(t *testing.T) {
+		root := t.TempDir()
+		dir, err := skill.Install(root, "1.0.0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := snapshot(t, dir)
+		injected := errors.New("injected rename failure")
+		restore := skill.SetRename(func(oldpath, newpath string) error {
+			if strings.HasPrefix(filepath.Base(oldpath), ".ytrack-skill-new-") {
+				return injected
+			}
+			return os.Rename(oldpath, newpath)
+		})
+		defer restore()
+		if _, err := skill.Install(root, "1.1.0"); !errors.Is(err, injected) {
+			t.Fatalf("err = %v, want the injected failure", err)
+		}
+		if after := snapshot(t, dir); after != before {
+			t.Errorf("the earlier skill was not restored:\nbefore %s\nafter  %s", before, after)
+		}
+		assertNoStaging(t, root)
+	})
+
 	t.Run("given a file named ytrack, it refuses", func(t *testing.T) {
 		root := t.TempDir()
 		writeFile(t, filepath.Join(root, "ytrack"), "a file\n")

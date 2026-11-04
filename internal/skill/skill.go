@@ -95,6 +95,9 @@ func splitFrontmatter(b []byte) (front, body []byte, ok bool) {
 	return nil, nil, false
 }
 
+// rename is os.Rename; tests swap it to fail a step of Install.
+var rename = os.Rename
+
 // ForeignError reports a skill directory that Install will not replace
 // because it does not hold the ytrack skill.
 type ForeignError struct{ Dir string }
@@ -140,7 +143,7 @@ func Install(root, version string) (string, error) {
 		return "", err
 	}
 	if !exists {
-		return path, os.Rename(stage, dir)
+		return path, rename(stage, dir)
 	}
 
 	old, err := os.MkdirTemp(parent, ".ytrack-skill-old-")
@@ -151,11 +154,11 @@ func Install(root, version string) (string, error) {
 	if err := os.Remove(old); err != nil {
 		return "", err
 	}
-	if err := os.Rename(dir, old); err != nil {
+	if err := rename(dir, old); err != nil {
 		return "", err
 	}
-	if err := os.Rename(stage, dir); err != nil {
-		_ = os.Rename(old, dir)
+	if err := rename(stage, dir); err != nil {
+		_ = rename(old, dir)
 		return "", err
 	}
 	return path, os.RemoveAll(old)
