@@ -137,19 +137,46 @@ func TestAPIRequests(t *testing.T) {
 		}
 	})
 
-	t.Run("given --input, it sends the file as the body", func(t *testing.T) {
+	t.Run("given --input, it sends the file as a JSON body", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
 		file := filepath.Join(t.TempDir(), "issue.json")
 		_ = os.WriteFile(file, []byte(`{"summary":"from file"}`), 0o600)
-		if code := env.Run("api", "/issues", "--input", file, "-H", "Content-Type: application/json"); code != 0 {
+		if code := env.Run("api", "-X", "POST", "/issues", "--input", file); code != 0 {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
 		}
 		req := yt.LastRequest(t)
 		if req.Method != http.MethodPost || req.Body != `{"summary":"from file"}` {
 			t.Errorf("got %s %q", req.Method, req.Body)
 		}
+		if got := req.Header.Get("Content-Type"); got != "application/json" {
+			t.Errorf("Content-Type = %q, want application/json", got)
+		}
 		if env.Stdout.String() != `{"summary":"from file"}` {
 			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given --input and -H Content-Type, the header wins", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		file := filepath.Join(t.TempDir(), "note.txt")
+		_ = os.WriteFile(file, []byte("plain"), 0o600)
+		_ = env.Run("api", "-X", "POST", "/issues", "--input", file, "-H", "Content-Type: text/plain")
+		req := yt.LastRequest(t)
+		if got := req.Header.Values("Content-Type"); len(got) != 1 || got[0] != "text/plain" {
+			t.Errorf("Content-Type = %q, want only text/plain", got)
+		}
+	})
+
+	t.Run("given -f with -X POST, it sends a JSON body with a JSON content type", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		_ = env.Run("api", "-X", "POST", "/admin/projects", "-f", "name=Demo", "-F", "leader[login]=jdoe")
+		req := yt.LastRequest(t)
+		if got := req.Header.Get("Content-Type"); got != "application/json" {
+			t.Errorf("Content-Type = %q, want application/json", got)
+		}
+		var body map[string]any
+		if err := json.Unmarshal([]byte(req.Body), &body); err != nil || body["name"] != "Demo" {
+			t.Errorf("body %q: %v", req.Body, err)
 		}
 	})
 
