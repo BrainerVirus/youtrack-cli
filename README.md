@@ -5,7 +5,8 @@ An unofficial command-line interface for JetBrains YouTrack, in the style of
 
 Status: early. This release covers authentication, the raw `ytrack api`
 command, reading, creating, editing and commenting on issues, YouTrack
-commands on one or many issues, and time tracking (work items).
+commands on one or many issues, time tracking (work items), and an
+[agent skill](#agent-skill) that teaches coding agents to use ytrack.
 
 ## Install
 
@@ -216,6 +217,48 @@ profile line. Otherwise run `ytrack completion bash|zsh|fish|powershell`.
 Completion suggests commands, flags, `--json` fields, issue IDs (with their
 summaries) and `--project` names. See
 [docs/install.md](docs/install.md#shell-completions).
+
+## Agent skill
+
+No coding agent was trained on ytrack, so agents guess `gh` habits
+(`--hostname` instead of `--host`, `--title` instead of `--summary`) or
+scrape the YouTrack web page. The `ytrack` [agent
+skill](skills/ytrack/SKILL.md) teaches them the real commands: hosts and auth,
+issue queries, create, edit and comment, YouTrack commands (`--dry-run` first,
+locale-proof field names), work items, `--json`/`--jq`, `ytrack api` as the
+escape hatch, and what to tell you on exit code 4. It never has an agent
+handle your token.
+
+With [skills.sh](https://skills.sh), for the agents it supports:
+
+```sh
+npx skills add BrainerVirus/youtrack-cli
+```
+
+Or from the binary, which installs the skill matching its own version
+(`metadata.version` in `SKILL.md`); rerun it after `ytrack upgrade`:
+
+```sh
+ytrack skill install --dir ~/.claude/skills          # Claude Code
+ytrack skill install --dir ~/.codex/skills           # Codex
+ytrack skill install --dir ~/.cursor/skills          # Cursor
+ytrack skill install --dir ~/.config/opencode/skills # OpenCode
+ytrack skill install --dir ~/.pi/agent/skills        # Pi
+ytrack skill install --dir ~/.agents/skills          # agents that read ~/.agents/skills
+ytrack skill install --dir .claude/skills --json     # one project; prints {"path", "version"}
+ytrack skill print                                   # SKILL.md on stdout
+```
+
+`ytrack skill install` writes `<dir>/ytrack/SKILL.md` and `references/`,
+replacing an earlier ytrack skill there by renaming the new copy into place;
+it refuses a `ytrack` directory that holds anything else and leaves it
+untouched. Both commands work offline and logged out.
+
+[Workit](https://github.com/BrainerVirus/workit) installs and updates the
+skill for the agents it sets up, so with Workit you need neither command.
+
+A test checks every `ytrack` command and flag the skill names against the
+command tree, so the skill cannot drift from the binary.
 
 ## Development
 
