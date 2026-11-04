@@ -8,9 +8,9 @@ token to the active host (or `--host`), so you never handle a token.
 ```sh
 ytrack api /users/me --fields login,fullName
 ytrack api /issues/APP-123 --fields 'idReadable,summary,customFields(name,value(name))'
-ytrack api /issues -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
+ytrack api /issues -X GET -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
 ytrack api /admin/projects --fields shortName,name --paginate
-ytrack api /issues/APP-123/comments -f text='Posted through the API'
+ytrack api /issues/APP-123/comments -f text='Posted through the API'   # POST: adds a comment
 ytrack api /issues/APP-123/comments/4-17 -X DELETE
 ytrack api /commands --input command.json
 ```
@@ -22,10 +22,12 @@ ytrack api /commands --input command.json
 - `-f key=value` adds a string parameter, `-F key=value` a typed one (`true`,
   `false`, `null` and integers become JSON; `@file` reads a file). Keys nest:
   `-F 'project[id]=0-0'`.
-- GET sends parameters in the query string. Any parameter or `--input` makes
-  the request a POST with a JSON body unless `-X` names a method;
-  `Content-Type: application/json` is added for you.
-- `--paginate` follows `$skip`/`$top` and prints one JSON array (GET only).
+- Any `-f`, `-F` or `--input` makes the request a POST with a JSON body
+  unless `-X` names a method; `Content-Type: application/json` is added for
+  you. A POST to `/issues` creates an issue, so a read with parameters always
+  needs `-X GET`, which sends them in the query string.
+- `--paginate` follows `$skip`/`$top` and prints one JSON array. It works with
+  GET only: with `-f`/`-F`, pass `-X GET`.
 - `--jq '<expr>'` filters the response; it does not need `--json` here.
 - `--include` prints the status line and headers before the body.
 

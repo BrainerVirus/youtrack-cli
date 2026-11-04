@@ -172,14 +172,16 @@ terminal and needs `--yes` otherwise.
 
 ```sh
 ytrack api /users/me --fields login,fullName
-ytrack api /issues -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
+ytrack api /issues -X GET -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
 ytrack api /issues --fields idReadable --jq '.[].idReadable'
 ytrack api /issues -F 'project[id]=0-0' -f summary='New issue'
 ytrack api /commands --input command.json
 ```
 
-`/issues` and `/api/issues` are the same path. `--paginate` pages with
-`$skip`/`$top` and prints one JSON array. The token is sent only to the
+`/issues` and `/api/issues` are the same path. `-f`, `-F` and `--input`
+make the request a POST unless you pass `-X GET`, and a POST to `/issues`
+creates an issue, so reads with parameters need `-X GET`. `--paginate` (GET
+only) pages with `$skip`/`$top` and prints one JSON array. The token is sent only to the
 configured service URL: redirects to other hosts and from https to http are
 refused. Plain-http hosts other than localhost trigger a warning. See
 `ytrack api --help`.

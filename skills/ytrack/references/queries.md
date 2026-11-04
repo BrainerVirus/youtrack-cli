@@ -1,6 +1,6 @@
 # YouTrack search queries
 
-`ytrack issue list -q '<query>'` and `ytrack api /issues -f query='<query>'`
+`ytrack issue list -q '<query>'` and `ytrack api /issues -X GET -f query='<query>'`
 send the query to YouTrack unchanged. Quote the whole query in single quotes:
 it contains spaces, `#` and braces.
 

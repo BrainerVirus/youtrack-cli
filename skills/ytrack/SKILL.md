@@ -22,10 +22,14 @@ ytrack auth switch --host acme.youtrack.cloud    # change the default host
 
 - Pick the host with the global `--host` flag on any command. There is no
   hostname flag: `gh auth status --hostname` habits fail here.
-- Which host a command uses, first match wins: `--host`, the host of an issue
-  URL you pass, `YTRACK_HOST`, the default host from `ytrack auth switch`.
-  With more than one logged-in host, run `ytrack auth status` first and pass
-  `--host` or the full issue URL so you never read the wrong instance.
+- A command uses `--host`, else `YTRACK_HOST`, else the default host from
+  `ytrack auth switch`. With more than one logged-in host, run
+  `ytrack auth status` first and pass `--host` so you never read the wrong
+  instance.
+- An issue URL selects its own host, but when `--host` or `YTRACK_HOST`
+  names another host the command fails with exit 1 ("the issue URL is on X
+  but --host is Y"). For a URL from another host, drop `--host` and unset
+  `YTRACK_HOST`, or pass the URL's host as `--host`.
 - Tokens are the user's. Never ask for one, never put one in a command line
   or an environment variable, never run `ytrack auth token`. If no host is
   logged in, ask the user to run `ytrack auth login` themselves.
@@ -37,7 +41,9 @@ required. On exit 4, stop and tell the user that ytrack is not logged in to
 that host or its token was rejected, and that they should run
 `ytrack auth login --host <host>` themselves. Do not retry with another host
 and do not fall back to the web page. On exit 1, read stderr: it names the
-bad flag or value and the command to run.
+bad flag or value and the command to run. `ytrack auth status` itself exits
+4 when any logged-in host has no token or a rejected one, even if the active
+host works.
 
 ## Read issues
 
@@ -59,7 +65,8 @@ ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state
 
 ```sh
 ytrack issue create --project APP --summary 'Login fails on Safari' --description-file notes.md
-ytrack issue create -p APP -s 'Crash on start' --field Type=Bug --field Priority=Critical --assignee me
+ytrack issue create -p APP -s 'Crash on start' --field Type=Bug --field Priority=Critical --assignee me --tag backend
+ytrack issue edit APP-123 --field 'Estimation=2d'     # period field: a duration such as 1w 2d 4h
 ytrack issue edit APP-123 --summary 'New title' --field 'State=In Progress' --add-tag backend
 ytrack issue edit APP-123 --assignee ''             # unassign
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
@@ -69,6 +76,10 @@ ytrack issue comment APP-123 --body-file reply.md   # long or multi-line text
 - An issue has a `--summary` and a `--description`; a comment has a `--body`.
 - `--field 'Name=Value'` sets a custom field by its project field name;
   `ytrack issue view APP-123 --json customFields` lists the names and values.
+  Period fields (Estimation, Spent time) take a duration like `1w 2d 4h`.
+- `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tags.
+- `--body-file -` (comment) and `--description-file -` (create, edit) read
+  standard input, e.g. text you pipe in.
 - Without a terminal, `issue create` needs `--project` and `--summary`. Never
   pass `--editor` (it waits for a human).
 
@@ -121,14 +132,15 @@ ytrack work-item list APP-123 --json duration --jq 'map(.duration.minutes) | add
 
 ```sh
 ytrack api /users/me --fields login,fullName
-ytrack api /issues -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
+ytrack api /issues -X GET -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
 ytrack api /issues/APP-123/links --fields 'linkType(name),direction,issues(idReadable)'
 ```
 
 `ytrack api` sends the stored token for you. YouTrack returns only the
-attributes named in `--fields`. Parameters switch the method to POST and go
-in a JSON body; `Content-Type: application/json` is set for you. Details:
-[references/api.md](references/api.md).
+attributes named in `--fields`. Any `-f`, `-F` or `--input` makes the
+request a POST with a JSON body unless you pass `-X GET`; a POST to `/issues`
+creates an issue. Every read with parameters needs `-X GET` (`--paginate`
+refuses POST). Details: [references/api.md](references/api.md).
 
 ## gh habits that are wrong here
 

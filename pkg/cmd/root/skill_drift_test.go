@@ -3,7 +3,10 @@ package root_test
 import (
 	"fmt"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -70,6 +73,69 @@ func TestSkillDriftCatchesBogusNames(t *testing.T) {
 	})
 }
 
+func TestAPIExamplesReadWithGET(t *testing.T) {
+	tree := commandTree(t)
+	api, _, err := tree.Find([]string{"api"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// "  $ ytrack api ..." example lines, as code snippets.
+	var help []string
+	for _, l := range strings.Split(api.Example, "\n") {
+		if _, cmd, ok := strings.Cut(l, "$ "); ok {
+			help = append(help, cmd)
+		}
+	}
+	readme, err := os.ReadFile(filepath.Join("..", "..", "..", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sources := map[string][]string{"api --help": help, "README.md": codeSnippets(string(readme))}
+	_ = fs.WalkDir(skill.Files(), ".", func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			b, _ := fs.ReadFile(skill.Files(), p)
+			sources["skill "+p] = codeSnippets(string(b))
+		}
+		return err
+	})
+	total := 0
+	for name, snippets := range sources {
+		calls := apiInvocations(snippets)
+		total += len(calls)
+		for _, c := range calls {
+			if p := apiMisuse(c); p != "" {
+				t.Errorf("%s: %s", name, p)
+			}
+		}
+	}
+	if total < 10 {
+		t.Errorf("found only %d ytrack api examples; the scanner is broken", total)
+	}
+
+	for line, want := range map[string]string{
+		"ytrack api /issues -f query='project: APP' --paginate":    "ytrack api /issues: --paginate without -X GET is a POST, which --paginate refuses",
+		"ytrack api /issues -f query='project: APP'":               `ytrack api /issues: read parameter "query" without -X GET is sent as a POST`,
+		"ytrack api /api/issues -F '$top=5'":                       `ytrack api /api/issues: read parameter "$top" without -X GET is sent as a POST`,
+		"ytrack api issues -f 'project[id]=0-0'":                   "ytrack api issues: parameters without -X GET POST to /issues, which creates an issue",
+		"ytrack api /admin/projects --input q.json --paginate":     "ytrack api /admin/projects: --paginate without -X GET is a POST, which --paginate refuses",
+		"ytrack api /issues -X GET -f query='x' --paginate":        "",
+		"ytrack api /issues --method=get -f query='x'":             "",
+		"ytrack api /issues -F 'project[id]=0-0' -f summary='New'": "",
+		"ytrack api /issues/APP-1/comments -f text='hi'":           "",
+		"ytrack api /issues/APP-1 -X DELETE":                       "",
+	} {
+		t.Run("given "+line, func(t *testing.T) {
+			calls := apiInvocations([]string{line})
+			if len(calls) != 1 {
+				t.Fatalf("calls = %q", calls)
+			}
+			if got := apiMisuse(calls[0]); got != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
+		})
+	}
+}
+
 func commandTree(t *testing.T) *cobra.Command {
 	t.Helper()
 	cmd := root.NewCmdRoot(cmdtest.New(t).Factory)
@@ -90,17 +156,9 @@ var (
 // returns the number of invocations and the problems found. Code that starts
 // with gh is a gh command and is skipped.
 func skillDrift(tree *cobra.Command, text string) (int, []string) {
-	text = strings.ReplaceAll(text, "\r\n", "\n")
-	var snippets []string
-	for _, m := range fence.FindAllStringSubmatch(text, -1) {
-		snippets = append(snippets, strings.Split(m[1], "\n")...)
-	}
-	for _, m := range inlineCode.FindAllStringSubmatch(fence.ReplaceAllString(text, ""), -1) {
-		snippets = append(snippets, m[1])
-	}
 	invocations := 0
 	var problems []string
-	for _, s := range snippets {
+	for _, s := range codeSnippets(text) {
 		words := shellWords(s)
 		if len(words) == 0 || words[0] == "gh" {
 			continue
@@ -123,8 +181,113 @@ func skillDrift(tree *cobra.Command, text string) (int, []string) {
 		}
 		invocations++
 		problems = append(problems, checkInvocation(tree, words[start+1:])...)
+		if p := apiMisuse(words[start+1:]); p != "" {
+			problems = append(problems, p)
+		}
 	}
 	return invocations, problems
+}
+
+// codeSnippets returns the lines of a markdown text's fenced blocks and its
+// inline code spans.
+func codeSnippets(text string) []string {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	var snippets []string
+	for _, m := range fence.FindAllStringSubmatch(text, -1) {
+		snippets = append(snippets, strings.Split(m[1], "\n")...)
+	}
+	for _, m := range inlineCode.FindAllStringSubmatch(fence.ReplaceAllString(text, ""), -1) {
+		snippets = append(snippets, m[1])
+	}
+	return snippets
+}
+
+// apiInvocations returns the arguments after "ytrack" of every ytrack api
+// call in snippets.
+func apiInvocations(snippets []string) [][]string {
+	var calls [][]string
+	for _, s := range snippets {
+		words := shellWords(s)
+		for i, w := range words {
+			if w == "ytrack" {
+				if i+1 < len(words) && words[i+1] == "api" {
+					calls = append(calls, words[i+1:])
+				}
+				break
+			}
+		}
+	}
+	return calls
+}
+
+// Query parameters that only make sense on a read.
+var readParams = map[string]bool{"query": true, "fields": true, "$top": true, "$skip": true, "customFields": true}
+
+// apiMisuse reports a ytrack api call (args start at "api") that means to
+// read but would write: -f, -F and --input switch the method to POST unless
+// -X names one, --paginate refuses anything but GET, and a POST to /issues
+// creates an issue.
+func apiMisuse(args []string) string {
+	if len(args) == 0 || args[0] != "api" {
+		return ""
+	}
+	var path, method string
+	var keys []string
+	params, paginate := false, false
+	for i := 1; i < len(args); i++ {
+		w := args[i]
+		if !strings.HasPrefix(w, "-") {
+			if path == "" {
+				path = w
+			}
+			continue
+		}
+		name, val, inline := strings.Cut(w, "=")
+		value := func() string {
+			if inline {
+				return val
+			}
+			if i+1 < len(args) {
+				i++
+				return args[i]
+			}
+			return ""
+		}
+		switch name {
+		case "-f", "--raw-field", "-F", "--field":
+			params = true
+			key, _, _ := strings.Cut(value(), "=")
+			keys = append(keys, key)
+		case "--input":
+			params = true
+			value()
+		case "-X", "--method":
+			method = strings.ToUpper(value())
+		case "--paginate":
+			paginate = true
+		case "--fields", "--jq", "-q", "--template", "-t", "-H", "--header":
+			value()
+		}
+	}
+	call := "ytrack api " + path
+	if method == "GET" || (!params && method == "") {
+		return ""
+	}
+	if paginate {
+		return call + ": --paginate without -X GET is a POST, which --paginate refuses"
+	}
+	if method != "" {
+		return "" // an explicit write
+	}
+	for _, k := range keys {
+		if readParams[k] {
+			return fmt.Sprintf("%s: read parameter %q without -X GET is sent as a POST", call, k)
+		}
+	}
+	if p := "/" + strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(path, "/"), "api/"), "/"); p == "/issues" && !slices.Contains(keys, "summary") {
+		return call + ": parameters without -X GET POST to /issues, which creates an issue"
+	}
+	return ""
 }
 
 // checkInvocation resolves the command path in args, then checks each flag
@@ -241,4 +404,31 @@ func truncateAtRedirect(words []string) []string {
 		}
 	}
 	return words
+}
+
+// The skill tells agents that an issue URL on another host than --host or
+// YTRACK_HOST is refused, quoting the error; keep both true.
+func TestSkillHostConflictClaim(t *testing.T) {
+	b, err := fs.ReadFile(skill.Files(), "SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"the issue URL is on X`) {
+		t.Fatal("SKILL.md no longer quotes the host-conflict error")
+	}
+	for name, setup := range map[string]func(env *cmdtest.Env) []string{
+		"--host":      func(*cmdtest.Env) []string { return []string{"--host", "b.example.com"} },
+		"YTRACK_HOST": func(*cmdtest.Env) []string { t.Setenv("YTRACK_HOST", "b.example.com"); return nil },
+	} {
+		t.Run("given "+name+" on another host than the issue URL, it exits 1 with the quoted error", func(t *testing.T) {
+			env := cmdtest.New(t)
+			args := append([]string{"issue", "view", "https://a.example.com/issue/APP-1"}, setup(env)...)
+			if code := env.Run(args...); code != 1 {
+				t.Fatalf("exit %d, want 1: %s", code, env.Stderr)
+			}
+			if want := "the issue URL is on a.example.com but " + name + " is b.example.com"; !strings.Contains(env.Stderr.String(), want) {
+				t.Errorf("stderr = %q, want %q", env.Stderr, want)
+			}
+		})
+	}
 }
