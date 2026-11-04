@@ -30,6 +30,7 @@ An unofficial command-line interface for JetBrains YouTrack.
   <accent>completion </> Generate the autocompletion script for the specified shell
   <accent>help       </> Help about any command
   <accent>issue      </> Work with YouTrack issues
+  <accent>skill      </> Print or install the ytrack agent skill
   <accent>upgrade    </> Upgrade ytrack to the latest release
   <accent>version    </> Show ytrack version information
   <accent>work-item  </> Track time spent on issues

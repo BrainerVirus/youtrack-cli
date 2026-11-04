@@ -30,6 +30,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   issue       Work with YouTrack issues
+  skill       Print or install the ytrack agent skill
   upgrade     Upgrade ytrack to the latest release
   version     Show ytrack version information
   work-item   Track time spent on issues

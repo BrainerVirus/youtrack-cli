@@ -61,21 +61,22 @@ YouTrack returns only the attributes named in the fields query parameter; use
 true, false, null and integers become JSON values, and "@file" reads the value
 from a file ("@-" from stdin). Keys nest: -F 'project[id]=0-0'. Parameters go
 in the query string for GET and in a JSON body otherwise. Passing parameters
-switches the default method from GET to POST.
+switches the default method from GET to POST, so a read with parameters needs
+-X GET: a POST to /issues creates an issue.
 
 A request with a body (--input, or -f/-F on a method other than GET) is sent
 with "Content-Type: application/json" unless -H sets another Content-Type.
 
---paginate follows YouTrack's $skip/$top paging and prints all items as one
-JSON array (--slurp is accepted for gh compatibility; it is the default). It
-stops at an empty page or at a page shorter than both the requested $top and
-the first page, so a server-side cap on $top does not end paging early. --jq
-and --template apply to the merged array.
+--paginate (GET only) follows YouTrack's $skip/$top paging and prints all
+items as one JSON array (--slurp is accepted for gh compatibility; it is the
+default). It stops at an empty page or at a page shorter than both the
+requested $top and the first page, so a server-side cap on $top does not end
+paging early. --jq and --template apply to the merged array.
 
 With --include, the status line and headers are printed to stdout even when
 the request fails; the error itself still goes to stderr.`,
 		Example: `  $ ytrack api /users/me --fields login,fullName
-  $ ytrack api /issues -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
+  $ ytrack api /issues -X GET -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
   $ ytrack api /issues --fields idReadable --jq '.[].idReadable'
   $ ytrack api /issues -F 'project[id]=0-0' -f summary='New issue'
   $ ytrack api /commands --input command.json`,
