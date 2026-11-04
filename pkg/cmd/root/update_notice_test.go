@@ -178,6 +178,10 @@ func TestUpdateNotice(t *testing.T) {
 			setup: func(*testing.T, *cmdtest.Env) {},
 			args:  []string{"upgrade", "--help"},
 		},
+		"the skill command, which works offline": {
+			setup: func(*testing.T, *cmdtest.Env) {},
+			args:  []string{"skill", "print"},
+		},
 	}
 	for name, tc := range silent {
 		t.Run("given "+name+", it prints nothing and makes no network call", func(t *testing.T) {

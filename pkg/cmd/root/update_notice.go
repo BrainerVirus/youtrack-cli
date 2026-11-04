@@ -29,9 +29,9 @@ var noticeGrace = 300 * time.Millisecond
 // hours per release. The cache is refreshed from GitHub at most once per 24
 // hours (update.CheckDaily) in a background goroutine; a refresh that has not
 // finished noticeGrace after the command is abandoned and retried next run.
-// It never runs in CI, when stderr is not a terminal, under --json, for
-// development builds, or when turned off with YTRACK_NO_UPDATE_NOTIFIER or
-// `check_update: false` in config.yml.
+// It never runs for `ytrack skill` (which works offline), in CI, when stderr
+// is not a terminal, under --json, for development builds, or when turned off
+// with YTRACK_NO_UPDATE_NOTIFIER or `check_update: false` in config.yml.
 type updateNotice struct {
 	f         *cmdutil.Factory
 	statePath string
@@ -74,7 +74,7 @@ func (n *updateNotice) enabled(cmd *cobra.Command) bool {
 	}
 	for c := cmd; c != nil; c = c.Parent() {
 		switch c.Name() {
-		case "upgrade", "completion", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
+		case "upgrade", "skill", "completion", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 			return false
 		}
 	}
