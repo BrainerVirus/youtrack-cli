@@ -1,10 +1,14 @@
-# Keep the SHA-pinned GitHub Actions and the Go modules current.
+# Keep the SHA-pinned GitHub Actions and the Go modules current. A release
+# must be a week old first (cooldown): compromised releases are usually
+# caught and pulled within days.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
@@ -12,6 +16,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       go-modules:
         patterns: ["*"]
