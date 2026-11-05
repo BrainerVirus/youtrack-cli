@@ -23,6 +23,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -53,6 +54,7 @@ jobs:
   goreleaser:
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write # create the GitHub release and upload assets
       id-token: write # cosign keyless: sign the checksums with this workflow's OIDC identity
@@ -76,11 +78,11 @@ jobs:
       # internal/upgrade.ReleaseIdentity and the install scripts pin.
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
-          cosign-release: v3.1.1
+          cosign-release: v3.1.4
       - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           distribution: goreleaser
-          version: "~> v2"
+          version: v2.19.0 # exact, never a range: what signs the release is reviewed
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
