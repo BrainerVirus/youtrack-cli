@@ -24,6 +24,12 @@ vet:
 
 lint: vet
 	golangci-lint run ./...
+	go mod tidy -diff
+	@out="$$(go tool -modfile=tools/go.mod deadcode -test ./...)"; test -z "$$out" || { echo "unreachable code (deadcode):"; echo "$$out"; exit 1; }
+
+# Known vulnerabilities that ytrack's code actually reaches (govulncheck).
+vulncheck:
+	go tool -modfile=tools/go.mod govulncheck ./...
 
 fmt:
 	golangci-lint fmt ./...
