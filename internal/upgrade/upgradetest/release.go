@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -136,12 +137,41 @@ func archive(t *testing.T, name string, bin []byte) []byte {
 
 // Server is a fake GitHub serving the releases API and release downloads
 // over TLS. Use Server.Client() as the HTTP client.
+//
+// Paths: release download URLs are /download/<tag>/<name>; asset API URLs
+// are /repos/BrainerVirus/youtrack-cli/releases/assets/<id>, which with
+// Accept: application/octet-stream redirect to /objects/<tag>/<name> (as
+// GitHub redirects to its object storage).
 type Server struct {
 	*httptest.Server
 	mu       sync.Mutex
 	requests []string
 	releases []*Release
 	assets   map[string]map[string][]byte // tag → name → data
+	ids      []assetKey                   // asset id - 1 → asset
+	handle   func(w http.ResponseWriter, r *http.Request) bool
+}
+
+type assetKey struct{ tag, name string }
+
+// DownloadPath is the path of the release download URL of name.
+func DownloadPath(tag, name string) string { return "/download/" + tag + "/" + name }
+
+// ObjectPath is where the asset API URL of name redirects.
+func ObjectPath(tag, name string) string { return "/objects/" + tag + "/" + name }
+
+// IsAssetAPIPath tells whether path is an asset API URL.
+func IsAssetAPIPath(path string) bool { return strings.HasPrefix(path, releasesAPI+"assets/") }
+
+const releasesAPI = "/repos/BrainerVirus/youtrack-cli/releases/"
+
+// Handle installs h to see every request first; it answers the request by
+// returning true (fault injection), or leaves it to the fake by returning
+// false.
+func (s *Server) Handle(h func(w http.ResponseWriter, r *http.Request) bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.handle = h
 }
 
 // NewServer serves releases; the last one that is not a prerelease is the
@@ -151,6 +181,9 @@ func NewServer(t *testing.T, s *Sigstore, releases ...*Release) *Server {
 	srv := &Server{releases: releases, assets: map[string]map[string][]byte{}}
 	for _, r := range releases {
 		srv.assets[r.Tag()] = r.Assets(t, s)
+		for _, n := range sortedNames(srv.assets[r.Tag()]) {
+			srv.ids = append(srv.ids, assetKey{r.Tag(), n})
+		}
 	}
 	srv.Server = httptest.NewTLSServer(http.HandlerFunc(srv.serve))
 	t.Cleanup(srv.Close)
@@ -167,8 +200,12 @@ func (s *Server) Requests() []string {
 func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	s.requests = append(s.requests, r.URL.Path)
+	h := s.handle
 	s.mu.Unlock()
-	const api = "/repos/BrainerVirus/youtrack-cli/releases/"
+	if h != nil && h(w, r) {
+		return
+	}
+	const api = releasesAPI
 	switch {
 	case r.URL.Path == api+"latest":
 		var latest *Release
@@ -191,8 +228,22 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		http.NotFound(w, r)
-	case strings.HasPrefix(r.URL.Path, "/download/"):
-		tag, name, _ := strings.Cut(strings.TrimPrefix(r.URL.Path, "/download/"), "/")
+	case IsAssetAPIPath(r.URL.Path):
+		id, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, api+"assets/"))
+		if err != nil || id < 1 || id > len(s.ids) {
+			http.NotFound(w, r)
+			return
+		}
+		a := s.ids[id-1]
+		if r.Header.Get("Accept") != "application/octet-stream" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": id, "name": a.name})
+			return
+		}
+		http.Redirect(w, r, s.URL+ObjectPath(a.tag, a.name), http.StatusFound)
+	case strings.HasPrefix(r.URL.Path, "/download/"), strings.HasPrefix(r.URL.Path, "/objects/"):
+		_, rest, _ := strings.Cut(strings.TrimPrefix(r.URL.Path, "/"), "/")
+		tag, name, _ := strings.Cut(rest, "/")
 		data, ok := s.assets[tag][name]
 		if !ok {
 			http.NotFound(w, r)
@@ -205,16 +256,13 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) writeRelease(w http.ResponseWriter, rel *Release) {
-	names := make([]string, 0, len(s.assets[rel.Tag()]))
-	for n := range s.assets[rel.Tag()] {
-		names = append(names, n)
-	}
-	sort.Strings(names)
+	names := sortedNames(s.assets[rel.Tag()])
 	assets := make([]map[string]any, 0, len(names))
 	for _, n := range names {
 		assets = append(assets, map[string]any{
 			"name":                 n,
-			"browser_download_url": s.URL + "/download/" + rel.Tag() + "/" + n,
+			"url":                  s.URL + releasesAPI + "assets/" + strconv.Itoa(s.assetID(rel.Tag(), n)),
+			"browser_download_url": s.URL + DownloadPath(rel.Tag(), n),
 			"size":                 len(s.assets[rel.Tag()][n]),
 		})
 	}
@@ -226,6 +274,24 @@ func (s *Server) writeRelease(w http.ResponseWriter, rel *Release) {
 		"draft":      false,
 		"assets":     assets,
 	})
+}
+
+func (s *Server) assetID(tag, name string) int {
+	for i, a := range s.ids {
+		if a == (assetKey{tag, name}) {
+			return i + 1
+		}
+	}
+	return 0
+}
+
+func sortedNames(files map[string][]byte) []string {
+	names := make([]string, 0, len(files))
+	for n := range files {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // WriteDir lays out releases as a static mirror for the install scripts:
