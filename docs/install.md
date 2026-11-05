@@ -119,6 +119,16 @@ it. On Windows the running `ytrack.exe` is first renamed to `ytrack.exe.old`,
 which the next upgrade deletes. Any failed check refuses the upgrade and
 leaves the installed binary as it was.
 
+Each file is fetched from its release download URL. A network error, HTTP 5xx
+or HTTP 429 is retried twice, after 1 s and 2 s; other HTTP errors are not
+retried. If the download URL still fails, the file is fetched once more
+through the GitHub REST API (the asset's API URL with
+`Accept: application/octet-stream`, with the same retries), because GitHub's
+download CDN can serve a cached error for one asset while the API serves it.
+ytrack then prints `downloaded <file> through the GitHub API instead`. Both
+paths accept only https (no redirect off https) and the same size limits, and
+the signature and checksum checks run on the bytes either way.
+
 If the binary lives in a package manager's directory, `ytrack upgrade` prints
 that manager's command and changes nothing:
 

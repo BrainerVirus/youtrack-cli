@@ -67,7 +67,8 @@ ytrack upgrade --version v0.3.0
 `ytrack upgrade` replaces the running binary only after the release's
 checksums file passes a cosign keyless signature check pinned to this
 repository's release workflow and the archive matches its SHA-256; any
-mismatch refuses and changes nothing. If Homebrew, Scoop or WinGet installed
+mismatch refuses and changes nothing. Failed downloads are retried, then
+fetched through the GitHub API, under the same checks. If Homebrew, Scoop or WinGet installed
 ytrack, it prints that package manager's upgrade command instead.
 
 Once a day, after a command, ytrack tells you on stderr when a newer release
