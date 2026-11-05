@@ -125,9 +125,14 @@ func (d *Downloader) fetch(ctx context.Context, tag string, a *update.Asset, lim
 	if err == nil || !errors.As(err, &hf) || ctx.Err() != nil {
 		return b, err
 	}
-	apiURL, lerr := d.assetAPIURL(ctx, tag, a.Name)
-	if lerr != nil {
-		return nil, fmt.Errorf("%w; GitHub API fallback: %w", err, lerr)
+	// The release JSON already names the asset's API URL; look it up only
+	// when the asset came without one.
+	apiURL := a.APIURL
+	if apiURL == "" {
+		var lerr error
+		if apiURL, lerr = d.assetAPIURL(ctx, tag, a.Name); lerr != nil {
+			return nil, fmt.Errorf("%w; GitHub API fallback: %w", err, lerr)
+		}
 	}
 	b, ferr := d.getRetrying(ctx, a.Name, apiURL, "application/octet-stream", limit)
 	if ferr != nil {

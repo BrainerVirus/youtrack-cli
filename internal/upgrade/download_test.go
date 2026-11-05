@@ -212,6 +212,23 @@ func TestDownloadRetryAndFallback(t *testing.T) {
 		}
 	})
 
+	t.Run("given assets that carry their API URL, the fallback makes no extra release lookup", func(t *testing.T) {
+		fx := newDownloadFixture(t)
+		fx.srv.Handle(failing(upgradetest.DownloadPath(tag, bundleName), http.StatusGatewayTimeout))
+		if _, err := fx.binary(t); err != nil {
+			t.Fatal(err)
+		}
+		// One release read: the version check's own (`Latest`), none from the fallback.
+		if n := fx.count(func(p string) bool {
+			return strings.Contains(p, "/releases/") && !upgradetest.IsAssetAPIPath(p) && !strings.Contains(p, "/download/")
+		}); n != 1 {
+			t.Errorf("release JSON reads = %d, want 1 (requests: %v)", n, fx.srv.Requests())
+		}
+		if n := fx.count(upgradetest.IsAssetAPIPath); n != 1 {
+			t.Errorf("API asset requests = %d, want 1", n)
+		}
+	})
+
 	t.Run("given a fallback redirected off https, it refuses without retrying", func(t *testing.T) {
 		var plainHits atomic.Int32
 		plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
