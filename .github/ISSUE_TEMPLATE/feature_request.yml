@@ -1,0 +1,38 @@
+name: Feature request
+description: Propose a command, flag or behaviour for ytrack
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What do you need to do in YouTrack that ytrack makes hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The command and flags you would expect, ideally in `gh`/`glab` style, with example output
+      placeholder: |
+        ytrack issue list --assignee me --state open
+    validations:
+      required: true
+  - type: input
+    id: api
+    attributes:
+      label: YouTrack REST endpoint, if you know it
+      description: From https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html
+      placeholder: "GET /api/issues?query=…"
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: e.g. `ytrack api` with a raw request today
+  - type: checkboxes
+    id: agent
+    attributes:
+      label: Agent skill
+      options:
+        - label: Coding agents should be able to use this (the bundled agent skill needs an update)
