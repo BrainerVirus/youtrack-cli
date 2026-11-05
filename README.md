@@ -1,5 +1,11 @@
 # ytrack
 
+[![CI](https://github.com/BrainerVirus/youtrack-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/BrainerVirus/youtrack-cli/actions/workflows/ci.yml)
+[![Vulnerabilities](https://github.com/BrainerVirus/youtrack-cli/actions/workflows/vulncheck.yml/badge.svg)](https://github.com/BrainerVirus/youtrack-cli/actions/workflows/vulncheck.yml)
+[![Release](https://img.shields.io/github/v/release/BrainerVirus/youtrack-cli?sort=semver)](https://github.com/BrainerVirus/youtrack-cli/releases/latest)
+[![Go](https://img.shields.io/github/go-mod/go-version/BrainerVirus/youtrack-cli)](go.mod)
+[![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 An unofficial command-line interface for JetBrains YouTrack, in the style of
 `gh` and `glab`. Not affiliated with or endorsed by JetBrains.
 
@@ -297,7 +303,9 @@ The REST surface ytrack relies on is listed by hand in
 Tests check every request against it, and a weekly workflow checks it against
 the live API description.
 
-See [AGENTS.md](AGENTS.md) for layout and conventions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute, [AGENTS.md](AGENTS.md)
+for layout and conventions, and [SECURITY.md](SECURITY.md) to report a
+vulnerability.
 
 ## License
 

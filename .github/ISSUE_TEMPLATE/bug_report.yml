@@ -1,0 +1,68 @@
+name: Bug report
+description: A ytrack command does not work as documented
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Never paste a token, cookie or `Authorization` header.**
+        `--debug` output redacts credentials, but check it for private issue text or hostnames before pasting.
+  - type: input
+    id: version
+    attributes:
+      label: ytrack version
+      description: Output of `ytrack version`
+      placeholder: "ytrack version 0.3.2 (2026-11-05)"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+    validations:
+      required: true
+  - type: input
+    id: install
+    attributes:
+      label: Installed with
+      placeholder: "install.sh / install.ps1 / Homebrew / go install / built from source"
+  - type: dropdown
+    id: youtrack
+    attributes:
+      label: YouTrack
+      options:
+        - YouTrack Cloud (*.youtrack.cloud)
+        - YouTrack Server / self-hosted
+        - Not relevant (install, upgrade, completion)
+    validations:
+      required: true
+  - type: input
+    id: youtrack-version
+    attributes:
+      label: YouTrack version (Server only)
+      placeholder: "2025.3"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: The command you ran
+      description: Replace issue IDs, project names or hostnames you cannot share
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output with `--debug`
+      description: Run the command again with `--debug` (HTTP requests, credentials redacted) and paste the output
+      render: text
