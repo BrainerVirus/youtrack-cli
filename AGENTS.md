@@ -5,7 +5,7 @@ Spec: `docs/YT_CLI_SPEC.md` (its Decisions section wins over the body).
 
 ## Commands
 - `make build` → `bin/ytrack`; `make test` (`go test -race ./...`)
-- `make lint` (`go vet` + `golangci-lint run`); `make fmt` (gofumpt, goimports)
+- `make lint` (`go vet`, `golangci-lint run`, `go mod tidy -diff`, deadcode); `make vulncheck` (govulncheck); `make fmt` (gofumpt, goimports). Dev tools live in `tools/go.mod` (`go tool -modfile=tools/go.mod <name>`).
 
 ## Layout
 - `cmd/ytrack` entry point; `pkg/cmd/<group>/<verb>` one package per command
