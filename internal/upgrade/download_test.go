@@ -232,8 +232,35 @@ func TestDownloadRetryAndFallback(t *testing.T) {
 		if !errors.Is(err, upgrade.ErrRefused) || !strings.Contains(err.Error(), "redirected off https") {
 			t.Fatalf("err = %v, want a refusal", err)
 		}
-		if n := plainHits.Load(); n != 1 {
-			t.Errorf("http requests = %d, want 1", n)
+		// The hop is refused before it is followed: the http server is never asked.
+		if n := plainHits.Load(); n != 0 {
+			t.Errorf("http requests = %d, want 0", n)
+		}
+	})
+
+	t.Run("given a redirect chain through http back to https, it refuses the http hop", func(t *testing.T) {
+		var plainHits atomic.Int32
+		fx := newDownloadFixture(t)
+		back := fx.srv.URL + upgradetest.ObjectPath(tag, bundleName) + "?via=http"
+		plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			plainHits.Add(1)
+			http.Redirect(w, r, back, http.StatusFound)
+		}))
+		t.Cleanup(plain.Close)
+		download := failing(upgradetest.DownloadPath(tag, bundleName), http.StatusGatewayTimeout)
+		fx.srv.Handle(func(w http.ResponseWriter, r *http.Request) bool {
+			if r.URL.Path == upgradetest.ObjectPath(tag, bundleName) && r.URL.Query().Get("via") == "" {
+				http.Redirect(w, r, plain.URL+"/hop", http.StatusFound)
+				return true
+			}
+			return download(w, r)
+		})
+		_, err := fx.binary(t)
+		if !errors.Is(err, upgrade.ErrRefused) || !strings.Contains(err.Error(), "redirected off https") {
+			t.Fatalf("err = %v, want a refusal", err)
+		}
+		if n := plainHits.Load(); n != 0 {
+			t.Errorf("http requests = %d, want 0", n)
 		}
 	})
 

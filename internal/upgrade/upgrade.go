@@ -204,6 +204,32 @@ func (d *Downloader) sleep(ctx context.Context, dur time.Duration) error {
 	}
 }
 
+var errOffHTTPS = errors.New("redirect off https")
+
+// httpsOnly is hc (or the default client) refusing every redirect hop that
+// leaves https, before it is followed: checking only the final URL let a
+// chain through https -> http -> https, with the middle hop in the clear.
+func httpsOnly(hc *http.Client) *http.Client {
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+	c := *hc
+	next := hc.CheckRedirect
+	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if req.URL.Scheme != "https" {
+			return errOffHTTPS
+		}
+		if next != nil {
+			return next(req, via)
+		}
+		if len(via) >= 10 {
+			return errors.New("stopped after 10 redirects")
+		}
+		return nil
+	}
+	return &c
+}
+
 // get makes one request for rawURL. Failures that a retry or the fallback
 // may cure are *httpFailure; refusals and oversized files are not.
 func (d *Downloader) get(ctx context.Context, name, rawURL, accept string, limit int64) ([]byte, error) {
@@ -220,12 +246,11 @@ func (d *Downloader) get(ctx context.Context, name, rawURL, accept string, limit
 	if accept != "" {
 		req.Header.Set("Accept", accept)
 	}
-	hc := d.HTTP
-	if hc == nil {
-		hc = http.DefaultClient
-	}
-	resp, err := hc.Do(req)
+	resp, err := httpsOnly(d.HTTP).Do(req)
 	if err != nil {
+		if errors.Is(err, errOffHTTPS) {
+			return nil, fmt.Errorf("%w: %s was redirected off https", ErrRefused, name)
+		}
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("downloading %s: %w", name, err)
 		}
