@@ -32,6 +32,8 @@ type Options struct {
 	Executable func() (string, error)
 	GOOS       string
 	GOARCH     string
+	// Sleep waits between download retries; nil waits for real.
+	Sleep func(ctx context.Context, d time.Duration) error
 }
 
 func defaults(f *cmdutil.Factory) *Options {
@@ -58,6 +60,10 @@ The release's checksums file must carry a Sigstore (cosign keyless) signature
 made by this repository's release workflow on GitHub Actions, and the archive
 must match its SHA-256 in that file. Only then is the running binary replaced,
 atomically. Any failed check refuses the upgrade and changes nothing.
+
+A download that fails with a network error, HTTP 5xx or 429 is retried
+(3 attempts). If the release download URL still fails, the file is fetched
+through the GitHub API instead, with the same checks.
 
 When Homebrew, Scoop or WinGet installed ytrack, upgrade prints that package
 manager's command instead and changes nothing.`,
@@ -144,6 +150,9 @@ func run(ctx context.Context, f *cmdutil.Factory, o *Options, check bool, versio
 		GOOS:      o.GOOS,
 		GOARCH:    o.GOARCH,
 		UserAgent: "ytrack/" + f.AppVersion,
+		APIURL:    o.APIURL,
+		Sleep:     o.Sleep,
+		Notice:    func(msg string) { fmt.Fprintf(errOut, "%s\n", msg) },
 	}
 	fmt.Fprintf(errOut, "Downloading ytrack %s for %s/%s...\n", latest, o.GOOS, o.GOARCH)
 	bin, err := d.Binary(ctx, rel)

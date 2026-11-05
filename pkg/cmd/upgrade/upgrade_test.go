@@ -2,16 +2,20 @@ package upgrade_test
 
 import (
 	"bytes"
+	"context"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sigstore/sigstore-go/pkg/root"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
+	"github.com/BrainerVirus/youtrack-cli/internal/upgrade"
 	"github.com/BrainerVirus/youtrack-cli/internal/upgrade/upgradetest"
 	cmdupgrade "github.com/BrainerVirus/youtrack-cli/pkg/cmd/upgrade"
 )
@@ -52,6 +56,7 @@ func (fx *fixture) run(t *testing.T, args ...string) error {
 		Executable:  func() (string, error) { return fx.exe, nil },
 		GOOS:        "linux",
 		GOARCH:      "amd64",
+		Sleep:       func(context.Context, time.Duration) error { return nil },
 	}
 	cmd := cmdupgrade.NewCmdUpgrade(fx.env.Factory, opts)
 	cmd.SetArgs(args)
@@ -182,6 +187,62 @@ func TestUpgrade(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 	})
+}
+
+// cdnDown makes every release download URL answer 504, as GitHub's download
+// CDN did for one asset of v0.3.1 (issue #21), and serves tampered bytes for
+// tamper's object when it is not empty.
+func cdnDown(tamper string, data []byte) func(http.ResponseWriter, *http.Request) bool {
+	return func(w http.ResponseWriter, r *http.Request) bool {
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/download/"):
+			w.WriteHeader(http.StatusGatewayTimeout)
+			return true
+		case tamper != "" && r.URL.Path == upgradetest.ObjectPath("v1.1.0", tamper):
+			_, _ = w.Write(data)
+			return true
+		}
+		return false
+	}
+}
+
+func TestUpgradeDownloadFallback(t *testing.T) {
+	t.Run("given the release download URLs answer 504, it upgrades through the GitHub API and says so", func(t *testing.T) {
+		rel := &upgradetest.Release{Version: "1.1.0"}
+		fx := newFixture(t, "bin/ytrack", rel)
+		fx.srv.Handle(cdnDown("", nil))
+		if err := fx.run(t); err != nil {
+			t.Fatalf("%v; stderr: %s", err, fx.env.Stderr)
+		}
+		if got, want := fx.binary(t), string(rel.BinaryFor("linux/amd64")); got != want {
+			t.Errorf("binary = %q, want %q", got, want)
+		}
+		stderr := fx.env.Stderr.String()
+		for _, name := range []string{upgrade.ChecksumsName("1.1.0"), upgrade.BundleName("1.1.0"), upgrade.ArchiveName("1.1.0", "linux", "amd64")} {
+			if !strings.Contains(stderr, "downloaded "+name+" through the GitHub API instead") {
+				t.Errorf("stderr does not report the fallback for %s: %q", name, stderr)
+			}
+		}
+	})
+
+	sums := upgrade.ChecksumsName("1.1.0")
+	for name, tc := range map[string]struct{ file, data string }{
+		"a tampered archive":        {upgrade.ArchiveName("1.1.0", "linux", "amd64"), "tampered archive"},
+		"a tampered checksums file": {sums, "0000000000000000000000000000000000000000000000000000000000000000  ytrack_1.1.0_linux_amd64.tar.gz\n"},
+		"a tampered signature":      {upgrade.BundleName("1.1.0"), `{"mediaType":"application/vnd.dev.sigstore.bundle.v0.3+json"}`},
+	} {
+		t.Run("given "+name+" from the GitHub API fallback, it refuses and leaves the binary untouched", func(t *testing.T) {
+			fx := newFixture(t, "bin/ytrack", &upgradetest.Release{Version: "1.1.0"})
+			fx.srv.Handle(cdnDown(tc.file, []byte(tc.data)))
+			err := fx.run(t)
+			if err == nil || !strings.Contains(err.Error(), "refusing to upgrade") || !strings.Contains(err.Error(), "was not changed") {
+				t.Fatalf("err = %v, want a refusal", err)
+			}
+			if got := fx.binary(t); got != oldBinary {
+				t.Errorf("binary = %q, want it unchanged", got)
+			}
+		})
+	}
 }
 
 func TestUpgradeHelpNeedsNoNetwork(t *testing.T) {
