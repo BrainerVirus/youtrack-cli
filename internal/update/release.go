@@ -39,7 +39,10 @@ type Release struct {
 type Asset struct {
 	Name string `json:"name"`
 	URL  string `json:"browser_download_url"`
-	Size int64  `json:"size"`
+	// APIURL is the asset's REST API URL: with Accept application/octet-stream
+	// it serves the same bytes when the download CDN fails.
+	APIURL string `json:"url"`
+	Size   int64  `json:"size"`
 }
 
 // Version returns the tag without its leading "v".
