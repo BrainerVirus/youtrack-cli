@@ -52,8 +52,9 @@ with `go tool -modfile=tools/go.mod <name>`; no separate install needed.
   the release notes are grouped from. Keep it a valid conventional commit.
 - Fill in the PR template: what and why, scenarios, verification output,
   breaking notes.
-- CI (lint, tests on Linux, macOS and Windows, workflow lint, govulncheck)
-  must be green.
+- CI must be green: lint and tests on Linux, macOS and Windows on every
+  change, plus govulncheck when Go code or dependencies change and workflow
+  lint (actionlint, zizmor) when `.github/` changes.
 
 Releases are cut by the maintainer with `make release VERSION=vX.Y.Z`; see the
 README's Development section.
