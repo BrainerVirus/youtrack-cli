@@ -43,7 +43,11 @@ type Request struct {
 //	GET  /api/issues/{id}           the issue in Issues with that idReadable or id,
 //	                                with commentsCount; 404 with a YouTrack body if none
 //	GET  /api/issues/{id}/comments  Comments[idReadable], paged with $skip/$top
-//	POST /api/issues/{id}/comments  appends {"text"} to Comments and returns it
+//	POST /api/issues/{id}/comments  appends {"text", "attachments"} to Comments and
+//	                                returns it; an attachment needs a name and a
+//	                                data URI base64Content (400 otherwise)
+//	POST /api/issues/{id}/attachments  stores multipart files in Attachments and
+//	                                returns them
 //	GET  /api/issues/{id}/timeTracking/workItems         WorkItems[idReadable], paged
 //	POST /api/issues/{id}/timeTracking/workItems         creates a work item from
 //	                                {duration{minutes}, date, text, type{id}}; 400 for
@@ -55,7 +59,8 @@ type Request struct {
 //	GET  /api/plain                 a text/plain body
 //	GET  /users/me                  the web token page (no auth; 404 if HubTokenPage)
 //
-// Like YouTrack, a request with a body that is not JSON is a 415.
+// Like YouTrack, a request with a body that is not JSON (or multipart for
+// attachments) is a 415.
 //
 // Like YouTrack, JSON responses keep only the attributes named in fields=
 // (plus $type), when fields= is given. Every /api route requires
@@ -69,6 +74,8 @@ type FakeYouTrack struct {
 	Issues   []map[string]any
 	// Comments holds each issue's comments by readable ID, oldest first.
 	Comments map[string][]map[string]any
+	// Attachments holds each issue's issue-level attachments by readable ID.
+	Attachments map[string][]map[string]any
 	// WorkItems holds each issue's work items by readable ID.
 	WorkItems map[string][]map[string]any
 	// TimeTracking holds project time tracking settings by project ID.
@@ -134,11 +141,26 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			return
 		}
 		var body struct {
-			Text string `json:"text"`
+			Text        string `json:"text"`
+			Attachments []struct {
+				Name          string `json:"name"`
+				Base64Content string `json:"base64Content"`
+			} `json:"attachments"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": err.Error()})
 			return
+		}
+		attachments := []any{}
+		for i, a := range body.Attachments {
+			mt, data, ok := parseDataURI(a.Base64Content)
+			if a.Name == "" || !ok {
+				writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "invalid attachment " + a.Name})
+				return
+			}
+			attachments = append(attachments, map[string]any{
+				"id": fmt.Sprintf("8-%d", 200+i), "name": a.Name, "mimeType": mt, "size": len(data), "$type": "IssueAttachment",
+			})
 		}
 		id := is["idReadable"].(string)
 		yt.mu.Lock()
@@ -149,12 +171,14 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			"id": fmt.Sprintf("4-%d", 100+len(yt.Comments[id])), "text": body.Text, "$type": "IssueComment",
 			"author":  map[string]any{"login": yt.Login, "fullName": yt.FullName, "$type": "User"},
 			"created": 1791374400000, "updated": nil,
-			"issue": map[string]any{"id": is["id"], "idReadable": id, "$type": "Issue"},
+			"issue":       map[string]any{"id": is["id"], "idReadable": id, "$type": "Issue"},
+			"attachments": attachments,
 		}
 		yt.Comments[id] = append(yt.Comments[id], c)
 		yt.mu.Unlock()
 		writeProjected(w, r, 200, c)
 	})
+	mux.HandleFunc("POST /api/issues/{id}/attachments", yt.attachToIssue)
 	yt.workItemRoutes(mux)
 	yt.issueWriteRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
@@ -175,7 +199,9 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			writeJSON(w, 401, map[string]any{"error": "Unauthorized", "error_description": "You are not logged in."})
 			return
 		}
-		if r.ContentLength != 0 && r.Method != http.MethodGet && !strings.Contains(r.Header.Get("Content-Type"), "json") {
+		ct := r.Header.Get("Content-Type")
+		multipartOK := strings.HasPrefix(ct, "multipart/form-data") && strings.HasSuffix(r.URL.Path, "/attachments")
+		if r.ContentLength != 0 && r.Method != http.MethodGet && !strings.Contains(ct, "json") && !multipartOK {
 			writeJSON(w, 415, map[string]any{"error": "Unsupported Media Type", "error_description": "HTTP 415 Unsupported Media Type"})
 			return
 		}

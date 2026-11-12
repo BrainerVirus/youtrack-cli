@@ -6,6 +6,7 @@ import (
 
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth/login"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth/logout"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth/paths"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth/status"
 	authswitch "github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth/switch"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth/token"
@@ -24,5 +25,6 @@ func NewCmdAuth(f *cmdutil.Factory) *cobra.Command {
 	cmd.AddCommand(status.NewCmdStatus(f))
 	cmd.AddCommand(token.NewCmdToken(f))
 	cmd.AddCommand(authswitch.NewCmdSwitch(f))
+	cmd.AddCommand(paths.NewCmdPaths(f))
 	return cmd
 }

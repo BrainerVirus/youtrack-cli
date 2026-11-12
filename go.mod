@@ -2,7 +2,7 @@ module github.com/BrainerVirus/youtrack-cli
 
 go 1.27.1
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	github.com/cli/browser v1.3.0

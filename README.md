@@ -115,6 +115,21 @@ ytrack auth token         # print the token (only on request)
 ytrack auth logout
 ```
 
+With more than one host, tie each to the folders you work in; a command run
+inside one of them talks to that host:
+
+```sh
+ytrack auth paths --host work.youtrack.cloud --add '~/work/**'
+ytrack auth paths --host acme.youtrack.cloud --add '~/oss/acme/**'
+ytrack auth paths         # every host's paths
+ytrack auth status        # shows which host this folder uses and why
+```
+
+A path is absolute or starts with `~/`; `*` matches within one folder name
+and `**` any number of folders (`~/work/**` also matches `~/work`). When
+paths of several hosts match, the one with the longest text before its first
+wildcard wins. The paths live in `hosts.yml` next to each host.
+
 ## Issues
 
 ```sh
@@ -124,9 +139,20 @@ ytrack issue list --project APP --all                         # resolved too
 ytrack issue list -q '#Unresolved' --json idReadable,summary,state,url
 ytrack issue view APP-123 --comments
 ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --web
+ytrack issue view https://acme.youtrack.cloud/projects/APP/issues/APP-123
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
+ytrack issue comment APP-123 --body 'Fixed: ![](after.png)' --attach after.png --attach report.html
+ytrack issue attach APP-123 dump.sql repro.sh               # prints name<TAB>id per file
 ```
+
+An issue URL may be `/issue/APP-123`, with or without the title slug, or
+`/projects/APP/issues/APP-123`; it selects its host. `issue comment --attach`
+(repeatable) posts the files with the comment in one request: the text shows
+a file inline when it names it, as `![](after.png)` or
+`[report](report.html)`, and the others are listed under the comment.
+`issue attach` attaches files to the issue itself. A missing file stops
+either command before anything is sent.
 
 Without `--query` or `--state`, `issue list` shows only unresolved issues
 (it adds `#Unresolved`); `--all` includes resolved ones. `--json` with no
@@ -209,14 +235,17 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   `YTRACK_DEBUG=1` (request log with credentials redacted, same as `--debug`),
   `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`,
   `YTRACK_NO_UPDATE_NOTIFIER=1` (no new-release notice).
-- Host precedence: `--host`, `YTRACK_HOST`, the default host. Token
+- Host precedence: `--host`, the host of an issue URL argument,
+  `YTRACK_HOST`, the host whose `auth paths` match the current folder, the
+  default host. Token
   precedence: `YTRACK_TOKEN`, then the stored token. `YTRACK_TOKEN` goes to
   a host named by `--host` or `YTRACK_HOST` without a warning (the CI setup),
   and to a host taken from a pasted issue URL only when that host is logged in.
 
 Configuration lives in `~/.config/ytrack/` (`$XDG_CONFIG_HOME/ytrack`,
 `%AppData%\ytrack` on Windows): `config.yml` (`browser`, `timezone`,
-`check_update`) and `hosts.yml`, which never holds tokens. The daily update
+`check_update`) and `hosts.yml` (hosts, their `paths` and the default host),
+which never holds tokens. The daily update
 check keeps its state in `~/.local/state/ytrack/state.yml`
 (`$XDG_STATE_HOME/ytrack`, `%LOCALAPPDATA%\ytrack` on Windows).
 

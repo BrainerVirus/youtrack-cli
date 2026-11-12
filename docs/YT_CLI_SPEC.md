@@ -57,8 +57,11 @@ disagrees, these win.
    no keyring is available unless `--insecure-storage` is passed (file written
    `0600`). Tokens never appear in argv, and `--debug` redacts `Authorization`.
    `auth status` masks the token; `auth token` prints it on request.
-   - Host precedence: `--host`, then `YTRACK_HOST`, then the default host in
-     config.
+   - Host precedence: `--host`, then the host of an issue URL argument, then
+     `YTRACK_HOST`, then the logged-in host whose `paths` (folder globs in
+     `hosts.yml`, edited with `ytrack auth paths`) match the working
+     directory, the longest literal prefix winning, then the default host in
+     config. `auth status` reports which one applies and why.
    - Token precedence: `YTRACK_TOKEN` (a runtime override for CI that is never
      saved by `auth login`), then the keyring entry for the host.
    - Config is YAML in the user config dir (`ytrack/config.yml` plus
@@ -1141,15 +1144,27 @@ yt issue edit APP-123 --summary 'Updated summary'
 
 ```bash
 yt issue comment APP-123 --body 'Reproduced on 2026.2'
+ytrack issue comment APP-123 --body 'Repro: ![](shot.png)' --attach shot.png --attach notes.html
 ```
+
+`--attach` (repeatable) sends the files in the same `POST
+/issues/{id}/comments` request as `IssueComment.attachments` (`name` and a
+`data:<type>;base64,` `base64Content`), so the comment and its files land
+together. `![](name)` or `[text](name)` in the text shows an attached file
+inline; a reference to the path given to `--attach` is rewritten to the
+file's base name, which must be unique.
 
 ## 14.7 Attachments
 
 ```bash
-yt issue attach APP-123 screenshot.png log.txt
+ytrack issue attach APP-123 screenshot.png log.txt
 ```
 
-Uploads should stream files instead of reading entire files into memory.
+`POST /issues/{id}/attachments` with one multipart request; prints
+`name<TAB>id` per file, `--json name,id,size,mimeType`. Both commands read
+every file before the first request, so a missing file sends nothing. Files
+are read into memory (a comment's base64 JSON body needs that anyway);
+streaming large issue uploads is a later improvement.
 
 ---
 

@@ -26,6 +26,8 @@ type options struct {
 	body     string
 	bodyFile string
 	editor   bool
+	attach   []string
+	files    []adapter.File
 	exporter *output.Exporter
 }
 
@@ -53,13 +55,22 @@ input) or from your editor with --editor. With none of them, the editor
 opens when ytrack runs in a terminal. The editor is $YTRACK_EDITOR,
 $GIT_EDITOR, $VISUAL or $EDITOR.
 
+--attach adds a file to the comment (repeat it for more files); all of
+them go up with the comment in one request. The comment text shows an
+attached file inline when it refers to it by name: ![](shot.png) for an
+image, [notes](notes.html) for a link. A reference to the path you gave,
+such as ![](shots/shot.png), is rewritten to the name. Files the text does
+not mention appear as the comment's attachments. A missing or unreadable
+file stops the command before anything is posted.
+
 JSON fields:
   id     comment ID
   url    comment web URL
   issue  readable ID of the issue`,
 		Example: `  $ ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
   $ git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
-  $ ytrack issue comment APP-123 --editor`,
+  $ ytrack issue comment APP-123 --editor
+  $ ytrack issue comment APP-123 --body 'Before and after: ![](shot.png)' --attach shot.png --attach notes.html`,
 		Args:              cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
 		ValidArgsFunction: shared.CompleteIssues(f, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -78,6 +89,9 @@ JSON fields:
 				}
 				opts.editor = true
 			}
+			if opts.files, err = shared.ReadFiles(opts.attach); err != nil {
+				return err
+			}
 			if err := shared.UseRefHost(f, ref, true); err != nil {
 				return err
 			}
@@ -88,6 +102,7 @@ JSON fields:
 	fl.StringVarP(&opts.body, "body", "b", "", "Comment `text`")
 	fl.StringVarP(&opts.bodyFile, "body-file", "F", "", "Read the comment from `file` (\"-\" for standard input)")
 	fl.BoolVarP(&opts.editor, "editor", "e", false, "Write the comment in your editor")
+	fl.StringArrayVar(&opts.attach, "attach", nil, "Attach a `file` to the comment (repeatable)")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, Fields)
 	return cmd
 }
@@ -107,7 +122,8 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		return errors.New("the comment is empty; nothing was posted")
 	}
 
-	c, err := adapter.AddComment(cmd.Context(), client, opts.ref.ID, body)
+	body = shared.InlineRefs(body, opts.attach)
+	c, err := adapter.AddComment(cmd.Context(), client, opts.ref.ID, body, opts.files...)
 	if err != nil {
 		if opts.editor {
 			saveDraft(f, body)

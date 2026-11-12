@@ -40,6 +40,8 @@ func TestEmbeddedSkillLayout(t *testing.T) {
 
 	t.Run("given the skill's markdown links, every relative one resolves inside the skill", func(t *testing.T) {
 		link := regexp.MustCompile(`\]\(([^)#]+)\)`)
+		// Code shows Markdown to write, such as ![](shot.png); it links nowhere.
+		code := regexp.MustCompile("(?s)```.*?```|`[^`\n]*`")
 		err := fs.WalkDir(skill.Files(), ".", func(p string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return err
@@ -48,7 +50,7 @@ func TestEmbeddedSkillLayout(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			for _, m := range link.FindAllStringSubmatch(string(b), -1) {
+			for _, m := range link.FindAllStringSubmatch(code.ReplaceAllString(string(b), ""), -1) {
 				target := m[1]
 				if strings.Contains(target, "://") {
 					continue

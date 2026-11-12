@@ -10,7 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"sort"
 	"strings"
@@ -109,11 +112,52 @@ func (c *Client) SendJSON(ctx context.Context, method, path string, body, v any)
 	if err != nil {
 		return fmt.Errorf("encoding %s request: %w", path, err)
 	}
-	req, err := http.NewRequestWithContext(ctx, method, c.URL(path), bytes.NewReader(b))
+	return c.send(ctx, method, path, "application/json", bytes.NewReader(b), v)
+}
+
+// FilePart is one file of a multipart upload.
+type FilePart struct {
+	Name        string
+	ContentType string
+	Data        []byte
+}
+
+// SendMultipart sends POST path with files as multipart/form-data, one part
+// per file named files[0], files[1], ..., and decodes a successful JSON
+// response into v (when v is non-nil).
+func (c *Client) SendMultipart(ctx context.Context, path string, files []FilePart, v any) error {
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	for i, fp := range files {
+		h := textproto.MIMEHeader{}
+		h.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{
+			"name": fmt.Sprintf("files[%d]", i), "filename": fp.Name,
+		}))
+		ct := fp.ContentType
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		h.Set("Content-Type", ct)
+		pw, err := mw.CreatePart(h)
+		if err != nil {
+			return err
+		}
+		if _, err := pw.Write(fp.Data); err != nil {
+			return err
+		}
+	}
+	if err := mw.Close(); err != nil {
+		return err
+	}
+	return c.send(ctx, http.MethodPost, path, mw.FormDataContentType(), &buf, v)
+}
+
+func (c *Client) send(ctx context.Context, method, path, contentType string, body io.Reader, v any) error {
+	req, err := http.NewRequestWithContext(ctx, method, c.URL(path), body)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 	resp, err := c.Do(req)
 	if err != nil {
 		return err

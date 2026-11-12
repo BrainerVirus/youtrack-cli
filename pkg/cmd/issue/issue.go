@@ -4,6 +4,7 @@ package issue
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/attach"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/command"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/create"
@@ -23,6 +24,7 @@ func NewCmdIssue(f *cmdutil.Factory) *cobra.Command {
 	cmd.AddCommand(list.NewCmdList(f))
 	cmd.AddCommand(view.NewCmdView(f))
 	cmd.AddCommand(comment.NewCmdComment(f))
+	cmd.AddCommand(attach.NewCmdAttach(f))
 	cmd.AddCommand(create.NewCmdCreate(f))
 	cmd.AddCommand(edit.NewCmdEdit(f))
 	cmd.AddCommand(command.NewCmdCommand(f))

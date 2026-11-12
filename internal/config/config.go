@@ -38,6 +38,9 @@ type HostEntry struct {
 	User    string `yaml:"user,omitempty"`
 	Auth    string `yaml:"auth,omitempty"`
 	Storage string `yaml:"storage,omitempty"`
+	// Paths are folder globs (/abs/dir/**, ~/dir/**) whose commands talk to
+	// this host when no --host, issue URL or $YTRACK_HOST picks one.
+	Paths []string `yaml:"paths,omitempty"`
 }
 
 type preferences struct {
@@ -164,8 +167,12 @@ func (c *Config) HostKeys() []string {
 	return keys
 }
 
-// SetHost adds or replaces a host entry. The first host becomes the default.
+// SetHost adds or replaces a host entry, keeping the folder paths of the
+// entry it replaces when entry has none. The first host becomes the default.
 func (c *Config) SetHost(key string, entry HostEntry) {
+	if old := c.hosts.Hosts[key]; old != nil && entry.Paths == nil {
+		entry.Paths = old.Paths
+	}
 	c.hosts.Hosts[key] = &entry
 	if c.hosts.DefaultHost == "" {
 		c.hosts.DefaultHost = key
