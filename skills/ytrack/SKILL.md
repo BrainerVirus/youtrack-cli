@@ -18,14 +18,18 @@ commands below, and `ytrack api` for anything they do not cover.
 ytrack auth status                               # logged-in hosts; the active one is marked
 ytrack auth status --json host,url,active,login,state
 ytrack auth switch --host acme.youtrack.cloud    # change the default host
+ytrack auth paths                                # folders tied to each host
 ```
 
 - Pick the host with the global `--host` flag on any command. There is no
   hostname flag: `gh auth status --hostname` habits fail here.
-- A command uses `--host`, else `YTRACK_HOST`, else the default host from
-  `ytrack auth switch`. With more than one logged-in host, run
-  `ytrack auth status` first and pass `--host` so you never read the wrong
-  instance.
+- A command uses `--host`, else the host of an issue URL, else
+  `YTRACK_HOST`, else the host whose `ytrack auth paths` match the current
+  folder, else the default host. With more than one logged-in host, run
+  `ytrack auth status` in the folder you work in: it marks the active host
+  and says why (`--host`, `YTRACK_HOST`, a matching path or the default).
+  Pass `--host` when that is not the instance you need. Change paths only
+  when the user asks (`ytrack auth paths --host <h> --add '<dir>/**'`).
 - An issue URL selects its own host, but when `--host` or `YTRACK_HOST`
   names another host the command fails with exit 1 ("the issue URL is on X
   but --host is Y"). For a URL from another host, drop `--host` and unset
@@ -50,6 +54,7 @@ host works.
 ```sh
 ytrack issue view APP-123
 ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments
+ytrack issue view https://acme.youtrack.cloud/projects/APP/issues/APP-123
 ytrack issue view APP-123 --json summary,state,assignee,customFields,comments
 ytrack issue list -q 'project: APP for: me #Unresolved'
 ytrack issue list --project APP --assignee me --state 'In Progress' --sort 'updated desc'
@@ -71,6 +76,8 @@ ytrack issue edit APP-123 --summary 'New title' --field 'State=In Progress' --ad
 ytrack issue edit APP-123 --assignee ''             # unassign
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 ytrack issue comment APP-123 --body-file reply.md   # long or multi-line text
+ytrack issue comment APP-123 --body 'Repro: ![](shot.png)' --attach shot.png --attach trace.html
+ytrack issue attach APP-123 dump.sql repro.sh       # attach to the issue: name<TAB>id per file
 ```
 
 - An issue has a `--summary` and a `--description`; a comment has a `--body`.
@@ -80,6 +87,11 @@ ytrack issue comment APP-123 --body-file reply.md   # long or multi-line text
 - `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tags.
 - `--body-file -` (comment) and `--description-file -` (create, edit) read
   standard input, e.g. text you pipe in.
+- Files go up with `--attach` (comment) or `ytrack issue attach` (issue),
+  never through `ytrack api` multipart or curl. In a comment, `![](name)`
+  shows an attached image inline and `[text](name)` links to an attached
+  file; `name` is the file's base name. A missing file fails before
+  anything is posted.
 - Without a terminal, `issue create` needs `--project` and `--summary`. Never
   pass `--editor` (it waits for a human).
 

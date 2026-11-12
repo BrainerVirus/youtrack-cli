@@ -15,6 +15,9 @@ ytrack api /issues/APP-123/comments/4-17 -X DELETE
 ytrack api /commands --input command.json
 ```
 
+Attach files with `ytrack issue comment --attach` or `ytrack issue attach`,
+not with a multipart request through `ytrack api`.
+
 - The path may omit `/api`: `/issues`, `issues` and `/api/issues` are the same.
 - `--fields` sets YouTrack's `fields=` projection. Without it YouTrack returns
   little more than `id` and `$type`; name every attribute you need, nesting
