@@ -5,6 +5,7 @@ Usage:
   ytrack issue [command]
 
 Available Commands:
+  attach      Attach files to an issue
   command     Apply a YouTrack command to one or more issues
   comment     Add a comment to an issue
   create      Create an issue

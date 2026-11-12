@@ -5,6 +5,7 @@ Work with YouTrack issues
   <accent>ytrack issue</> [command]
 
 <bold>Available Commands:</>
+  <accent>attach     </> Attach files to an issue
   <accent>command    </> Apply a YouTrack command to one or more issues
   <accent>comment    </> Add a comment to an issue
   <accent>create     </> Create an issue

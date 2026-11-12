@@ -205,6 +205,10 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	yt.SeedSampleWorkItems()
 	yt.SeedSampleProjects()
 	env.Login(yt)
+	shot := filepath.Join(t.TempDir(), "shot.png")
+	if err := os.WriteFile(shot, []byte("\x89PNG"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	allIssue := strings.Join(shared.IssueFields, ",")
 	allWorkItem := strings.Join(workitem.Fields, ",")
 	runs := [][]string{
@@ -214,6 +218,8 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"issue", "view", "NSR-40", "--comments"},
 		{"issue", "view", "NSR-40", "--json", allIssue + ",comments"},
 		{"issue", "comment", "NSR-40", "--body", "contract"},
+		{"issue", "comment", "NSR-40", "--body", "![](shot.png)", "--attach", shot},
+		{"issue", "attach", "NSR-40", shot, "--json", "name,id,size,mimeType"},
 		{"work-item", "list", "NSR-40", "--author", "me", "--json", allWorkItem},
 		{"work-item", "add", "NSR-40", "--duration", "1h30m", "--type", "Testing", "--text", "contract", "--date", "2026-10-06"},
 		{"work-item", "edit", "NSR-40", "115-1", "--duration", "2h", "--type", "Documentation", "--text", "", "--date", "2026-10-05"},
@@ -258,7 +264,7 @@ func TestRequestsMatchTheContract(t *testing.T) {
 				t.Errorf("%s %s: query parameter %q is not in the contract", e.Method, e.Path, name)
 			}
 		}
-		if r.Body != "" {
+		if r.Body != "" && !strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
 			for _, p := range c.checkBody(e, r.Body) {
 				t.Errorf("%s %s body %s: %s", e.Method, e.Path, r.Body, p)
 			}
