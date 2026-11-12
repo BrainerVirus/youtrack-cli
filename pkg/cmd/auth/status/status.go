@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -20,7 +21,7 @@ import (
 )
 
 // Fields lists the --json fields of auth status.
-var Fields = []string{"host", "url", "active", "login", "fullName", "token", "tokenSource", "storage", "state", "error"}
+var Fields = []string{"host", "url", "active", "resolvedBy", "matchedPath", "paths", "login", "fullName", "token", "tokenSource", "storage", "state", "error"}
 
 // States of a host's credentials, reported as the "state" field.
 const (
@@ -34,6 +35,9 @@ type hostStatus struct {
 	Host        string
 	URL         string
 	Active      bool
+	ResolvedBy  string
+	MatchedPath string
+	Paths       []string
 	Login       string
 	FullName    string
 	Token       string // masked
@@ -44,8 +48,13 @@ type hostStatus struct {
 }
 
 func (s hostStatus) ExportData(fields []string) map[string]any {
+	paths := s.Paths
+	if paths == nil {
+		paths = []string{}
+	}
 	all := map[string]any{
-		"host": s.Host, "url": s.URL, "active": s.Active, "login": s.Login,
+		"host": s.Host, "url": s.URL, "active": s.Active, "resolvedBy": s.ResolvedBy,
+		"matchedPath": s.MatchedPath, "paths": paths, "login": s.Login,
 		"fullName": s.FullName, "token": s.Token, "tokenSource": s.TokenSource,
 		"storage": s.Storage, "state": s.State, "error": s.Error,
 	}
@@ -65,12 +74,20 @@ func NewCmdStatus(f *cmdutil.Factory) *cobra.Command {
 		Long: `Show which YouTrack hosts ytrack is logged in to, check each token
 against its host and show the account it belongs to.
 
-With --host, only that host is checked.
+With --host, only that host is checked. The active host is the one
+commands run here talk to: --host, else YTRACK_HOST, else the host whose
+paths match the current folder (see "ytrack auth paths"), else the default
+host.
 
 JSON fields:
   host         host key, e.g. acme.youtrack.cloud or tools.acme.com/youtrack
   url          service URL
-  active       whether commands use this host by default
+  active       whether commands run in the current folder use this host
+  resolvedBy   why the active host is active: flag (--host), env
+               (YTRACK_HOST), path (a path matches the current folder) or
+               default; empty for other hosts
+  matchedPath  the path that matched the current folder, when resolvedBy is path
+  paths        the host's folder paths
   login        account login (when the token works)
   fullName     account full name
   token        the token, masked (e.g. perm-****); use "ytrack auth token" to print it
@@ -107,7 +124,7 @@ is treated as rejected); 1 when a check fails for another reason.`,
 }
 
 func collect(cmd *cobra.Command, f *cmdutil.Factory, cfg *config.Config) ([]hostStatus, error) {
-	active, activeErr := f.ResolveHost(cfg)
+	active, res, activeErr := f.HostResolution(cfg)
 	envToken := os.Getenv("YTRACK_TOKEN")
 
 	var targets []hosts.Host
@@ -139,8 +156,11 @@ func collect(cmd *cobra.Command, f *cmdutil.Factory, cfg *config.Config) ([]host
 	statuses := make([]hostStatus, 0, len(targets))
 	for _, h := range targets {
 		s := hostStatus{Host: h.Key, URL: h.URL, Active: activeErr == nil && h.Key == active.Key}
+		if s.Active {
+			s.ResolvedBy, s.MatchedPath = res.Source, res.Glob
+		}
 		if e := cfg.Host(h.Key); e != nil {
-			s.Storage = e.Storage
+			s.Storage, s.Paths = e.Storage, e.Paths
 		}
 		var token, source string
 		var err error
@@ -193,12 +213,31 @@ func render(f *cmdutil.Factory, statuses []hostStatus) {
 		} else {
 			fmt.Fprintf(w, "  %s Not authenticated: %s\n", fail, s.Error)
 		}
-		fmt.Fprintf(w, "  - Active host: %t\n", s.Active)
+		fmt.Fprintf(w, "  - Active host: %t%s\n", s.Active, activeReason(s))
 		fmt.Fprintf(w, "  - URL: %s\n", s.URL)
+		if len(s.Paths) > 0 {
+			fmt.Fprintf(w, "  - Paths: %s\n", output.SanitizeCell(strings.Join(s.Paths, ", ")))
+		}
 		if s.Token != "" {
 			fmt.Fprintf(w, "  - Token: %s (from %s)\n", s.Token, s.TokenSource)
 		}
 	}
+}
+
+// activeReason explains why the active host is active, e.g. " (current
+// folder matches ~/work/**)".
+func activeReason(s hostStatus) string {
+	switch s.ResolvedBy {
+	case cmdutil.HostFromFlag:
+		return " (--host)"
+	case cmdutil.HostFromEnv:
+		return " (YTRACK_HOST)"
+	case cmdutil.HostFromPath:
+		return " (current folder matches " + output.SanitizeCell(s.MatchedPath) + ")"
+	case cmdutil.HostFromDefault:
+		return " (default host)"
+	}
+	return ""
 }
 
 // outcome turns the statuses into the exit code: 4 when a token is missing or

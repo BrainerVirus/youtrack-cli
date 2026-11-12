@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -31,6 +32,9 @@ type Factory struct {
 	RoundTripper http.RoundTripper
 	// Now returns the current time; nil means time.Now (tests set it).
 	Now func() time.Time
+	// WorkDir returns the folder host paths are matched against; nil means
+	// the process's working directory (tests set it).
+	WorkDir func() (string, error)
 
 	// Bound to the root command's persistent flags.
 	HostFlag string
@@ -73,37 +77,89 @@ func (f *Factory) CredentialStore(cfg *config.Config) auth.Store {
 	return auth.Store{Dir: cfg.Dir()}
 }
 
-// ResolveHost picks the host to talk to: --host, then the host of an issue
-// URL argument, then $YTRACK_HOST, then the default host from hosts.yml. A
-// known host keeps its stored URL (scheme and path prefix); an unknown one
-// is normalized from the input.
+// Sources of the host a command talks to, as HostResolution reports them.
+const (
+	HostFromFlag    = "flag"    // --host
+	HostFromURL     = "url"     // an issue URL argument
+	HostFromEnv     = "env"     // $YTRACK_HOST
+	HostFromPath    = "path"    // a hosts.yml path glob matching the working directory
+	HostFromDefault = "default" // default_host in hosts.yml
+)
+
+// Resolution says why a host was picked.
+type Resolution struct {
+	// Source is one of the HostFrom* values.
+	Source string
+	// Glob is the matching path glob when Source is HostFromPath.
+	Glob string
+}
+
+// ResolveHost picks the host to talk to (see HostResolution).
 func (f *Factory) ResolveHost(cfg *config.Config) (hosts.Host, error) {
-	input, explicit := f.HostFlag, true
-	if input == "" {
-		input, explicit = f.urlHost, false
+	h, _, err := f.HostResolution(cfg)
+	return h, err
+}
+
+// HostResolution picks the host to talk to and says why: --host, then the
+// host of an issue URL argument, then $YTRACK_HOST, then the logged-in host
+// whose path glob matches the working directory, then the default host from
+// hosts.yml. A known host keeps its stored URL (scheme and path prefix); an
+// unknown one is normalized from the input.
+func (f *Factory) HostResolution(cfg *config.Config) (hosts.Host, Resolution, error) {
+	var res Resolution
+	input := ""
+	for _, c := range []struct{ source, value string }{
+		{HostFromFlag, f.HostFlag},
+		{HostFromURL, f.urlHost},
+		{HostFromEnv, os.Getenv("YTRACK_HOST")},
+	} {
+		if c.value != "" {
+			input, res.Source = c.value, c.source
+			break
+		}
 	}
 	if input == "" {
-		input, explicit = os.Getenv("YTRACK_HOST"), true
+		if m, ok := cfg.HostForPath(f.workDirs()...); ok {
+			input, res = m.Host, Resolution{Source: HostFromPath, Glob: m.Glob}
+		}
 	}
 	if input == "" {
-		input, explicit = cfg.DefaultHost(), false
+		input, res.Source = cfg.DefaultHost(), HostFromDefault
 	}
 	if input == "" {
-		return hosts.Host{}, clierr.AuthErrorf("no YouTrack host configured; run `ytrack auth login` or set YTRACK_HOST")
+		return hosts.Host{}, Resolution{}, clierr.AuthErrorf("no YouTrack host configured; run `ytrack auth login` or set YTRACK_HOST")
 	}
 	h, err := hosts.Parse(input)
 	if err != nil {
-		return hosts.Host{}, clierr.FlagErrorWrap(err)
+		return hosts.Host{}, Resolution{}, clierr.FlagErrorWrap(err)
 	}
-	if explicit {
+	if res.Source == HostFromFlag || res.Source == HostFromEnv {
 		f.explicitHost = h.Key
 	}
 	if e := cfg.Host(h.Key); e != nil && e.URL != "" {
 		if stored, err := hosts.Parse(e.URL); err == nil {
-			return stored, nil
+			return stored, res, nil
 		}
 	}
-	return h, nil
+	return h, res, nil
+}
+
+// workDirs returns the working directory and, when it differs, its path
+// with symbolic links resolved; nil when it cannot be read.
+func (f *Factory) workDirs() []string {
+	getwd := f.WorkDir
+	if getwd == nil {
+		getwd = os.Getwd
+	}
+	wd, err := getwd()
+	if err != nil || wd == "" {
+		return nil
+	}
+	dirs := []string{wd}
+	if real, err := filepath.EvalSymlinks(wd); err == nil && real != wd {
+		dirs = append(dirs, real)
+	}
+	return dirs
 }
 
 // ResolveToken returns the token for host and where it came from:

@@ -3,6 +3,7 @@
 package shared
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -56,7 +57,9 @@ type Ref struct {
 }
 
 // ParseRef accepts a readable ID (APP-123), a database ID (2-1234) or an
-// issue URL such as https://acme.youtrack.cloud/issue/APP-123/some-slug.
+// issue URL such as https://acme.youtrack.cloud/issue/APP-123/some-slug or
+// https://acme.youtrack.cloud/projects/APP/issues/APP-123, with any query or
+// fragment.
 func ParseRef(arg string) (Ref, error) {
 	if !strings.Contains(arg, "://") {
 		if !idPattern.MatchString(arg) {
@@ -68,13 +71,23 @@ func ParseRef(arg string) (Ref, error) {
 	if err != nil || u.Host == "" {
 		return Ref{}, clierr.FlagErrorf("invalid issue URL %q", arg)
 	}
-	prefix, rest, ok := strings.Cut(u.Path, "/issue/")
-	id, _, _ := strings.Cut(rest, "/")
-	if !ok || !idPattern.MatchString(id) {
-		return Ref{}, clierr.FlagErrorf("invalid issue URL %q: expected .../issue/APP-123", arg)
+	m := issuePath.FindStringSubmatch(u.Path)
+	if m == nil {
+		m = projectIssuePath.FindStringSubmatch(u.Path)
 	}
-	return Ref{ID: id, ServiceURL: u.Scheme + "://" + u.Host + prefix}, nil
+	if m == nil || !idPattern.MatchString(m[2]) {
+		return Ref{}, clierr.FlagErrorf("invalid issue URL %q: expected .../issue/APP-123 or .../projects/APP/issues/APP-123", arg)
+	}
+	return Ref{ID: m[2], ServiceURL: u.Scheme + "://" + u.Host + m[1]}, nil
 }
+
+// Issue web paths: [prefix]/issue/APP-123[/slug] and
+// [prefix]/projects/APP/issues/APP-123[/slug]. The first group is the
+// service path prefix, the second the issue ID.
+var (
+	issuePath        = regexp.MustCompile(`^(.*?)/issue/([^/]+)(?:/.*)?$`)
+	projectIssuePath = regexp.MustCompile(`^(.*?)/projects/[^/]+/issues/([^/]+)(?:/.*)?$`)
+)
 
 // UseRefHost points f at the host of an issue URL. A --host or $YTRACK_HOST
 // naming a different host is a usage error. When sendsToken is set and
@@ -131,6 +144,39 @@ func NotFound(err error, id string, host hosts.Host) error {
 		return fmt.Errorf("issue %s not found on %s (or you cannot see it)", id, host.Key)
 	}
 	return err
+}
+
+// NotFoundElsewhere is NotFound, and when host is only the default host (no
+// --host, issue URL, YTRACK_HOST or folder path picked it), it looks for the
+// issue on the other logged-in hosts, with their stored tokens, and names
+// the first one that has it.
+func NotFoundElsewhere(ctx context.Context, f *cmdutil.Factory, err error, id string, host hosts.Host) error {
+	nf := NotFound(err, id, host)
+	if nf == err {
+		return err
+	}
+	cfg, cerr := f.Config()
+	if cerr != nil {
+		return nf
+	}
+	if _, res, rerr := f.HostResolution(cfg); rerr != nil || res.Source != cmdutil.HostFromDefault {
+		return nf
+	}
+	store := f.CredentialStore(cfg)
+	for _, key := range cfg.HostKeys() {
+		if key == host.Key {
+			continue
+		}
+		other, perr := hosts.Parse(cfg.Host(key).URL)
+		token, _, terr := store.Get(key)
+		if perr != nil || terr != nil || token == "" {
+			continue
+		}
+		if _, gerr := adapter.GetIssue(ctx, f.NewClient(other, token), id, []string{"idReadable"}); gerr == nil {
+			return fmt.Errorf("%w; it is on %s: rerun with --host %s", nf, key, key)
+		}
+	}
+	return nf
 }
 
 // Attrs returns the adapter attributes needed for the requested --json
