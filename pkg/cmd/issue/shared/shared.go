@@ -140,10 +140,15 @@ func CommentURL(host hosts.Host, issueID, commentID string) string {
 
 // NotFound turns a 404 for issue id into a clear message.
 func NotFound(err error, id string, host hosts.Host) error {
-	if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
+	if isNotFound(err) {
 		return fmt.Errorf("issue %s not found on %s (or you cannot see it)", id, host.Key)
 	}
 	return err
+}
+
+func isNotFound(err error) bool {
+	apiErr, ok := errors.AsType[*transport.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusNotFound
 }
 
 // NotFoundElsewhere is NotFound, and when host is only the default host (no
@@ -151,10 +156,10 @@ func NotFound(err error, id string, host hosts.Host) error {
 // issue on the other logged-in hosts, with their stored tokens, and names
 // the first one that has it.
 func NotFoundElsewhere(ctx context.Context, f *cmdutil.Factory, err error, id string, host hosts.Host) error {
-	nf := NotFound(err, id, host)
-	if nf == err {
+	if !isNotFound(err) {
 		return err
 	}
+	nf := NotFound(err, id, host)
 	cfg, cerr := f.Config()
 	if cerr != nil {
 		return nf
