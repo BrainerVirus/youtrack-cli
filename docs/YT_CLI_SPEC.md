@@ -61,7 +61,15 @@ disagrees, these win.
      `YTRACK_HOST`, then the logged-in host whose `paths` (folder globs in
      `hosts.yml`, edited with `ytrack auth paths`) match the working
      directory, the longest literal prefix winning, then the default host in
-     config. `auth status` reports which one applies and why.
+     config. Globs match folders case-insensitively on macOS and Windows
+     (case-insensitive file systems by default; the OS decides, the file
+     system is not probed) and case-sensitively elsewhere; Windows also takes
+     `\` and drive letters. There, `auth paths --add` treats a case variant
+     of a stored glob as already present, and two globs of different hosts
+     that differ only by case fail resolution, naming both globs and hosts,
+     when they are the most specific globs matching the folder; a narrower
+     glob still wins. `auth status` reports which one applies and
+     why.
    - Token precedence: `YTRACK_TOKEN` (a runtime override for CI that is never
      saved by `auth login`), then the keyring entry for the host.
    - Config is YAML in the user config dir (`ytrack/config.yml` plus

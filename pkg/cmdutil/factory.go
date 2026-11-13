@@ -119,7 +119,11 @@ func (f *Factory) HostResolution(cfg *config.Config) (hosts.Host, Resolution, er
 		}
 	}
 	if input == "" {
-		if m, ok := cfg.HostForPath(f.workDirs()...); ok {
+		m, ok, err := cfg.HostForPath(f.workDirs()...)
+		if err != nil {
+			return hosts.Host{}, Resolution{}, err
+		}
+		if ok {
 			input, res = m.Host, Resolution{Source: HostFromPath, Glob: m.Glob}
 		}
 	}

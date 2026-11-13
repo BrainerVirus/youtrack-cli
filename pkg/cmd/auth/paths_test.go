@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
+	"github.com/BrainerVirus/youtrack-cli/internal/config"
 )
 
 // twoHosts logs in to personal (the default host, logged in first) and work.
@@ -82,6 +83,54 @@ func TestAuthPaths(t *testing.T) {
 		env, _, _ := twoHosts(t)
 		if code := env.Run("auth", "paths", "--add", "/w/**"); !env.IsUsageError(code) || !strings.Contains(env.Stderr.String(), "--host is required") {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+	})
+
+	for goos, fold := range map[string]bool{"darwin": true, "windows": true, "linux": false} {
+		t.Run("given "+goos+" and ~/Work/** stored, --add ~/work/** is already present only where case does not matter", func(t *testing.T) {
+			t.Cleanup(config.SetPathOS(goos))
+			env, _, work := twoHosts(t)
+			mustRunAuth(t, env, "auth", "paths", "--host", work.URL(), "--add", "~/Work/**")
+			env.Reset()
+			mustRunAuth(t, env, "auth", "paths", "--host", work.URL(), "--add", "~/work/**")
+			reported := strings.Contains(env.Stderr.String(), "~/work/** is already a path of "+work.Key()+", as ~/Work/**")
+			if reported != fold {
+				t.Errorf("reported %v, want %v; stderr = %q", reported, fold, env.Stderr)
+			}
+			want := 2
+			if fold {
+				want = 1
+			}
+			if got := env.Config().HostPaths(work.Key()); len(got) != want {
+				t.Errorf("paths = %v", got)
+			}
+		})
+	}
+
+	t.Run("given an exact duplicate, --add reports it as already present", func(t *testing.T) {
+		env, _, work := twoHosts(t)
+		mustRunAuth(t, env, "auth", "paths", "--host", work.URL(), "--add", "/w/**")
+		env.Reset()
+		mustRunAuth(t, env, "auth", "paths", "--host", work.URL(), "--add", "/w/**")
+		if !strings.Contains(env.Stderr.String(), "/w/** is already a path of "+work.Key()+"\n") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+	})
+
+	t.Run("given macOS and globs of two hosts differing only by case, resolving the host fails naming both", func(t *testing.T) {
+		t.Cleanup(config.SetPathOS("darwin"))
+		env, personal, work := twoHosts(t)
+		mustRunAuth(t, env, "auth", "paths", "--host", personal.URL(), "--add", "/w/Code/**")
+		mustRunAuth(t, env, "auth", "paths", "--host", work.URL(), "--add", "/w/code/**")
+		inFolder(env, "/w/code/repo")
+		env.Reset()
+		if code := env.Run("auth", "token"); code == 0 {
+			t.Fatalf("exit 0; stdout %q", env.Stdout)
+		}
+		for _, s := range []string{"/w/Code/**", "/w/code/**", personal.Key(), work.Key()} {
+			if !strings.Contains(env.Stderr.String(), s) {
+				t.Errorf("stderr lacks %q: %s", s, env.Stderr)
+			}
 		}
 	})
 

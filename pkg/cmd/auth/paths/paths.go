@@ -54,6 +54,12 @@ that host when neither --host, an issue URL nor YTRACK_HOST names one; the
 default host comes last. When paths of several hosts match, the one with the
 longest text before its first wildcard wins.
 
+On macOS and Windows, whose file systems ignore case by default, paths match
+folders in any case (~/Work/** and ~/work/** are one path), and Windows also
+takes \ and drive letters (C:/Code/**). Elsewhere case matters. Two paths of
+different hosts that differ only by case are an error when they are the most
+specific paths a folder matches.
+
 A path is absolute or starts with ~/ and may use * (within one folder name)
 and ** (any number of folders): /home/me/work/** matches /home/me/work and
 every folder under it.
@@ -167,8 +173,16 @@ func edit(f *cmdutil.Factory, cfg *config.Config, opts *options) error {
 		}
 	}
 	for _, g := range opts.add {
+		stored, present := cfg.FindHostPath(key, g)
 		if _, err := cfg.AddHostPath(key, g); err != nil {
 			return clierr.FlagErrorWrap(err)
+		}
+		switch {
+		case present && stored == g:
+			fmt.Fprintf(errOut, "! %s is already a path of %s\n", output.SanitizeCell(g), key)
+		case present:
+			fmt.Fprintf(errOut, "! %s is already a path of %s, as %s (case does not matter on this OS)\n",
+				output.SanitizeCell(g), key, output.SanitizeCell(stored))
 		}
 	}
 	if err := cfg.Save(); err != nil {

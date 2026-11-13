@@ -130,6 +130,14 @@ and `**` any number of folders (`~/work/**` also matches `~/work`). When
 paths of several hosts match, the one with the longest text before its first
 wildcard wins. The paths live in `hosts.yml` next to each host.
 
+On macOS and Windows, whose file systems ignore case by default, paths match
+folders in any case: `~/Work/**` and `~/work/**` are one path, and adding the
+second reports it as already present. Windows paths may use `\` and a drive
+letter (`C:/Code/**` matches `c:\code\app`). On Linux and other systems case
+matters. Two paths of different hosts that differ only by case are an error
+when they are the most specific paths a folder matches: `ytrack` names both
+and picks neither. A narrower path that also matches still wins.
+
 ## Issues
 
 ```sh
@@ -236,8 +244,9 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`,
   `YTRACK_NO_UPDATE_NOTIFIER=1` (no new-release notice).
 - Host precedence: `--host`, the host of an issue URL argument,
-  `YTRACK_HOST`, the host whose `auth paths` match the current folder, the
-  default host. Token
+  `YTRACK_HOST`, the host whose `auth paths` match the current folder (in any
+  case on macOS and Windows, case-sensitively elsewhere), the default host.
+  Token
   precedence: `YTRACK_TOKEN`, then the stored token. `YTRACK_TOKEN` goes to
   a host named by `--host` or `YTRACK_HOST` without a warning (the CI setup),
   and to a host taken from a pasted issue URL only when that host is logged in.
