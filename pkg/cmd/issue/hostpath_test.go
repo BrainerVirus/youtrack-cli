@@ -1,6 +1,8 @@
 package issue_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -152,4 +154,67 @@ func TestNotFoundOnDefaultHost(t *testing.T) {
 			}
 		}
 	})
+}
+
+// writeCases are the issue writes that name another host on a not-found.
+func writeCases(t *testing.T) map[string][]string {
+	t.Helper()
+	file := filepath.Join(t.TempDir(), "log.txt")
+	if err := os.WriteFile(file, []byte("trace\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return map[string][]string{
+		"comment":        {"issue", "comment", "NSR-40", "-b", "x"},
+		"attach":         {"issue", "attach", "NSR-40", file},
+		"edit --summary": {"issue", "edit", "NSR-40", "-s", "New summary"},
+		"edit --field":   {"issue", "edit", "NSR-40", "-f", "Priority=Major"},
+		"edit --add-tag": {"issue", "edit", "NSR-40", "--add-tag", "regression"},
+	}
+}
+
+// writes counts the requests to yt that are not reads.
+func writes(yt *cmdtest.FakeYouTrack) int {
+	n := 0
+	for _, r := range yt.Requests() {
+		if r.Method != "GET" {
+			n++
+		}
+	}
+	return n
+}
+
+func TestNotFoundOnDefaultHostWrites(t *testing.T) {
+	for name, args := range writeCases(t) {
+		t.Run("given an issue only on another logged-in host, "+name+" names that host and writes nowhere else", func(t *testing.T) {
+			env, personal, work := personalAndWork(t)
+			personal.SeedSampleProjects()
+			personal.Issues = nil
+			if code := env.Run(args...); code != 1 {
+				t.Fatalf("exit %d: %s", code, env.Stderr)
+			}
+			want := "issue NSR-40 not found on " + personal.Key() + " (or you cannot see it); it is on " + work.Key() + ": rerun with --host " + work.Key()
+			if !strings.Contains(env.Stderr.String(), want) {
+				t.Errorf("stderr = %q, want %q", env.Stderr, want)
+			}
+			if writes(work) != 0 || issueGets(work) != 1 {
+				t.Errorf("work got %d writes and %d issue reads, want 0 and 1", writes(work), issueGets(work))
+			}
+			if strings.Contains(env.Stderr.String()+env.Stdout.String(), work.Token) {
+				t.Errorf("output carries work's token: %s", env.Stderr)
+			}
+		})
+
+		t.Run("given --host, "+name+" does not look at other hosts", func(t *testing.T) {
+			env, personal, work := personalAndWork(t)
+			personal.SeedSampleProjects()
+			personal.Issues = nil
+			before := len(work.Requests())
+			if code := env.Run(append(args, "--host", personal.URL())...); code != 1 {
+				t.Fatalf("exit %d: %s", code, env.Stderr)
+			}
+			if len(work.Requests()) != before || strings.Contains(env.Stderr.String(), "rerun with") {
+				t.Errorf("stderr = %q, work got %d requests", env.Stderr, len(work.Requests())-before)
+			}
+		})
+	}
 }

@@ -128,7 +128,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if opts.editor {
 			saveDraft(f, body)
 		}
-		return shared.NotFound(err, opts.ref.ID, host)
+		return shared.NotFoundElsewhere(cmd.Context(), f, err, opts.ref.ID, host)
 	}
 	issueID := c.IssueIDReadable
 	if issueID == "" {

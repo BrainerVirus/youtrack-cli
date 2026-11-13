@@ -103,6 +103,15 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	if err != nil {
 		return err
 	}
+	// Only the first issue request's 404 may point at another host: after
+	// that the issue was found here, and a change may already be made.
+	found := false
+	notFound := func(err error) error {
+		if found {
+			return shared.NotFound(err, id, host)
+		}
+		return shared.NotFoundElsewhere(ctx, f, err, id, host)
+	}
 
 	var changed []string
 	ch := adapter.IssueChange{}
@@ -110,8 +119,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	if len(opts.assigns) > 0 {
 		p, err := adapter.GetIssueProject(ctx, client, id)
 		if err != nil {
-			return shared.NotFound(err, id, host)
+			return notFound(err)
 		}
+		found = true
 		zone, err := shared.Zone(f)
 		if err != nil {
 			return err
@@ -142,8 +152,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if opts.description.Editor {
 			cur, err := adapter.GetIssue(ctx, client, id, []string{"description"})
 			if err != nil {
-				return shared.NotFound(err, id, host)
+				return notFound(err)
 			}
+			found = true
 			initial = cur.Description
 		}
 		text, err := opts.description.Read(f, initial)
@@ -163,14 +174,15 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	fresh := false
 	if !ch.Empty() {
 		if issue, err = adapter.UpdateIssue(ctx, client, id, ch, attrs); err != nil {
-			return shared.NotFound(err, id, host)
+			return notFound(err)
 		}
-		fresh = true
+		found, fresh = true, true
 	}
 	for _, t := range addTags {
 		if err := adapter.AddIssueTag(ctx, client, id, t.ID); err != nil {
-			return shared.NotFound(err, id, host)
+			return notFound(err)
 		}
+		found = true
 		changed, fresh = append(changed, "+"+t.Name), false
 	}
 	for _, t := range removeTags {
@@ -187,7 +199,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	if !fresh {
 		if issue, err = adapter.GetIssue(ctx, client, id, attrs); err != nil {
-			return shared.NotFound(err, id, host)
+			return notFound(err)
 		}
 	}
 	if opts.exporter != nil {
