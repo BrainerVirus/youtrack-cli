@@ -34,9 +34,11 @@ func NewCmdAttach(f *cmdutil.Factory) *cobra.Command {
 		Short: "Attach files to an issue",
 		Long: `Attach files to an issue and print each one as "<name><TAB><id>".
 
-The files go up in one request, each named after its file name and
-streamed from disk. A missing or unreadable file stops the command before
-anything is uploaded; a file that changes size during the upload fails it. To put a
+The files go up in one request, each named after its file name. A regular
+file is streamed from disk; a file that changes size during the upload
+fails it. A pipe, such as <(cmd) or a FIFO, is read in full first, so the
+upload fails if the server redirects it. A missing or unreadable file, a
+directory or a device stops the command before anything is uploaded. To put a
 file in a comment instead, use "ytrack issue comment --attach".
 
 JSON fields:

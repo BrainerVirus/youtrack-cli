@@ -3,8 +3,12 @@ package issue_test
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -184,6 +188,68 @@ func TestIssueAttach(t *testing.T) {
 		}
 	})
 
+	t.Run("given a pipe with a writer, as from <(cmd), it attaches its bytes with an exact Content-Length", func(t *testing.T) {
+		path, content := pipeFile(t)
+		env, yt := loggedIn(t, "")
+		mustRun(t, env, "issue", "attach", "NSR-40", path)
+		stored := yt.Attachments["NSR-40"]
+		if len(stored) != 1 || stored[0]["name"] != filepath.Base(path) || stored[0]["mimeType"] != "text/html" || stored[0]["content"] != content {
+			t.Fatalf("stored %d attachments: %.80v", len(stored), stored)
+		}
+		reqs := requests(yt, "POST", "/api/issues/NSR-40/attachments")
+		if len(reqs) != 1 || stored[0]["requestContentLength"] != int64(len(reqs[0].Body)) {
+			t.Errorf("Content-Length %v for a %d-byte body", stored[0]["requestContentLength"], len(reqs[0].Body))
+		}
+	})
+
+	t.Run("given a named FIFO with a writer, it attaches its bytes", func(t *testing.T) {
+		mkfifo, err := exec.LookPath("mkfifo")
+		if err != nil {
+			t.Skip("no mkfifo")
+		}
+		path := filepath.Join(t.TempDir(), "trace.log")
+		if out, err := exec.Command(mkfifo, path).CombinedOutput(); err != nil {
+			t.Fatalf("mkfifo: %v: %s", err, out)
+		}
+		go func() {
+			w, err := os.OpenFile(path, os.O_WRONLY, 0)
+			if err != nil {
+				return
+			}
+			_, _ = io.WriteString(w, "line 1\nline 2\n")
+			_ = w.Close()
+		}()
+		env, yt := loggedIn(t, "")
+		mustRun(t, env, "issue", "attach", "NSR-40", path)
+		if stored := yt.Attachments["NSR-40"]; len(stored) != 1 || stored[0]["name"] != "trace.log" || stored[0]["content"] != "line 1\nline 2\n" {
+			t.Errorf("stored %v", stored)
+		}
+	})
+
+	t.Run("given a 307 within the service, it resends a regular file in full", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.RedirectUploads()
+		dir := writeFiles(t, map[string]string{"a.sql": "select 1;"})
+		mustRun(t, env, "issue", "attach", "NSR-40", filepath.Join(dir, "a.sql"))
+		stored := yt.Attachments["NSR-40"]
+		if attachmentCalls(yt) != 2 || len(stored) != 1 || stored[0]["content"] != "select 1;" {
+			t.Errorf("%d upload requests, stored %v", attachmentCalls(yt), stored)
+		}
+	})
+
+	t.Run("given a 307 within the service and a pipe, it fails naming the pipe, which cannot be resent", func(t *testing.T) {
+		path, _ := pipeFile(t)
+		env, yt := loggedIn(t, "")
+		yt.RedirectUploads()
+		code := env.Run("issue", "attach", "NSR-40", path)
+		if code != 1 || !strings.Contains(env.Stderr.String(), "cannot attach "+path+": the server redirected the upload, and a pipe cannot be read again") {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if len(yt.Attachments["NSR-40"]) != 0 {
+			t.Errorf("stored %v", yt.Attachments["NSR-40"])
+		}
+	})
+
 	t.Run("given --json, it prints name, id, size and mimeType", func(t *testing.T) {
 		env, _ := loggedIn(t, "")
 		dir := writeFiles(t, map[string]string{"page.html": "<p>x</p>"})
@@ -241,4 +307,25 @@ func TestUploadKeepsTheTokenSecret(t *testing.T) {
 			t.Errorf("no debug trace of the upload:\n%s", env.Stderr)
 		}
 	})
+}
+
+// pipeFile returns the /dev/fd path of a pipe that a goroutine fills with
+// more than a pipe buffer of HTML and then closes, as a shell's process
+// substitution does.
+func pipeFile(t *testing.T) (path, content string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("no /dev/fd on Windows")
+	}
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = r.Close() })
+	content = "<p>" + strings.Repeat("log line\n", 20_000) + "</p>"
+	go func() {
+		_, _ = io.WriteString(w, content)
+		_ = w.Close()
+	}()
+	return fmt.Sprintf("/dev/fd/%d", r.Fd()), content
 }

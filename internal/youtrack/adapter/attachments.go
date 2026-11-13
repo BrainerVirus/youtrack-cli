@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -29,7 +30,7 @@ type Attachment struct {
 }
 
 // LocalFile is a file on disk to upload as an issue attachment. The upload
-// streams it from Path rather than holding it in memory.
+// streams a regular file from Path rather than holding it in memory.
 type LocalFile struct {
 	Name     string
 	MimeType string
@@ -37,6 +38,10 @@ type LocalFile struct {
 	// Size is the length the file had when it was checked; the upload fails
 	// if the file changes size before it is sent.
 	Size int64
+	// Pipe marks a file that can be read only once, such as a FIFO: Data
+	// holds its content, and a redirect that would resend it fails.
+	Pipe bool
+	Data []byte
 }
 
 // AttachToIssue uploads files to the issue in one request and returns the
@@ -44,11 +49,29 @@ type LocalFile struct {
 func AttachToIssue(ctx context.Context, c *transport.Client, issueID string, files []LocalFile) ([]Attachment, error) {
 	parts := make([]transport.FilePart, len(files))
 	for i, f := range files {
-		parts[i] = transport.FilePart{Name: f.Name, ContentType: f.MimeType, Size: f.Size, Open: openFile(f.Path)}
+		open := openFile(f.Path)
+		if f.Pipe {
+			open = readOnce(f.Path, f.Data)
+		}
+		parts[i] = transport.FilePart{Name: f.Name, ContentType: f.MimeType, Size: f.Size, Open: open}
 	}
 	var out []Attachment
 	err := c.SendMultipart(ctx, "/api/issues/"+url.PathEscape(issueID)+"/attachments?fields=id,name,size,mimeType", parts, &out)
 	return out, err
+}
+
+// readOnce serves a pipe's content for the first send only: a pipe cannot be
+// reopened, so a redirect asking to resend the upload fails naming it rather
+// than sending a body that differs from the first.
+func readOnce(path string, data []byte) func() (io.ReadCloser, error) {
+	sent := false
+	return func() (io.ReadCloser, error) {
+		if sent {
+			return nil, fmt.Errorf("cannot attach %s: the server redirected the upload, and a pipe cannot be read again to resend it", path)
+		}
+		sent = true
+		return io.NopCloser(bytes.NewReader(data)), nil
+	}
 }
 
 func openFile(path string) func() (io.ReadCloser, error) {

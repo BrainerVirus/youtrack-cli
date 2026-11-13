@@ -35,11 +35,13 @@ func ReadFiles(paths []string) ([]adapter.File, error) {
 // sniffLen is how much of a file http.DetectContentType looks at.
 const sniffLen = 512
 
-// CheckFiles checks files to upload without reading them into memory: each
-// must be a regular file that opens and reads, all before any request, so a
-// missing or unreadable file posts nothing. It records each file's size and
-// media type, guessed from its name or its first bytes. Names follow
-// ReadFiles.
+// CheckFiles checks files to upload, all before any request, so a missing or
+// unreadable file posts nothing. A regular file is not read into memory: it
+// must open and read, and its size and media type, guessed from its name or
+// its first bytes, are recorded so the upload can stream it. A pipe, such as
+// a FIFO or the /dev/fd/N of a shell's process substitution, can be read only
+// once, so it is read in full here. Anything else, such as a directory or a
+// device, is refused. Names follow ReadFiles.
 func CheckFiles(paths []string) ([]adapter.LocalFile, error) {
 	names, err := attachmentNames(paths)
 	if err != nil {
@@ -47,34 +49,55 @@ func CheckFiles(paths []string) ([]adapter.LocalFile, error) {
 	}
 	out := make([]adapter.LocalFile, 0, len(paths))
 	for i, p := range paths {
-		size, head, err := statAndSniff(p)
+		f, err := checkFile(p)
 		if err != nil {
 			return nil, fmt.Errorf("cannot attach %s: %w", p, err)
 		}
-		out = append(out, adapter.LocalFile{Name: names[i], MimeType: mediaType(names[i], head), Path: p, Size: size})
+		f.Name = names[i]
+		f.MimeType = mediaType(f.Name, f.head)
+		out = append(out, f.LocalFile)
 	}
 	return out, nil
 }
 
-func statAndSniff(path string) (size int64, head []byte, err error) {
+type checkedFile struct {
+	adapter.LocalFile
+	head []byte
+}
+
+func checkFile(path string) (checkedFile, error) {
+	st, err := os.Stat(path)
+	if err != nil {
+		return checkedFile{}, err
+	}
+	pipe := st.Mode()&os.ModeNamedPipe != 0
+	if !st.Mode().IsRegular() && !pipe {
+		return checkedFile{}, errors.New("not a regular file")
+	}
 	f, err := os.Open(path)
 	if err != nil {
-		return 0, nil, err
+		return checkedFile{}, err
 	}
 	defer func() { _ = f.Close() }()
-	st, err := f.Stat()
-	if err != nil {
-		return 0, nil, err
+	if pipe {
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return checkedFile{}, err
+		}
+		return checkedFile{adapter.LocalFile{Path: path, Size: int64(len(data)), Pipe: true, Data: data}, data}, nil
+	}
+	if st, err = f.Stat(); err != nil {
+		return checkedFile{}, err
 	}
 	if !st.Mode().IsRegular() {
-		return 0, nil, errors.New("not a regular file")
+		return checkedFile{}, errors.New("not a regular file")
 	}
-	head = make([]byte, sniffLen)
+	head := make([]byte, sniffLen)
 	n, err := io.ReadFull(f, head)
 	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return 0, nil, err
+		return checkedFile{}, err
 	}
-	return st.Size(), head[:n], nil
+	return checkedFile{adapter.LocalFile{Path: path, Size: st.Size()}, head[:n]}, nil
 }
 
 // attachmentNames returns each path's base name, failing when two share one.
