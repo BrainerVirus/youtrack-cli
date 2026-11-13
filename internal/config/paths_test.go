@@ -197,6 +197,64 @@ func TestPathCase(t *testing.T) {
 			t.Errorf("got %+v, %v, %v", m, ok, err)
 		}
 	})
+
+	t.Run("given darwin and a case-only pair, a narrower glob of a third host still wins", func(t *testing.T) {
+		asOS(t, "darwin")
+		c := cfgWith(t, map[string][]string{
+			"a.example": {"/w/Code/**"},
+			"b.example": {"/w/code/**"},
+			"c.example": {"/w/code/client/**"},
+		})
+		if m, ok, err := c.HostForPath("/w/code/client/repo"); err != nil || !ok || m.Host != "c.example" {
+			t.Errorf("narrower folder: got %+v, %v, %v", m, ok, err)
+		}
+		if _, _, err := c.HostForPath("/w/code/other"); err == nil {
+			t.Error("a folder only the case-only pair matches did not fail")
+		}
+	})
+
+	t.Run("given darwin and the same glob on two hosts, the host key that sorts first wins", func(t *testing.T) {
+		asOS(t, "darwin")
+		c := cfgWith(t, map[string][]string{
+			"b.example": {"/w/**"},
+			"a.example": {"/w/**"},
+		})
+		if m, ok, err := c.HostForPath("/w/repo"); err != nil || !ok || m.Host != "a.example" {
+			t.Errorf("got %+v, %v, %v", m, ok, err)
+		}
+	})
+
+	t.Run("given windows and a case-only pair written with different separators, resolution fails", func(t *testing.T) {
+		asOS(t, "windows")
+		c := cfgWith(t, map[string][]string{
+			"a.example": {`C:\Code\**`},
+			"b.example": {"c:/code/**"},
+		})
+		if _, _, err := c.HostForPath(`C:\Code\x`); err == nil || !strings.Contains(err.Error(), "a.example") {
+			t.Errorf("err = %v", err)
+		}
+	})
+}
+
+func TestHostPathEditsSeparators(t *testing.T) {
+	for goos, same := range map[string]bool{"windows": true, "linux": false} {
+		t.Run("given "+goos+`, c:/code/x after C:\Code\x is a duplicate only on Windows`, func(t *testing.T) {
+			asOS(t, goos)
+			c, _ := LoadFrom(t.TempDir())
+			c.SetHost("work.example", HostEntry{URL: "https://work.example", Paths: []string{`C:\Code\x`}})
+			if stored, found := c.FindHostPath("work.example", "c:/code/x"); found != same || (same && stored != `C:\Code\x`) {
+				t.Errorf("FindHostPath = %q, %v", stored, found)
+			}
+			if same {
+				if added, err := c.AddHostPath("work.example", "c:/code/x"); added || err != nil {
+					t.Errorf("added %v, %v", added, err)
+				}
+				if !c.RemoveHostPath("work.example", "c:/code/x") || len(c.HostPaths("work.example")) != 0 {
+					t.Errorf("remove left %v", c.HostPaths("work.example"))
+				}
+			}
+		})
+	}
 }
 
 func TestHostPathEditsCase(t *testing.T) {

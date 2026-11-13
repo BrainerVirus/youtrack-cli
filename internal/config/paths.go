@@ -19,7 +19,9 @@ type PathMatch struct {
 
 // pathOS decides how paths compare: macOS and Windows file systems ignore
 // case by default, so globs match folders regardless of case there and
-// case-sensitively elsewhere. Windows also takes \ and drive letters.
+// case-sensitively elsewhere. Windows also takes \ as a separator and a
+// drive letter as the root. Every rule follows pathOS, never the rules of
+// the OS the code runs on, so tests can stand in for any OS.
 var pathOS = runtime.GOOS
 
 // SetPathOS makes path globs compare as on goos (a runtime.GOOS value) until
@@ -33,8 +35,10 @@ func SetPathOS(goos string) (restore func()) {
 // foldCase reports whether paths compare case-insensitively.
 func foldCase() bool { return pathOS == "darwin" || pathOS == "windows" }
 
-// samePath reports whether two stored globs name the same path.
+// samePath reports whether two stored globs name the same path: the same
+// text, on Windows with \ and / alike, and on macOS and Windows in any case.
 func samePath(a, b string) bool {
+	a, b = toSlash(a), toSlash(b)
 	if foldCase() {
 		return strings.EqualFold(a, b)
 	}
@@ -54,11 +58,11 @@ func ValidatePathGlob(glob string) error {
 		}
 		return fmt.Errorf("unsupported %q in path %q: use * and ** only, e.g. /home/me/work/**", glob[i], glob)
 	}
-	expanded, err := expandHome(glob)
-	if err != nil {
+	if isHome(glob) {
+		_, err := expandHome(glob)
 		return err
 	}
-	if g := toSlash(expanded); !strings.HasPrefix(g, "/") && !hasDrive(g) && !filepath.IsAbs(expanded) {
+	if g := toSlash(glob); !strings.HasPrefix(g, "/") && !hasDrive(g) {
 		return fmt.Errorf("path %q is not absolute: start it with / or ~/", glob)
 	}
 	return nil
@@ -73,7 +77,7 @@ func (c *Config) HostPaths(key string) []string {
 }
 
 // FindHostPath returns the stored path of host key that names the same path
-// as glob: the same text, or on macOS and Windows the same text in any case.
+// as glob (see samePath).
 func (c *Config) FindHostPath(key, glob string) (string, bool) {
 	if e := c.hosts.Hosts[key]; e != nil {
 		if i := slices.IndexFunc(e.Paths, func(p string) bool { return samePath(p, glob) }); i >= 0 {
@@ -115,33 +119,49 @@ func (c *Config) RemoveHostPath(key, glob string) bool {
 // most specific glob wins: the one with the longest literal text before its
 // first wildcard. A tie goes to the host key that sorts first.
 //
-// On macOS and Windows globs match regardless of case, and two matching
-// globs that differ only by case but belong to different hosts are an error
-// naming both: the user meant one folder, so neither host is picked.
+// On macOS and Windows globs match regardless of case. When the most
+// specific matching globs include two of different hosts that differ only
+// by case, it is an error naming both: the user meant one folder, so
+// neither host is picked. A narrower glob that also matches still wins, and
+// the same glob on two hosts keeps the tie rule.
 func (c *Config) HostForPath(dirs ...string) (PathMatch, bool, error) {
-	var best PathMatch
+	type match struct {
+		PathMatch
+		prefixLen int
+	}
+	var matched []match
 	bestLen := -1
-	var matched []PathMatch
 	for _, key := range c.HostKeys() {
 		for _, glob := range c.hosts.Hosts[key].Paths {
 			re, prefix, err := compileGlob(glob)
 			if err != nil || !matchesAny(re, dirs) {
 				continue
 			}
-			for _, m := range matched {
-				if m.Host != key && foldCase() && strings.EqualFold(m.Glob, glob) {
+			matched = append(matched, match{PathMatch{Host: key, Glob: glob}, len(prefix)})
+			bestLen = max(bestLen, len(prefix))
+		}
+	}
+	var top []PathMatch
+	for _, m := range matched {
+		if m.prefixLen == bestLen {
+			top = append(top, m.PathMatch)
+		}
+	}
+	if len(top) == 0 {
+		return PathMatch{}, false, nil
+	}
+	if foldCase() {
+		for i, a := range top {
+			for _, b := range top[i+1:] {
+				if a.Host != b.Host && a.Glob != b.Glob && samePath(a.Glob, b.Glob) {
 					return PathMatch{}, false, fmt.Errorf(
 						"cannot pick a host by folder: path %q of %s and path %q of %s differ only by case, and case does not matter on this OS; remove one with `ytrack auth paths --remove`",
-						m.Glob, m.Host, glob, key)
+						a.Glob, a.Host, b.Glob, b.Host)
 				}
-			}
-			matched = append(matched, PathMatch{Host: key, Glob: glob})
-			if len(prefix) > bestLen {
-				best, bestLen = PathMatch{Host: key, Glob: glob}, len(prefix)
 			}
 		}
 	}
-	return best, bestLen >= 0, nil
+	return top[0], true, nil
 }
 
 func matchesAny(re *regexp.Regexp, dirs []string) bool {
@@ -153,20 +173,13 @@ func matchesAny(re *regexp.Regexp, dirs []string) bool {
 	return false
 }
 
-func slashClean(p string) string {
-	s := filepath.ToSlash(filepath.Clean(p))
-	if t := toSlash(s); t != s {
-		s = path.Clean(t)
-	}
-	return s
-}
+func slashClean(p string) string { return path.Clean(toSlash(p)) }
 
-// toSlash turns separators into /, including \ when paths compare as on
-// Windows.
+// toSlash turns \ into / when paths compare as on Windows; elsewhere \ is
+// an ordinary character of a folder name.
 func toSlash(p string) string {
-	p = filepath.ToSlash(p)
 	if pathOS == "windows" {
-		p = strings.ReplaceAll(p, `\`, "/")
+		return strings.ReplaceAll(p, `\`, "/")
 	}
 	return p
 }
@@ -178,15 +191,21 @@ func hasDrive(p string) bool {
 		(p[0] >= 'a' && p[0] <= 'z' || p[0] >= 'A' && p[0] <= 'Z')
 }
 
+func isHome(glob string) bool {
+	return glob == "~" || strings.HasPrefix(glob, "~/") || strings.HasPrefix(glob, `~\`)
+}
+
+// expandHome replaces a leading ~ with the home directory, which comes from
+// the OS the code runs on and so is written with its separators.
 func expandHome(glob string) (string, error) {
-	if glob != "~" && !strings.HasPrefix(glob, "~/") && !strings.HasPrefix(glob, `~\`) {
+	if !isHome(glob) {
 		return glob, nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("cannot expand ~ in %q: %w", glob, err)
 	}
-	return home + glob[1:], nil
+	return filepath.ToSlash(home) + glob[1:], nil
 }
 
 // compileGlob turns a path glob into a regular expression and returns the
