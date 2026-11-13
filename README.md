@@ -161,8 +161,8 @@ a file inline when it names it, as `![](after.png)` or
 `[report](report.html)`, and the others are listed under the comment.
 `issue attach` attaches files to the issue itself, streaming each regular
 file from disk, so a large file is not held in memory; a file that changes
-size during the upload fails it. A pipe such as `<(cmd)` is read in full
-first. A missing file stops either command before anything is sent.
+size during the upload fails it. A pipe such as `<(cmd)` is read into
+memory first. A missing file stops either command before anything is sent.
 
 Without `--query` or `--state`, `issue list` shows only unresolved issues
 (it adds `#Unresolved`); `--all` includes resolved ones. `--json` with no

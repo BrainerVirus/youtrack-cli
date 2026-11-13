@@ -237,16 +237,14 @@ func TestIssueAttach(t *testing.T) {
 		}
 	})
 
-	t.Run("given a 307 within the service and a pipe, it fails naming the pipe, which cannot be resent", func(t *testing.T) {
-		path, _ := pipeFile(t)
+	t.Run("given a 307 within the service and a pipe, it resends the same bytes in full", func(t *testing.T) {
+		path, content := pipeFile(t)
 		env, yt := loggedIn(t, "")
 		yt.RedirectUploads()
-		code := env.Run("issue", "attach", "NSR-40", path)
-		if code != 1 || !strings.Contains(env.Stderr.String(), "cannot attach "+path+": the server redirected the upload, and a pipe cannot be read again") {
-			t.Fatalf("exit %d: %s", code, env.Stderr)
-		}
-		if len(yt.Attachments["NSR-40"]) != 0 {
-			t.Errorf("stored %v", yt.Attachments["NSR-40"])
+		mustRun(t, env, "issue", "attach", "NSR-40", path)
+		stored := yt.Attachments["NSR-40"]
+		if attachmentCalls(yt) != 2 || len(stored) != 1 || stored[0]["content"] != content {
+			t.Errorf("%d upload requests, %d stored", attachmentCalls(yt), len(stored))
 		}
 	})
 

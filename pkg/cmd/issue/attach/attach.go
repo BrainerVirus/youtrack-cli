@@ -36,10 +36,10 @@ func NewCmdAttach(f *cmdutil.Factory) *cobra.Command {
 
 The files go up in one request, each named after its file name. A regular
 file is streamed from disk; a file that changes size during the upload
-fails it. A pipe, such as <(cmd) or a FIFO, is read in full first, so the
-upload fails if the server redirects it. A missing or unreadable file, a
-directory or a device stops the command before anything is uploaded. To put a
-file in a comment instead, use "ytrack issue comment --attach".
+fails it. A pipe, such as <(cmd) or a FIFO, is read in full first and
+held in memory. A missing or unreadable file, a directory or a device stops
+the command before anything is uploaded. To put a file in a comment
+instead, use "ytrack issue comment --attach".
 
 JSON fields:
   name      attachment name
