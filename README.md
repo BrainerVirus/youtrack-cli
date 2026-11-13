@@ -159,8 +159,10 @@ An issue URL may be `/issue/APP-123`, with or without the title slug, or
 (repeatable) posts the files with the comment in one request: the text shows
 a file inline when it names it, as `![](after.png)` or
 `[report](report.html)`, and the others are listed under the comment.
-`issue attach` attaches files to the issue itself. A missing file stops
-either command before anything is sent.
+`issue attach` attaches files to the issue itself, streaming each one from
+disk, so a large file is not held in memory; a file that changes size during
+the upload fails it. A missing file stops either command before anything is
+sent.
 
 Without `--query` or `--state`, `issue list` shows only unresolved issues
 (it adds `#Unresolved`); `--all` includes resolved ones. `--json` with no

@@ -24,10 +24,16 @@ func parseDataURI(s string) (mediaType string, data []byte, ok bool) {
 }
 
 // attachToIssue stores the files of a multipart request as issue attachments.
+// Like a server that needs the size up front, it refuses a chunked upload
+// with no Content-Length.
 func (yt *FakeYouTrack) attachToIssue(w http.ResponseWriter, r *http.Request) {
 	is, ok := yt.issue(r.PathValue("id"))
 	if !ok {
 		notFound(w, r.PathValue("id"))
+		return
+	}
+	if r.ContentLength < 0 {
+		writeJSON(w, http.StatusLengthRequired, map[string]any{"error": "length_required", "error_description": "an upload needs a Content-Length"})
 		return
 	}
 	mr, err := r.MultipartReader()
@@ -55,7 +61,7 @@ func (yt *FakeYouTrack) attachToIssue(w http.ResponseWriter, r *http.Request) {
 		a := map[string]any{
 			"id":   fmt.Sprintf("8-%d", 300+len(yt.Attachments[id])),
 			"name": p.FileName(), "size": len(data), "mimeType": p.Header.Get("Content-Type"),
-			"content": string(data), "$type": "IssueAttachment",
+			"content": string(data), "requestContentLength": r.ContentLength, "$type": "IssueAttachment",
 		}
 		yt.Attachments[id] = append(yt.Attachments[id], a)
 		created = append(created, a)

@@ -115,19 +115,74 @@ func (c *Client) SendJSON(ctx context.Context, method, path string, body, v any)
 	return c.send(ctx, method, path, "application/json", bytes.NewReader(b), v)
 }
 
-// FilePart is one file of a multipart upload.
+// FilePart is one file of a streamed multipart upload.
 type FilePart struct {
 	Name        string
 	ContentType string
-	Data        []byte
+	// Size is the file's length in bytes. The upload fails if Open yields
+	// more or fewer bytes, such as a file that changed during the upload.
+	Size int64
+	// Open returns the file's content from its start. It is called once per
+	// attempt: once for the request and again for each redirect that resends
+	// the body.
+	Open func() (io.ReadCloser, error)
+}
+
+// SizeChangedError reports a file whose length changed during an upload.
+type SizeChangedError struct {
+	Name       string
+	Want, Got  int64
+	MoreToRead bool
+}
+
+func (e *SizeChangedError) Error() string {
+	if e.MoreToRead {
+		return fmt.Sprintf("%s grew during the upload: it was %d bytes", e.Name, e.Want)
+	}
+	return fmt.Sprintf("%s changed during the upload: it was %d bytes, %d were read", e.Name, e.Want, e.Got)
 }
 
 // SendMultipart sends POST path with files as multipart/form-data, one part
 // per file named files[0], files[1], ..., and decodes a successful JSON
-// response into v (when v is non-nil).
+// response into v (when v is non-nil). It streams each file instead of
+// holding it in memory: every file is opened before the request goes out, so
+// one that cannot be opened sends nothing, and the body has an exact
+// Content-Length. A 307 or 308 redirect reopens the files to resend it.
 func (c *Client) SendMultipart(ctx context.Context, path string, files []FilePart, v any) error {
-	var buf bytes.Buffer
-	mw := multipart.NewWriter(&buf)
+	mp, err := newMultipartBody(files)
+	if err != nil {
+		return err
+	}
+	body, err := mp.open()
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.URL(path), body)
+	if err != nil {
+		_ = body.Close()
+		return err
+	}
+	req.ContentLength = mp.length
+	req.GetBody = mp.open
+	req.Header.Set("Content-Type", "multipart/form-data; boundary="+mp.boundary)
+	err = c.do(req, path, v)
+	if sc := (*SizeChangedError)(nil); errors.As(err, &sc) {
+		return sc
+	}
+	return err
+}
+
+// multipartBody describes a multipart/form-data body of files with a fixed
+// boundary, so its length is known before any file is read.
+type multipartBody struct {
+	files    []FilePart
+	headers  []textproto.MIMEHeader
+	boundary string
+	length   int64
+}
+
+func newMultipartBody(files []FilePart) (*multipartBody, error) {
+	mp := &multipartBody{files: files, headers: make([]textproto.MIMEHeader, len(files))}
 	for i, fp := range files {
 		h := textproto.MIMEHeader{}
 		h.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{
@@ -138,18 +193,92 @@ func (c *Client) SendMultipart(ctx context.Context, path string, files []FilePar
 			ct = "application/octet-stream"
 		}
 		h.Set("Content-Type", ct)
-		pw, err := mw.CreatePart(h)
+		mp.headers[i] = h
+	}
+	// The framing (boundaries and part headers) does not depend on the file
+	// content, so writing it without content counts every byte but the files'.
+	var framing countingWriter
+	mw := multipart.NewWriter(&framing)
+	mp.boundary = mw.Boundary()
+	for i, fp := range files {
+		if _, err := mw.CreatePart(mp.headers[i]); err != nil {
+			return nil, err
+		}
+		mp.length += fp.Size
+	}
+	if err := mw.Close(); err != nil {
+		return nil, err
+	}
+	mp.length += framing.n
+	return mp, nil
+}
+
+// open opens every file, then returns a body that streams them. If one fails
+// to open, the files already open are closed and no body is returned.
+func (mp *multipartBody) open() (io.ReadCloser, error) {
+	readers := make([]io.ReadCloser, 0, len(mp.files))
+	for _, fp := range mp.files {
+		r, err := fp.Open()
+		if err != nil {
+			closeAll(readers)
+			return nil, err
+		}
+		readers = append(readers, r)
+	}
+	pr, pw := io.Pipe()
+	go func() {
+		defer closeAll(readers)
+		_ = pw.CloseWithError(mp.write(pw, readers))
+	}()
+	return pr, nil
+}
+
+func (mp *multipartBody) write(w io.Writer, readers []io.ReadCloser) error {
+	mw := multipart.NewWriter(w)
+	if err := mw.SetBoundary(mp.boundary); err != nil {
+		return err
+	}
+	for i, r := range readers {
+		pw, err := mw.CreatePart(mp.headers[i])
 		if err != nil {
 			return err
 		}
-		if _, err := pw.Write(fp.Data); err != nil {
+		if err := copyExact(pw, r, mp.files[i]); err != nil {
 			return err
 		}
 	}
-	if err := mw.Close(); err != nil {
-		return err
+	return mw.Close()
+}
+
+// copyExact copies exactly fp.Size bytes of r to w, failing if r has fewer
+// or more, so a file that changed size never sends a body that disagrees with
+// its Content-Length.
+func copyExact(w io.Writer, r io.Reader, fp FilePart) error {
+	n, err := io.Copy(w, io.LimitReader(r, fp.Size))
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", fp.Name, err)
 	}
-	return c.send(ctx, http.MethodPost, path, mw.FormDataContentType(), &buf, v)
+	if n < fp.Size {
+		return &SizeChangedError{Name: fp.Name, Want: fp.Size, Got: n}
+	}
+	var extra [1]byte
+	if k, _ := io.ReadFull(r, extra[:]); k > 0 {
+		return &SizeChangedError{Name: fp.Name, Want: fp.Size, Got: n + 1, MoreToRead: true}
+	}
+	return nil
+}
+
+func closeAll(rs []io.ReadCloser) {
+	for _, r := range rs {
+		_ = r.Close()
+	}
+}
+
+type countingWriter struct{ n int64 }
+
+func (w *countingWriter) Write(p []byte) (int, error) {
+	w.n += int64(len(p))
+	return len(p), nil
 }
 
 func (c *Client) send(ctx context.Context, method, path, contentType string, body io.Reader, v any) error {
@@ -158,6 +287,12 @@ func (c *Client) send(ctx context.Context, method, path, contentType string, bod
 		return err
 	}
 	req.Header.Set("Content-Type", contentType)
+	return c.do(req, path, v)
+}
+
+// do sends req and decodes a successful JSON response into v (when v is
+// non-nil).
+func (c *Client) do(req *http.Request, path string, v any) error {
 	resp, err := c.Do(req)
 	if err != nil {
 		return err

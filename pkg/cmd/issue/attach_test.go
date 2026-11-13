@@ -136,6 +136,54 @@ func TestIssueAttach(t *testing.T) {
 		}
 	})
 
+	t.Run("given two files, the parts keep their names, media types and bytes, with an exact Content-Length", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		png := "\x89PNG\r\n\x1a\n" + strings.Repeat("\x00", 600)
+		dir := writeFiles(t, map[string]string{"shot": png, "notes.html": "<p>notes</p>"})
+		mustRun(t, env, "issue", "attach", "NSR-40", filepath.Join(dir, "shot"), filepath.Join(dir, "notes.html"))
+		stored := yt.Attachments["NSR-40"]
+		if len(stored) != 2 {
+			t.Fatalf("stored %v", stored)
+		}
+		for i, want := range []struct{ name, mimeType, content string }{
+			{"shot", "image/png", png},
+			{"notes.html", "text/html", "<p>notes</p>"},
+		} {
+			if a := stored[i]; a["name"] != want.name || a["mimeType"] != want.mimeType || a["content"] != want.content {
+				t.Errorf("part %d = %v %v %d bytes, want %s %s %d bytes", i, a["name"], a["mimeType"], a["size"], want.name, want.mimeType, len(want.content))
+			}
+		}
+		reqs := requests(yt, "POST", "/api/issues/NSR-40/attachments")
+		if len(reqs) != 1 || stored[0]["requestContentLength"] != int64(len(reqs[0].Body)) {
+			t.Errorf("Content-Length %v for a %d-byte body", stored[0]["requestContentLength"], len(reqs[0].Body))
+		}
+	})
+
+	t.Run("given one missing file among three, it exits 1 naming it and uploads nothing", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		dir := writeFiles(t, map[string]string{"a.sql": "x", "c.sh": "y"})
+		missing := filepath.Join(dir, "b.log")
+		code := env.Run("issue", "attach", "NSR-40", filepath.Join(dir, "a.sql"), missing, filepath.Join(dir, "c.sh"))
+		if code != 1 || !strings.Contains(env.Stderr.String(), "cannot attach "+missing) {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if attachmentCalls(yt) != 0 {
+			t.Error("it uploaded")
+		}
+	})
+
+	t.Run("given a directory, it exits 1 naming it and uploads nothing", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		dir := writeFiles(t, map[string]string{"a.sql": "x"})
+		code := env.Run("issue", "attach", "NSR-40", filepath.Join(dir, "a.sql"), dir)
+		if code != 1 || !strings.Contains(env.Stderr.String(), "cannot attach "+dir+": not a regular file") {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if attachmentCalls(yt) != 0 {
+			t.Error("it uploaded")
+		}
+	})
+
 	t.Run("given --json, it prints name, id, size and mimeType", func(t *testing.T) {
 		env, _ := loggedIn(t, "")
 		dir := writeFiles(t, map[string]string{"page.html": "<p>x</p>"})
