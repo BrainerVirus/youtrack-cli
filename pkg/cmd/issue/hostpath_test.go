@@ -1,6 +1,7 @@
 package issue_test
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -176,7 +177,7 @@ func writeCases(t *testing.T) map[string][]string {
 func writes(yt *cmdtest.FakeYouTrack) int {
 	n := 0
 	for _, r := range yt.Requests() {
-		if r.Method != "GET" {
+		if r.Method != http.MethodGet {
 			n++
 		}
 	}
