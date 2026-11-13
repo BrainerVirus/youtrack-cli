@@ -203,6 +203,9 @@ func TestIssueAttach(t *testing.T) {
 	})
 
 	t.Run("given a named FIFO with a writer, it attaches its bytes", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("no named FIFOs on Windows: a Git for Windows mkfifo makes no file that os.Stat can see")
+		}
 		mkfifo, err := exec.LookPath("mkfifo")
 		if err != nil {
 			t.Skip("no mkfifo")
