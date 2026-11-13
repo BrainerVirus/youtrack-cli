@@ -135,7 +135,8 @@ folders in any case: `~/Work/**` and `~/work/**` are one path, and adding the
 second reports it as already present. Windows paths may use `\` and a drive
 letter (`C:/Code/**` matches `c:\code\app`). On Linux and other systems case
 matters. Two paths of different hosts that differ only by case are an error
-when a folder matches both: `ytrack` names both and picks neither.
+when they are the most specific paths a folder matches: `ytrack` names both
+and picks neither. A narrower path that also matches still wins.
 
 ## Issues
 

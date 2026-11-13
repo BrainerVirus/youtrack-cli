@@ -66,8 +66,9 @@ disagrees, these win.
      system is not probed) and case-sensitively elsewhere; Windows also takes
      `\` and drive letters. There, `auth paths --add` treats a case variant
      of a stored glob as already present, and two globs of different hosts
-     that differ only by case fail resolution for a folder matching both,
-     naming both globs and hosts. `auth status` reports which one applies and
+     that differ only by case fail resolution, naming both globs and hosts,
+     when they are the most specific globs matching the folder; a narrower
+     glob still wins. `auth status` reports which one applies and
      why.
    - Token precedence: `YTRACK_TOKEN` (a runtime override for CI that is never
      saved by `auth login`), then the keyring entry for the host.

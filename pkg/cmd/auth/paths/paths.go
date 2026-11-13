@@ -57,7 +57,8 @@ longest text before its first wildcard wins.
 On macOS and Windows, whose file systems ignore case by default, paths match
 folders in any case (~/Work/** and ~/work/** are one path), and Windows also
 takes \ and drive letters (C:/Code/**). Elsewhere case matters. Two paths of
-different hosts that differ only by case make a matching folder an error.
+different hosts that differ only by case are an error when they are the most
+specific paths a folder matches.
 
 A path is absolute or starts with ~/ and may use * (within one folder name)
 and ** (any number of folders): /home/me/work/** matches /home/me/work and
