@@ -254,9 +254,12 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   host does, issue and work item commands use that host and print
   `using <host> for APP-* (the folder rule picked <other>)` on stderr. Reads
   try the picked host first and look the project up only after a 404; writes
-  look it up first, so they never reach a host that does not own the key.
-  The answer is cached for 7 days in `~/.cache/ytrack/projects.json`
-  (`$YTRACK_CACHE_DIR`, `$XDG_CACHE_HOME/ytrack`). `--host`, `YTRACK_HOST`,
+  look it up first, so they never reach a host that does not own the key,
+  and recheck the picked host before acting on a cached "it lacks the
+  project". Answers are cached for 7 days per host URL and project in
+  `~/.cache/ytrack/projects.json` (`$YTRACK_CACHE_DIR/projects.json`,
+  `$XDG_CACHE_HOME/ytrack/projects.json`; `~/Library/Caches/ytrack` on macOS,
+  `%LocalAppData%\ytrack` on Windows); delete that file to clear them. `--host`, `YTRACK_HOST`,
   an issue URL and `YTRACK_TOKEN` turn this off. With more than one logged-in
   host, HTTP errors name the host that answered and why it was chosen, and
   suggest `--host` for the others.

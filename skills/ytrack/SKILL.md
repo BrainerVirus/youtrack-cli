@@ -37,6 +37,8 @@ ytrack auth paths                                # folders tied to each host
 - When the folder or the default host picks a host without the issue's
   project and exactly one other logged-in host has it, ytrack uses that host
   and prints `using <host> for APP-* (...)` on stderr; no `--host` needed.
+  If that pick is stale (a project was just created or moved), delete the
+  cache file `projects.json` in `~/.cache/ytrack/` (or `$YTRACK_CACHE_DIR`).
 - When a key is not found, run `ytrack auth status` in this folder first.
   The error names the host that answered, why it was chosen and the other
   hosts (`try --host <h>`); never read `hosts.yml` by hand.

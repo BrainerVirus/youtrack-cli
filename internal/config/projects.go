@@ -32,8 +32,8 @@ func CacheDir() (string, error) {
 	return filepath.Join(d, "ytrack"), nil
 }
 
-// ProjectCache remembers, per host and project short name, whether the host
-// has that project, for ProjectCacheTTL. It is a hint: a missing, stale or
+// ProjectCache remembers, per host service URL and project short name,
+// whether the host has that project, for ProjectCacheTTL. It is a hint: a missing, stale or
 // unreadable file means "unknown".
 type ProjectCache struct {
 	Dir string
@@ -45,20 +45,21 @@ type projectEntry struct {
 	Checked time.Time `json:"checked"`
 }
 
-func projectKey(host, project string) string { return host + " " + strings.ToUpper(project) }
+func projectKey(hostURL, project string) string { return hostURL + " " + strings.ToUpper(project) }
 
-// Lookup returns whether host has project and whether the cache knows.
-func (c ProjectCache) Lookup(host, project string) (has, known bool) {
-	e, ok := c.read()[projectKey(host, project)]
+// Lookup returns whether the host at hostURL has project and whether the
+// cache knows.
+func (c ProjectCache) Lookup(hostURL, project string) (has, known bool) {
+	e, ok := c.read()[projectKey(hostURL, project)]
 	if !ok || c.now().Sub(e.Checked) > ProjectCacheTTL || e.Checked.After(c.now()) {
 		return false, false
 	}
 	return e.Has, true
 }
 
-// Store records whether host has project. Errors are ignored: the cache is
-// only a hint.
-func (c ProjectCache) Store(host, project string, has bool) {
+// Store records whether the host at hostURL has project. Errors are ignored:
+// the cache is only a hint.
+func (c ProjectCache) Store(hostURL, project string, has bool) {
 	entries := c.read()
 	now := c.now()
 	for k, e := range entries {
@@ -66,7 +67,7 @@ func (c ProjectCache) Store(host, project string, has bool) {
 			delete(entries, k)
 		}
 	}
-	entries[projectKey(host, project)] = projectEntry{Has: has, Checked: now}
+	entries[projectKey(hostURL, project)] = projectEntry{Has: has, Checked: now}
 	b, err := json.Marshal(entries)
 	if err != nil {
 		return

@@ -66,7 +66,7 @@ func (f *Factory) withIssueHost(ctx context.Context, id string, write bool, run 
 		return run()
 	}
 	probe := projectProbe{f: f, cfg: cfg, project: project, cache: f.projectCache()}
-	if owner, ok := probe.owner(ctx, host, others, write); ok {
+	if owner, ok := probe.owner(ctx, host, others, write, write); ok {
 		f.useKeyHost(owner, project, host, res)
 		return run()
 	}
@@ -74,7 +74,7 @@ func (f *Factory) withIssueHost(ctx context.Context, id string, write bool, run 
 	if write || !isNotFound(err) {
 		return err
 	}
-	owner, ok := probe.owner(ctx, host, others, true)
+	owner, ok := probe.owner(ctx, host, others, true, false)
 	if !ok {
 		return err
 	}
@@ -114,14 +114,17 @@ type projectProbe struct {
 
 // owner returns the one host in others that has the project, when picked
 // does not. With lookup false it uses only cached answers; with lookup set it
-// asks each host the cache does not know about, with its stored token.
-func (p projectProbe) owner(ctx context.Context, picked hosts.Host, others []string, lookup bool) (string, bool) {
-	if has, known := p.has(ctx, picked.Key, lookup); has || !known {
+// asks each host the cache does not know about, with its stored token. With
+// write set, a cached "picked lacks the project" is checked again on picked
+// before a write is sent elsewhere: the project may have been created since.
+func (p projectProbe) owner(ctx context.Context, picked hosts.Host, others []string, lookup, write bool) (string, bool) {
+	has, known, cached := p.has(ctx, picked.Key, lookup, false)
+	if has || !known {
 		return "", false
 	}
 	var owners []string
 	for _, key := range others {
-		has, known := p.has(ctx, key, lookup)
+		has, known, _ := p.has(ctx, key, lookup, false)
 		if !known {
 			return "", false
 		}
@@ -132,37 +135,45 @@ func (p projectProbe) owner(ctx context.Context, picked hosts.Host, others []str
 	if len(owners) != 1 {
 		return "", false
 	}
+	if write && cached {
+		if has, known, _ := p.has(ctx, picked.Key, true, true); has || !known {
+			return "", false
+		}
+	}
 	return owners[0], true
 }
 
-// has says whether host key has the project, and whether that is known.
-func (p projectProbe) has(ctx context.Context, key string, lookup bool) (has, known bool) {
-	if p.cache.Dir != "" {
-		if has, known := p.cache.Lookup(key, p.project); known {
-			return has, true
-		}
-	}
-	if !lookup {
-		return false, false
-	}
+// has says whether host key has the project, whether that is known and
+// whether the answer came from the cache. The cache is keyed by the host's
+// stored service URL, so a host key logged in again against another URL
+// does not reuse old answers. With refresh set it skips the cache.
+func (p projectProbe) has(ctx context.Context, key string, lookup, refresh bool) (has, known, cached bool) {
 	e := p.cfg.Host(key)
 	if e == nil {
-		return false, false
+		return false, false, false
 	}
 	h, err := hosts.Parse(e.URL)
 	if err != nil {
-		return false, false
+		return false, false, false
+	}
+	if p.cache.Dir != "" && !refresh {
+		if has, known := p.cache.Lookup(h.URL, p.project); known {
+			return has, true, true
+		}
+	}
+	if !lookup {
+		return false, false, false
 	}
 	token, _, err := p.f.CredentialStore(p.cfg).Get(key)
 	if err != nil || token == "" {
-		return false, false
+		return false, false, false
 	}
 	has, err = adapter.HasProject(ctx, p.f.NewClient(h, token), p.project)
 	if err != nil {
-		return false, false
+		return false, false, false
 	}
 	if p.cache.Dir != "" {
-		p.cache.Store(key, p.project, has)
+		p.cache.Store(h.URL, p.project, has)
 	}
-	return has, true
+	return has, true, false
 }

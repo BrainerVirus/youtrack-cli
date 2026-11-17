@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
+	"github.com/BrainerVirus/youtrack-cli/internal/config"
 )
 
 // personalAndWork logs in to personal (the default host) and work, both
@@ -302,6 +303,35 @@ func TestHostByIssueKeyWrites(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("given a cached 'picked host lacks the project' that is no longer true, a write re-checks it and stays on the picked host", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "idReadable") // caches: personal lacks NSR
+		personal.SeedSampleIssues()
+		personal.SeedSampleProjects() // NSR now exists on personal
+		env.Reset()
+		workWrites := writes(work)
+		mustRun(t, env, "issue", "comment", "NSR-40", "-b", "stays here")
+		if writes(personal) == 0 || writes(work) != workWrites || strings.Contains(env.Stderr.String(), "using ") {
+			t.Errorf("personal got %d writes, work %d more; stderr = %q", writes(personal), writes(work)-workWrites, env.Stderr)
+		}
+		cache := config.ProjectCache{Dir: env.CacheDir}
+		if has, known := cache.Lookup(personal.URL(), "NSR"); !has || !known {
+			t.Errorf("cache for personal: has %v known %v, want refreshed to true", has, known)
+		}
+	})
+
+	t.Run("given cached answers for another URL of the same host key, they are not used", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		personal.SeedSampleIssues()
+		cache := config.ProjectCache{Dir: env.CacheDir}
+		cache.Store("https://"+personal.Key(), "NSR", false) // the same keys, logged in over https before
+		cache.Store("https://"+work.Key(), "NSR", true)
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "idReadable")
+		if issueGets(personal) != 1 || issueGets(work) != 0 || strings.Contains(env.Stderr.String(), "using ") {
+			t.Errorf("personal got %d issue reads, work %d; stderr = %q", issueGets(personal), issueGets(work), env.Stderr)
+		}
+	})
 
 	t.Run("given the wrong folder, comment posts the comment to the owner once", func(t *testing.T) {
 		env, _, work := wrongFolder(t)
