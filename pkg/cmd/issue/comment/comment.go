@@ -14,6 +14,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/editor"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -27,7 +28,7 @@ type options struct {
 	bodyFile string
 	editor   bool
 	attach   []string
-	files    []adapter.File
+	files    []adapter.LocalFile
 	exporter *output.Exporter
 }
 
@@ -55,13 +56,15 @@ input) or from your editor with --editor. With none of them, the editor
 opens when ytrack runs in a terminal. The editor is $YTRACK_EDITOR,
 $GIT_EDITOR, $VISUAL or $EDITOR.
 
---attach adds a file to the comment (repeat it for more files); all of
-them go up with the comment in one request. The comment text shows an
-attached file inline when it refers to it by name: ![](shot.png) for an
-image, [notes](notes.html) for a link. A reference to the path you gave,
-such as ![](shots/shot.png), is rewritten to the name. Files the text does
-not mention appear as the comment's attachments. A missing or unreadable
-file stops the command before anything is posted.
+--attach adds a file to the comment (repeat it for more files): once the
+comment is posted, the files are uploaded to the issue and linked to the
+comment. The comment text shows an attached file inline when it refers to
+it by name: ![](shot.png) for an image, [notes](notes.html) for a link. A
+reference to the path you gave, such as ![](shots/shot.png), is rewritten
+to the name. Files the text does not mention appear as the comment's
+attachments. A missing or unreadable file stops the command before
+anything is posted. If the comment is posted but any file did not attach,
+the command names the missing files and exits 1.
 
 JSON fields:
   id     comment ID
@@ -89,7 +92,7 @@ JSON fields:
 				}
 				opts.editor = true
 			}
-			if opts.files, err = shared.ReadFiles(opts.attach); err != nil {
+			if opts.files, err = shared.CheckFiles(opts.attach); err != nil {
 				return err
 			}
 			if err := shared.UseRefHost(f, ref, true); err != nil {
@@ -123,7 +126,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 
 	body = shared.InlineRefs(body, opts.attach)
-	c, err := adapter.AddComment(cmd.Context(), client, opts.ref.ID, body, opts.files...)
+	c, err := adapter.AddComment(cmd.Context(), client, opts.ref.ID, body)
 	if err != nil {
 		if opts.editor {
 			saveDraft(f, body)
@@ -135,11 +138,55 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		issueID = opts.ref.ID
 	}
 	res := created{ID: c.ID, URL: shared.CommentURL(host, issueID, c.ID), Issue: issueID}
+	if err := attach(cmd, client, issueID, c.ID, opts.files); err != nil {
+		return fmt.Errorf("the comment was posted (%s), but %w", res.URL, err)
+	}
 	if opts.exporter != nil {
 		return opts.exporter.Write(ios, res)
 	}
 	fmt.Fprintln(ios.Out, res.URL)
 	return nil
+}
+
+// attach uploads files to the issue, links them to the comment and reads
+// the comment's attachments back, so a file YouTrack drops fails the command
+// instead of passing silently. YouTrack ignores files sent with the comment
+// itself and has no upload endpoint for a comment.
+func attach(cmd *cobra.Command, client *transport.Client, issueID, commentID string, files []adapter.LocalFile) error {
+	if len(files) == 0 {
+		return nil
+	}
+	ctx := cmd.Context()
+	uploaded, err := adapter.AttachToIssue(ctx, client, issueID, files)
+	if err != nil {
+		return fmt.Errorf("uploading its files failed: %w", err)
+	}
+	if err := adapter.LinkToComment(ctx, client, issueID, commentID, uploaded); err != nil {
+		return fmt.Errorf("its files are attached to the issue %s but not linked to the comment: %w", issueID, err)
+	}
+	got, err := adapter.CommentAttachments(ctx, client, issueID, commentID)
+	if err != nil {
+		return fmt.Errorf("checking its attachments failed: %w", err)
+	}
+	if missing := missingNames(files, got); len(missing) > 0 {
+		return fmt.Errorf("%d of %d files did not attach to it: %s", len(missing), len(files), strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+// missingNames lists the files with no attachment of their name.
+func missingNames(files []adapter.LocalFile, got []adapter.Attachment) []string {
+	have := make(map[string]bool, len(got))
+	for _, a := range got {
+		have[a.Name] = true
+	}
+	var missing []string
+	for _, f := range files {
+		if !have[f.Name] {
+			missing = append(missing, f.Name)
+		}
+	}
+	return missing
 }
 
 // saveDraft keeps text written in the editor when posting it failed, so the

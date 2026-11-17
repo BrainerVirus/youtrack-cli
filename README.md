@@ -156,9 +156,10 @@ ytrack issue attach APP-123 dump.sql repro.sh               # prints name<TAB>id
 
 An issue URL may be `/issue/APP-123`, with or without the title slug, or
 `/projects/APP/issues/APP-123`; it selects its host. `issue comment --attach`
-(repeatable) posts the files with the comment in one request: the text shows
-a file inline when it names it, as `![](after.png)` or
-`[report](report.html)`, and the others are listed under the comment.
+(repeatable) posts the comment, then uploads the files to the issue and
+links them to the comment: the text shows a file inline when it names it, as
+`![](after.png)` or `[report](report.html)`, and the others are listed under
+the comment. If any file does not attach, the command names it and exits 1.
 `issue attach` attaches files to the issue itself, streaming each regular
 file from disk, so a large file is not held in memory; a file that changes
 size during the upload fails it. A pipe such as `<(cmd)` is read into

@@ -91,7 +91,8 @@ ytrack issue attach APP-123 dump.sql repro.sh       # attach to the issue: name<
   never through `ytrack api` multipart or curl. In a comment, `![](name)`
   shows an attached image inline and `[text](name)` links to an attached
   file; `name` is the file's base name. A missing file fails before
-  anything is posted.
+  anything is posted; a file that does not attach to a posted comment exits 1
+  naming it.
 - Without a terminal, `issue create` needs `--project` and `--summary`. Never
   pass `--editor` (it waits for a human).
 

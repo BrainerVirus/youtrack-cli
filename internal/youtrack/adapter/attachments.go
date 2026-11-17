@@ -3,25 +3,16 @@ package adapter
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 )
 
-// File is a file to attach to an issue or a comment.
-type File struct {
-	// Name is the attachment name; a comment's text shows it inline with
-	// ![](Name).
-	Name     string
-	MimeType string
-	Data     []byte
-}
-
-// Attachment is a file attached to an issue.
+// Attachment is a file attached to an issue or a comment.
 type Attachment struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -29,9 +20,12 @@ type Attachment struct {
 	MimeType string `json:"mimeType"`
 }
 
-// LocalFile is a file on disk to upload as an issue attachment. The upload
-// streams a regular file from Path rather than holding it in memory.
+// LocalFile is a file on disk to upload as an issue or comment attachment.
+// The upload streams a regular file from Path rather than holding it in
+// memory.
 type LocalFile struct {
+	// Name is the attachment name; a comment's text shows it inline with
+	// ![](Name).
 	Name     string
 	MimeType string
 	Path     string
@@ -60,6 +54,31 @@ func AttachToIssue(ctx context.Context, c *transport.Client, issueID string, fil
 	return out, err
 }
 
+// LinkToComment makes attachments already uploaded to the issue the
+// comment's attachments. YouTrack has no upload endpoint for a comment and ignores files sent
+// inside the JSON that creates one, so a comment gets its files by
+// uploading them to the issue and linking them here.
+func LinkToComment(ctx context.Context, c *transport.Client, issueID, commentID string, attachments []Attachment) error {
+	ids := make([]map[string]string, len(attachments))
+	for i, a := range attachments {
+		ids[i] = map[string]string{"id": a.ID}
+	}
+	return c.SendJSON(ctx, http.MethodPost, commentPath(issueID, commentID)+"?fields=attachments(id,name)", map[string]any{"attachments": ids}, nil)
+}
+
+// CommentAttachments reads the attachments a comment has.
+func CommentAttachments(ctx context.Context, c *transport.Client, issueID, commentID string) ([]Attachment, error) {
+	var w struct {
+		Attachments []Attachment `json:"attachments"`
+	}
+	err := c.GetJSON(ctx, commentPath(issueID, commentID)+"?fields=attachments(id,name)", &w)
+	return w.Attachments, err
+}
+
+func commentPath(issueID, commentID string) string {
+	return "/api/issues/" + url.PathEscape(issueID) + "/comments/" + url.PathEscape(commentID)
+}
+
 // inMemory serves a pipe's content, read once in full when it was checked,
 // afresh for each send, so a redirect resends the same bytes.
 func inMemory(data []byte) func() (io.ReadCloser, error) {
@@ -74,21 +93,4 @@ func openFile(path string) func() (io.ReadCloser, error) {
 		}
 		return f, nil
 	}
-}
-
-// commentAttachments encodes files as IssueComment attachments: YouTrack
-// takes base64Content as a data URI, which carries the media type.
-func commentAttachments(files []File) []map[string]string {
-	out := make([]map[string]string, len(files))
-	for i, f := range files {
-		mt := f.MimeType
-		if mt == "" {
-			mt = "application/octet-stream"
-		}
-		out[i] = map[string]string{
-			"name":          f.Name,
-			"base64Content": "data:" + mt + ";base64," + base64.StdEncoding.EncodeToString(f.Data),
-		}
-	}
-	return out
 }

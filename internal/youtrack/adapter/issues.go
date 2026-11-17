@@ -303,9 +303,9 @@ type NewComment struct {
 	IssueIDReadable string
 }
 
-// AddComment posts text as a new comment on the issue, carrying files as
-// the comment's attachments, all in one request.
-func AddComment(ctx context.Context, c *transport.Client, issueID, text string, files ...File) (NewComment, error) {
+// AddComment posts text as a new comment on the issue. Its files go up
+// afterwards with AttachToComment.
+func AddComment(ctx context.Context, c *transport.Client, issueID, text string) (NewComment, error) {
 	var w struct {
 		ID    string `json:"id"`
 		Issue struct {
@@ -313,11 +313,7 @@ func AddComment(ctx context.Context, c *transport.Client, issueID, text string, 
 		} `json:"issue"`
 	}
 	path := "/api/issues/" + url.PathEscape(issueID) + "/comments?fields=id,issue(idReadable)"
-	body := map[string]any{"text": text}
-	if len(files) > 0 {
-		body["attachments"] = commentAttachments(files)
-	}
-	err := c.SendJSON(ctx, http.MethodPost, path, body, &w)
+	err := c.SendJSON(ctx, http.MethodPost, path, map[string]any{"text": text}, &w)
 	return NewComment{ID: w.ID, IssueIDReadable: w.Issue.IDReadable}, err
 }
 

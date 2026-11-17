@@ -6,6 +6,8 @@
     {"method": "GET", "path": "/issues/{id}", "query": ["fields"], "response": "Issue"},
     {"method": "GET", "path": "/issues/{id}/comments", "query": ["fields", "$skip", "$top"], "response": "IssueComment"},
     {"method": "POST", "path": "/issues/{id}/comments", "query": ["fields"], "response": "IssueComment"},
+    {"method": "GET", "path": "/issues/{id}/comments/{issueCommentId}", "query": ["fields"], "response": "IssueComment"},
+    {"method": "POST", "path": "/issues/{id}/comments/{issueCommentId}", "query": ["fields"], "response": "IssueComment"},
     {"method": "POST", "path": "/issues/{id}/attachments", "query": ["fields"], "response": "IssueAttachment"},
     {"method": "GET", "path": "/issues/{id}/timeTracking/workItems", "query": ["fields", "$skip", "$top"], "response": "IssueWorkItem"},
     {"method": "POST", "path": "/issues/{id}/timeTracking/workItems", "query": ["fields"], "response": "IssueWorkItem"},
@@ -58,7 +60,7 @@
       "issue": ["Issue"],
       "attachments": ["IssueAttachment"]
     },
-    "IssueAttachment": {"id": [], "name": [], "size": [], "mimeType": [], "base64Content": []},
+    "IssueAttachment": {"id": [], "name": [], "size": [], "mimeType": []},
     "IssueWorkItem": {
       "id": [],
       "date": [],
