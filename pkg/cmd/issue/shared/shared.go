@@ -3,7 +3,6 @@
 package shared
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -138,51 +137,28 @@ func CommentURL(host hosts.Host, issueID, commentID string) string {
 	return IssueURL(host, issueID) + "#focus=Comments-" + commentID + ".0-0"
 }
 
-// NotFound turns a 404 for issue id into a clear message.
+// NotFound turns a 404 for issue id into a clear message. When more than one
+// host is logged in, it also says why host was chosen and which hosts to try.
 func NotFound(err error, id string, host hosts.Host) error {
-	if isNotFound(err) {
-		return fmt.Errorf("issue %s not found on %s (or you cannot see it)", id, host.Key)
+	if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
+		return NotFoundf(apiErr, "issue %s not found on %s (or you cannot see it)", id, host.Key)
 	}
 	return err
 }
 
-func isNotFound(err error) bool {
-	apiErr, ok := errors.AsType[*transport.APIError](err)
-	return ok && apiErr.StatusCode == http.StatusNotFound
+// NotFoundf formats a not-found message, followed by the 404's host hint,
+// and keeps the 404 underneath, so Factory.WithIssueHost still sees it.
+func NotFoundf(apiErr *transport.APIError, format string, args ...any) error {
+	return &notFoundError{msg: fmt.Sprintf(format, args...) + apiErr.HostHint(), err: apiErr}
 }
 
-// NotFoundElsewhere is NotFound, and when host is only the default host (no
-// --host, issue URL, YTRACK_HOST or folder path picked it), it looks for the
-// issue on the other logged-in hosts, with their stored tokens, and names
-// the first one that has it.
-func NotFoundElsewhere(ctx context.Context, f *cmdutil.Factory, err error, id string, host hosts.Host) error {
-	if !isNotFound(err) {
-		return err
-	}
-	nf := NotFound(err, id, host)
-	cfg, cerr := f.Config()
-	if cerr != nil {
-		return nf
-	}
-	if _, res, rerr := f.HostResolution(cfg); rerr != nil || res.Source != cmdutil.HostFromDefault {
-		return nf
-	}
-	store := f.CredentialStore(cfg)
-	for _, key := range cfg.HostKeys() {
-		if key == host.Key {
-			continue
-		}
-		other, perr := hosts.Parse(cfg.Host(key).URL)
-		token, _, terr := store.Get(key)
-		if perr != nil || terr != nil || token == "" {
-			continue
-		}
-		if _, gerr := adapter.GetIssue(ctx, f.NewClient(other, token), id, []string{"idReadable"}); gerr == nil {
-			return fmt.Errorf("%w; it is on %s: rerun with --host %s", nf, key, key)
-		}
-	}
-	return nf
+type notFoundError struct {
+	msg string
+	err error
 }
+
+func (e *notFoundError) Error() string { return e.msg }
+func (e *notFoundError) Unwrap() error { return e.err }
 
 // Attrs returns the adapter attributes needed for the requested --json
 // fields plus extra.

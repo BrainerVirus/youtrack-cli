@@ -30,7 +30,9 @@ type Env struct {
 	Stderr    *bytes.Buffer
 	Browser   *browser.Stub
 	ConfigDir string
-	Factory   *cmdutil.Factory
+	// CacheDir is $YTRACK_CACHE_DIR, where the project cache lives.
+	CacheDir string
+	Factory  *cmdutil.Factory
 }
 
 // New returns an Env with no TTYs, an empty config dir, an empty mock keyring
@@ -43,10 +45,12 @@ func New(t *testing.T) *Env {
 		t.Setenv(k, "")
 	}
 	t.Setenv("YTRACK_CONFIG_DIR", dir)
+	cacheDir := t.TempDir()
+	t.Setenv("YTRACK_CACHE_DIR", cacheDir)
 	keyring.MockInit()
 
 	ios, stdin, stdout, stderr := iostreams.Test()
-	e := &Env{t: t, IO: ios, Stdin: stdin, Stdout: stdout, Stderr: stderr, Browser: &browser.Stub{}, ConfigDir: dir}
+	e := &Env{t: t, IO: ios, Stdin: stdin, Stdout: stdout, Stderr: stderr, Browser: &browser.Stub{}, ConfigDir: dir, CacheDir: cacheDir}
 	e.Factory = &cmdutil.Factory{
 		IOStreams:  ios,
 		Prompter:   prompter.New(stdin, stderr),
@@ -95,6 +99,20 @@ func (e *Env) Login(yt *FakeYouTrack) {
 		e.t.Fatalf("login failed with exit %d: %s", code, e.Stderr.String())
 	}
 	e.Reset()
+}
+
+// TwoHosts starts two fake servers, personal and work, each with its own
+// token, and logs in to both; personal, logged in first, is the default
+// host. Both start empty: seed their issues and projects.
+func TwoHosts(t *testing.T) (env *Env, personal, work *FakeYouTrack) {
+	t.Helper()
+	env = New(t)
+	personal = NewFakeYouTrack(t, "")
+	work = NewFakeYouTrack(t, "")
+	work.Token = "perm-d29yaw==.d29yaw==.w0rkT0k3nValue"
+	env.Login(personal)
+	env.Login(work)
+	return env, personal, work
 }
 
 // IsUsageError reports whether a run failed as a usage error: exit 1 (as in

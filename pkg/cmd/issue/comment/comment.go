@@ -28,6 +28,10 @@ type options struct {
 	bodyFile string
 	editor   bool
 	attach   []string
+	// text is the body once read, so a rerun does not read it again.
+	text     string
+	bodyRead bool
+	posted   bool
 	files    []adapter.LocalFile
 	exporter *output.Exporter
 }
@@ -98,7 +102,11 @@ JSON fields:
 			if err := shared.UseRefHost(f, ref, true); err != nil {
 				return err
 			}
-			return run(cmd, f, opts)
+			err = f.WithIssueHostForWrite(cmd.Context(), ref.ID, func() error { return run(cmd, f, opts) })
+			if err != nil && opts.editor && !opts.posted && strings.TrimSpace(opts.text) != "" {
+				saveDraft(f, opts.text)
+			}
+			return err
 		},
 	}
 	fl := cmd.Flags()
@@ -117,10 +125,14 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	if err != nil {
 		return err
 	}
-	body, err := readBody(f, opts)
-	if err != nil {
-		return err
+	// A rerun on the host that owns the issue reuses the text read the first time.
+	if !opts.bodyRead {
+		if opts.text, err = readBody(f, opts); err != nil {
+			return err
+		}
+		opts.bodyRead = true
 	}
+	body := opts.text
 	if strings.TrimSpace(body) == "" {
 		return errors.New("the comment is empty; nothing was posted")
 	}
@@ -128,11 +140,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	body = shared.InlineRefs(body, opts.attach)
 	c, err := adapter.AddComment(cmd.Context(), client, opts.ref.ID, body)
 	if err != nil {
-		if opts.editor {
-			saveDraft(f, body)
-		}
-		return shared.NotFoundElsewhere(cmd.Context(), f, err, opts.ref.ID, host)
+		return shared.NotFound(err, opts.ref.ID, host)
 	}
+	opts.posted = true
 	issueID := c.IssueIDReadable
 	if issueID == "" {
 		issueID = opts.ref.ID

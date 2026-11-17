@@ -117,7 +117,7 @@ JSON fields:
 			if err := shared.UseRefHostForWrite(f, hostRef); err != nil {
 				return err
 			}
-			return run(cmd, f, opts)
+			return f.WithIssueHostForWrite(cmd.Context(), commonID(opts.refs), func() error { return run(cmd, f, opts) })
 		},
 	}
 	fl := cmd.Flags()
@@ -126,6 +126,18 @@ JSON fields:
 	fl.BoolVarP(&opts.dryRun, "dry-run", "n", false, "Show how YouTrack parses the command without applying it")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, Fields)
 	return cmd
+}
+
+// commonID returns the first issue ID when every ID has the same project, so
+// the host that owns that project can be found; "" otherwise.
+func commonID(refs []shared.Ref) string {
+	project := cmdutil.IssueProject(refs[0].ID)
+	for _, r := range refs[1:] {
+		if cmdutil.IssueProject(r.ID) != project {
+			return ""
+		}
+	}
+	return refs[0].ID
 }
 
 func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {

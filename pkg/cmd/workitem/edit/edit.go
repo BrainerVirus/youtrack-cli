@@ -83,7 +83,7 @@ JSON fields:
 				}
 				ch.Date = &d
 			}
-			return run(cmd, f, opts, ch)
+			return f.WithIssueHostForWrite(cmd.Context(), ref.ID, func() error { return run(cmd, f, opts, ch) })
 		},
 	}
 	fl := cmd.Flags()

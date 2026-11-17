@@ -78,7 +78,7 @@ JSON fields:
 			if opts.web {
 				return openWeb(f, ref.ID)
 			}
-			return run(cmd, f, opts)
+			return f.WithIssueHost(cmd.Context(), ref.ID, func() error { return run(cmd, f, opts) })
 		},
 	}
 	fl := cmd.Flags()
@@ -124,7 +124,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		}
 		issue, err := adapter.GetIssue(ctx, client, id, shared.Attrs(opts.exporter.Fields, extra...))
 		if err != nil {
-			return shared.NotFoundElsewhere(ctx, f, err, id, host)
+			return shared.NotFound(err, id, host)
 		}
 		out := shared.Issue{Issue: issue, Host: host}
 		if wantComments {
@@ -141,7 +141,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 
 	issue, err := adapter.GetIssue(ctx, client, id, humanAttrs)
 	if err != nil {
-		return shared.NotFoundElsewhere(ctx, f, err, id, host)
+		return shared.NotFound(err, id, host)
 	}
 	var comments []adapter.Comment
 	if opts.comments && issue.CommentsCount > 0 {

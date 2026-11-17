@@ -92,6 +92,33 @@ func TestAPIError(t *testing.T) {
 	}
 }
 
+func TestAPIErrorOrigin(t *testing.T) {
+	t.Run("given a client with an origin, its errors name the host, why it was chosen and the others", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error":"Not Found","error_description":"Entity not found"}`))
+		}))
+		defer srv.Close()
+		o := &Origin{Host: "p.example", Why: "by the folder rule ~/p/**", Others: []string{"w.example", "x.example"}}
+		err := New(Options{BaseURL: srv.URL, Origin: o}).GetJSON(context.Background(), "/api/issues/X-1", &map[string]any{})
+		want := "HTTP 404 from p.example (chosen by the folder rule ~/p/**): Entity not found (Not Found); try --host w.example or --host x.example"
+		if err == nil || err.Error() != want {
+			t.Errorf("err = %v, want %q", err, want)
+		}
+		apiErr, _ := errors.AsType[*APIError](err)
+		if got := apiErr.HostHint(); got != "; p.example chosen by the folder rule ~/p/**; try --host w.example or --host x.example" {
+			t.Errorf("HostHint() = %q", got)
+		}
+	})
+
+	t.Run("given no origin, the message and hint are unchanged", func(t *testing.T) {
+		e := ParseError(404, "404 Not Found", strings.NewReader(`{}`))
+		if e.Error() != "HTTP 404: Not Found" || e.HostHint() != "" {
+			t.Errorf("got %q, hint %q", e.Error(), e.HostHint())
+		}
+	})
+}
+
 func TestRedirects(t *testing.T) {
 	t.Run("given a redirect to another host, the token never reaches it", func(t *testing.T) {
 		var gotAuth []string

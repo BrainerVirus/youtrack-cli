@@ -36,12 +36,15 @@ type Options struct {
 	Timeout time.Duration
 	// RoundTripper overrides the underlying transport (tests).
 	RoundTripper http.RoundTripper
+	// Origin, when non-nil, is attached to every *APIError the client returns.
+	Origin *Origin
 }
 
 // Client sends authenticated requests to one YouTrack host.
 type Client struct {
 	baseURL string
 	http    *http.Client
+	origin  *Origin
 }
 
 // New returns a Client for opts.BaseURL.
@@ -66,6 +69,7 @@ func New(opts Options) *Client {
 		timeout = 60 * time.Second
 	}
 	return &Client{
+		origin:  opts.Origin,
 		baseURL: baseURL,
 		http: &http.Client{
 			Transport:     rt,
@@ -79,9 +83,19 @@ func New(opts Options) *Client {
 func (c *Client) URL(path string) string { return c.baseURL + path }
 
 // Do sends req as is. Callers inspect the status code themselves; use
-// CheckResponse to convert error statuses.
+// the client's CheckResponse to convert error statuses.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return c.http.Do(req)
+}
+
+// CheckResponse is the package's CheckResponse, with the client's Origin on
+// the *APIError.
+func (c *Client) CheckResponse(resp *http.Response) error {
+	err := CheckResponse(resp)
+	if apiErr, ok := errors.AsType[*APIError](err); ok {
+		apiErr.Origin = c.origin
+	}
+	return err
 }
 
 // GetJSON sends GET path (relative to the service URL, starting with /api)
@@ -96,7 +110,7 @@ func (c *Client) GetJSON(ctx context.Context, path string, v any) error {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if err := CheckResponse(resp); err != nil {
+	if err := c.CheckResponse(resp); err != nil {
 		return err
 	}
 	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
@@ -298,7 +312,7 @@ func (c *Client) do(req *http.Request, path string, v any) error {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if err := CheckResponse(resp); err != nil {
+	if err := c.CheckResponse(resp); err != nil {
 		return err
 	}
 	if v == nil {
@@ -321,7 +335,7 @@ func (c *Client) Delete(ctx context.Context, path string) error {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	return CheckResponse(resp)
+	return c.CheckResponse(resp)
 }
 
 // authTransport adds the token only to requests inside the service URL: same

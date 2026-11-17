@@ -101,6 +101,25 @@ func (yt *FakeYouTrack) SeedSampleProjects() {
 	yt.Tags = tags
 }
 
+// AddProject adds a project with shortName and no custom fields.
+func (yt *FakeYouTrack) AddProject(shortName string) {
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	id := fmt.Sprintf("0-%d", 100+len(yt.Projects))
+	yt.Projects = append(yt.Projects, map[string]any{"$type": "Project", "id": id, "shortName": shortName, "name": shortName, "archived": false})
+}
+
+// ProjectLookups counts the project list reads (GET /api/admin/projects).
+func (yt *FakeYouTrack) ProjectLookups() int {
+	n := 0
+	for _, r := range yt.Requests() {
+		if r.Method == http.MethodGet && strings.HasSuffix(r.Path, "/api/admin/projects") {
+			n++
+		}
+	}
+	return n
+}
+
 func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/admin/projects", func(w http.ResponseWriter, r *http.Request) {
 		yt.mu.Lock()

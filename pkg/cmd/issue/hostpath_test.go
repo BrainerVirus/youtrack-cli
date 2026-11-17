@@ -14,14 +14,9 @@ import (
 // serving the sample issues.
 func personalAndWork(t *testing.T) (env *cmdtest.Env, personal, work *cmdtest.FakeYouTrack) {
 	t.Helper()
-	env = cmdtest.New(t)
-	personal = cmdtest.NewFakeYouTrack(t, "")
-	work = cmdtest.NewFakeYouTrack(t, "")
-	work.Token = "perm-d29yaw==.d29yaw==.w0rkT0k3nValue"
+	env, personal, work = cmdtest.TwoHosts(t)
 	personal.SeedSampleIssues()
 	work.SeedSampleIssues()
-	env.Login(personal)
-	env.Login(work)
 	return env, personal, work
 }
 
@@ -106,58 +101,150 @@ func TestIssueURLForms(t *testing.T) {
 	})
 }
 
-func TestNotFoundOnDefaultHost(t *testing.T) {
-	t.Run("given an issue only on another logged-in host, view names that host and the --host rerun", func(t *testing.T) {
-		env, personal, work := personalAndWork(t)
-		personal.Issues = nil
-		if code := env.Run("issue", "view", "NSR-40"); code != 1 {
-			t.Fatalf("exit %d: %s", code, env.Stderr)
+// wrongFolder sets up NSR-40 on work only, with a folder rule that picks
+// personal (which has only the OWN project) for the working directory.
+func wrongFolder(t *testing.T) (env *cmdtest.Env, personal, work *cmdtest.FakeYouTrack) {
+	t.Helper()
+	env, personal, work = cmdtest.TwoHosts(t)
+	personal.AddProject("OWN")
+	work.SeedSampleIssues()
+	work.SeedSampleProjects()
+	mustRun(t, env, "auth", "paths", "--host", personal.URL(), "--add", "/p/**")
+	env.Factory.WorkDir = func() (string, error) { return "/p/repo", nil }
+	env.Reset()
+	return env, personal, work
+}
+
+func TestHostByIssueKey(t *testing.T) {
+	t.Run("given the folder rule picks a host without the key's project, view uses the one host that has it and says so", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "idReadable,url")
+		if want := `{"idReadable":"NSR-40","url":"` + work.URL() + `/issue/NSR-40"}` + "\n"; env.Stdout.String() != want {
+			t.Errorf("stdout = %q, want %q", env.Stdout, want)
 		}
-		want := "issue NSR-40 not found on " + personal.Key() + " (or you cannot see it); it is on " + work.Key() + ": rerun with --host " + work.Key()
-		if !strings.Contains(env.Stderr.String(), want) {
+		if want := "using " + work.Key() + " for NSR-* (the folder rule picked " + personal.Key() + ")\n"; env.Stderr.String() != want {
 			t.Errorf("stderr = %q, want %q", env.Stderr, want)
 		}
 	})
 
-	t.Run("given --host, a not-found does not look at other hosts", func(t *testing.T) {
-		env, personal, work := personalAndWork(t)
-		personal.Issues = nil
-		before := issueGets(work)
-		if code := env.Run("issue", "view", "NSR-40", "--host", personal.URL()); code != 1 {
-			t.Fatalf("exit %d: %s", code, env.Stderr)
+	t.Run("given a cached answer, a second view goes straight to the owner with no project lookup", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "idReadable")
+		lookups, personalReads := personal.ProjectLookups()+work.ProjectLookups(), issueGets(personal)
+		env.Reset()
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "idReadable")
+		if n := personal.ProjectLookups() + work.ProjectLookups() - lookups; n != 0 {
+			t.Errorf("second run made %d project lookups", n)
 		}
-		if issueGets(work) != before || strings.Contains(env.Stderr.String(), "rerun with") {
-			t.Errorf("stderr = %q, work got %d", env.Stderr, issueGets(work)-before)
+		if issueGets(personal) != personalReads {
+			t.Errorf("second run asked personal for the issue")
+		}
+		if want := "using " + work.Key() + " for NSR-* (the folder rule picked " + personal.Key() + ")\n"; env.Stderr.String() != want {
+			t.Errorf("stderr = %q, want %q", env.Stderr, want)
 		}
 	})
 
-	t.Run("given a folder path picked the host, a not-found does not look at other hosts", func(t *testing.T) {
-		env, personal, work := personalAndWork(t)
-		mustRun(t, env, "auth", "paths", "--host", work.URL(), "--add", "/w/**")
-		env.Factory.WorkDir = func() (string, error) { return "/w/repo", nil }
-		work.Issues = nil
+	t.Run("given no folder rule matches, the default host is the one named", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		env.Factory.WorkDir = func() (string, error) { return "/elsewhere", nil }
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "idReadable")
+		if want := "using " + work.Key() + " for NSR-* (the default host is " + personal.Key() + ")\n"; env.Stderr.String() != want {
+			t.Errorf("stderr = %q, want %q", env.Stderr, want)
+		}
+	})
+
+	for _, explicit := range []struct{ name, why string }{{"--host", "by --host"}, {"YTRACK_HOST", "by YTRACK_HOST"}} {
+		t.Run("given "+explicit.name+" names a host without the key, no other host is tried and the error says where the host came from", func(t *testing.T) {
+			env, personal, work := wrongFolder(t)
+			before := len(work.Requests())
+			args := []string{"issue", "view", "NSR-40"}
+			if explicit.name == "--host" {
+				args = append(args, "--host", personal.URL())
+			} else {
+				t.Setenv("YTRACK_HOST", personal.URL())
+			}
+			if code := env.Run(args...); code != 1 {
+				t.Fatalf("exit %d: %s", code, env.Stderr)
+			}
+			want := "ytrack: issue NSR-40 not found on " + personal.Key() + " (or you cannot see it); " + personal.Key() + " chosen " + explicit.why + "; try --host " + work.Key() + "\n"
+			if env.Stderr.String() != want {
+				t.Errorf("stderr = %q, want %q", env.Stderr, want)
+			}
+			if len(work.Requests()) != before || personal.ProjectLookups() != 0 {
+				t.Errorf("work got %d requests, personal %d project lookups", len(work.Requests())-before, personal.ProjectLookups())
+			}
+		})
+	}
+
+	t.Run("given the key's project is on no host, the error names the host, why, and the others to try", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		if code := env.Run("issue", "view", "ZZZ-1"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		want := "ytrack: issue ZZZ-1 not found on " + personal.Key() + " (or you cannot see it); " + personal.Key() + " chosen by the folder rule /p/**; try --host " + work.Key() + "\n"
+		if env.Stderr.String() != want {
+			t.Errorf("stderr = %q, want %q", env.Stderr, want)
+		}
+	})
+
+	t.Run("given the picked host has the project, a missing issue is not looked for elsewhere", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		personal.AddProject("NSR")
 		if code := env.Run("issue", "view", "NSR-40"); code != 1 {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
 		}
-		if issueGets(personal) != 0 || strings.Contains(env.Stderr.String(), "rerun with") {
-			t.Errorf("stderr = %q, personal got %d", env.Stderr, issueGets(personal))
+		if issueGets(work) != 0 || strings.Contains(env.Stderr.String(), "using ") {
+			t.Errorf("stderr = %q, work got %d issue reads", env.Stderr, issueGets(work))
 		}
 	})
 
-	t.Run("given YTRACK_TOKEN, the probe of other hosts never sends it", func(t *testing.T) {
-		env, personal, work := personalAndWork(t)
-		personal.Issues = nil
+	t.Run("given two other hosts have the project, none is picked", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		third := cmdtest.NewFakeYouTrack(t, "")
+		third.Token = "perm-dGhpcmQ=.dGhpcmQ=.th1rdT0k3nValue"
+		third.AddProject("NSR")
+		env.Login(third)
+		if code := env.Run("issue", "view", "NSR-40"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if issueGets(work) != 0 || !strings.Contains(env.Stderr.String(), "not found on "+personal.Key()) {
+			t.Errorf("stderr = %q, work got %d issue reads", env.Stderr, issueGets(work))
+		}
+	})
+
+	t.Run("given YTRACK_TOKEN, no other host is tried and the token goes nowhere else", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
 		t.Setenv("YTRACK_TOKEN", personal.Token)
+		before := len(work.Requests())
 		_ = env.Run("issue", "view", "NSR-40")
-		for _, r := range work.Requests() {
-			if strings.Contains(r.Header.Get("Authorization"), personal.Token) {
-				t.Errorf("%s %s carried YTRACK_TOKEN", r.Method, r.Path)
-			}
+		if n := len(work.Requests()) - before; n != 0 {
+			t.Errorf("work got %d requests", n)
+		}
+	})
+
+	t.Run("given one logged-in host, a not-found makes no project lookup", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		if code := env.Run("issue", "view", "NOPE-1"); code != 1 {
+			t.Fatalf("exit %d", code)
+		}
+		if want := "ytrack: issue NOPE-1 not found on " + yt.Key() + " (or you cannot see it)\n"; env.Stderr.String() != want || yt.ProjectLookups() != 0 {
+			t.Errorf("stderr = %q, %d project lookups", env.Stderr, yt.ProjectLookups())
+		}
+	})
+
+	t.Run("given two hosts, an API error names the host that answered and why", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		if code := env.Run("api", "/issues/NSR-40"); code != 1 {
+			t.Fatalf("exit %d", code)
+		}
+		want := "HTTP 404 from " + personal.Key() + " (chosen by the folder rule /p/**): "
+		if !strings.Contains(env.Stderr.String(), want) || !strings.HasSuffix(env.Stderr.String(), "; try --host "+work.Key()+"\n") {
+			t.Errorf("stderr = %q, want it to contain %q", env.Stderr, want)
 		}
 	})
 }
 
-// writeCases are the issue writes that name another host on a not-found.
+// writeCases are the issue writes that follow the issue key's host.
 func writeCases(t *testing.T) map[string][]string {
 	t.Helper()
 	file := filepath.Join(t.TempDir(), "log.txt")
@@ -166,10 +253,13 @@ func writeCases(t *testing.T) map[string][]string {
 	}
 	return map[string][]string{
 		"comment":        {"issue", "comment", "NSR-40", "-b", "x"},
+		"comment+attach": {"issue", "comment", "NSR-40", "-b", "x", "--attach", file},
 		"attach":         {"issue", "attach", "NSR-40", file},
 		"edit --summary": {"issue", "edit", "NSR-40", "-s", "New summary"},
 		"edit --field":   {"issue", "edit", "NSR-40", "-f", "Priority=Major"},
 		"edit --add-tag": {"issue", "edit", "NSR-40", "--add-tag", "regression"},
+		"command":        {"issue", "command", "NSR-40", "Priority Major"},
+		"work-item add":  {"work-item", "add", "NSR-40", "--duration", "1h"},
 	}
 }
 
@@ -184,21 +274,16 @@ func writes(yt *cmdtest.FakeYouTrack) int {
 	return n
 }
 
-func TestNotFoundOnDefaultHostWrites(t *testing.T) {
+func TestHostByIssueKeyWrites(t *testing.T) {
 	for name, args := range writeCases(t) {
-		t.Run("given an issue only on another logged-in host, "+name+" names that host and writes nowhere else", func(t *testing.T) {
-			env, personal, work := personalAndWork(t)
-			personal.SeedSampleProjects()
-			personal.Issues = nil
-			if code := env.Run(args...); code != 1 {
-				t.Fatalf("exit %d: %s", code, env.Stderr)
+		t.Run("given the wrong folder, "+name+" writes to the host that has the key and never to the picked one", func(t *testing.T) {
+			env, personal, work := wrongFolder(t)
+			mustRun(t, env, args...)
+			if writes(personal) != 0 || writes(work) == 0 {
+				t.Errorf("personal got %d writes, work %d", writes(personal), writes(work))
 			}
-			want := "issue NSR-40 not found on " + personal.Key() + " (or you cannot see it); it is on " + work.Key() + ": rerun with --host " + work.Key()
-			if !strings.Contains(env.Stderr.String(), want) {
-				t.Errorf("stderr = %q, want %q", env.Stderr, want)
-			}
-			if writes(work) != 0 || issueGets(work) != 1 {
-				t.Errorf("work got %d writes and %d issue reads, want 0 and 1", writes(work), issueGets(work))
+			if !strings.Contains(env.Stderr.String(), "using "+work.Key()+" for NSR-*") {
+				t.Errorf("stderr = %q", env.Stderr)
 			}
 			if strings.Contains(env.Stderr.String()+env.Stdout.String(), work.Token) {
 				t.Errorf("output carries work's token: %s", env.Stderr)
@@ -206,16 +291,24 @@ func TestNotFoundOnDefaultHostWrites(t *testing.T) {
 		})
 
 		t.Run("given --host, "+name+" does not look at other hosts", func(t *testing.T) {
-			env, personal, work := personalAndWork(t)
+			env, personal, work := wrongFolder(t)
 			personal.SeedSampleProjects()
-			personal.Issues = nil
 			before := len(work.Requests())
 			if code := env.Run(append(args, "--host", personal.URL())...); code != 1 {
 				t.Fatalf("exit %d: %s", code, env.Stderr)
 			}
-			if len(work.Requests()) != before || strings.Contains(env.Stderr.String(), "rerun with") {
+			if len(work.Requests()) != before || strings.Contains(env.Stderr.String(), "using ") {
 				t.Errorf("stderr = %q, work got %d requests", env.Stderr, len(work.Requests())-before)
 			}
 		})
 	}
+
+	t.Run("given the wrong folder, comment posts the comment to the owner once", func(t *testing.T) {
+		env, _, work := wrongFolder(t)
+		mustRun(t, env, "issue", "comment", "NSR-40", "-b", "from the wrong folder")
+		cs := work.Comments["NSR-40"]
+		if len(cs) != 4 || cs[3]["text"] != "from the wrong folder" {
+			t.Errorf("work's comments = %v", cs)
+		}
+	})
 }

@@ -68,7 +68,7 @@ JSON fields:
 			if err := issueshared.UseRefHost(f, ref, true); err != nil {
 				return err
 			}
-			return run(cmd, f, opts)
+			return f.WithIssueHost(cmd.Context(), ref.ID, func() error { return run(cmd, f, opts) })
 		},
 	}
 	fl := cmd.Flags()
