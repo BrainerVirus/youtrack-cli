@@ -15,7 +15,44 @@ type APIError struct {
 	// Code and Description are YouTrack's "error" and "error_description".
 	Code        string
 	Description string
+	// Origin, when set, names the host that answered and why it was picked;
+	// ytrack sets it when more than one host is logged in.
+	Origin *Origin
 }
+
+// Origin says which host answered a request, why ytrack picked it and which
+// other logged-in hosts the user could try instead.
+type Origin struct {
+	// Host is the host key, e.g. acme.youtrack.cloud.
+	Host string
+	// Why completes "chosen ...", e.g. "by --host" or "as the default host".
+	Why string
+	// Others are the other logged-in host keys.
+	Others []string
+}
+
+// Hint is "; <host> chosen <why>; try --host <other>", or "" for a nil Origin.
+func (o *Origin) Hint() string {
+	if o == nil {
+		return ""
+	}
+	return fmt.Sprintf("; %s chosen %s", o.Host, o.Why) + o.try()
+}
+
+// try is "; try --host <a> or --host <b>", or "" with no other hosts.
+func (o *Origin) try() string {
+	if len(o.Others) == 0 {
+		return ""
+	}
+	tries := make([]string, len(o.Others))
+	for i, h := range o.Others {
+		tries[i] = "--host " + h
+	}
+	return "; try " + strings.Join(tries, " or ")
+}
+
+// HostHint is the Origin's Hint, for messages that already name the host.
+func (e *APIError) HostHint() string { return e.Origin.Hint() }
 
 func (e *APIError) Error() string {
 	var msg string
@@ -29,10 +66,17 @@ func (e *APIError) Error() string {
 	default:
 		msg = strings.TrimSpace(strings.TrimPrefix(e.Status, fmt.Sprint(e.StatusCode)))
 	}
-	if msg == "" {
-		return fmt.Sprintf("HTTP %d", e.StatusCode)
+	head := fmt.Sprintf("HTTP %d", e.StatusCode)
+	if e.Origin != nil {
+		head += fmt.Sprintf(" from %s (chosen %s)", e.Origin.Host, e.Origin.Why)
 	}
-	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, msg)
+	if msg != "" {
+		head += ": " + msg
+	}
+	if e.Origin != nil {
+		head += e.Origin.try()
+	}
+	return head
 }
 
 // HTTPStatus implements clierr.StatusCoder.

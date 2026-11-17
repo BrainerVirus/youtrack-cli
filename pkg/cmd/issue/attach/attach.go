@@ -67,13 +67,17 @@ JSON fields:
 			if err := shared.UseRefHost(f, ref, true); err != nil {
 				return err
 			}
-			client, host, err := f.APIClient()
+			var created []adapter.Attachment
+			err = f.WithIssueHostForWrite(cmd.Context(), ref.ID, func() error {
+				client, host, err := f.APIClient()
+				if err != nil {
+					return err
+				}
+				created, err = adapter.AttachToIssue(cmd.Context(), client, ref.ID, files)
+				return shared.NotFound(err, ref.ID, host)
+			})
 			if err != nil {
 				return err
-			}
-			created, err := adapter.AttachToIssue(cmd.Context(), client, ref.ID, files)
-			if err != nil {
-				return shared.NotFoundElsewhere(cmd.Context(), f, err, ref.ID, host)
 			}
 			out := make([]attachment, len(created))
 			for i, a := range created {

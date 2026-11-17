@@ -206,7 +206,7 @@ func ResolveType(ctx context.Context, c *transport.Client, p adapter.IssueProjec
 // NotFound turns a 404 on a work item into a clear message.
 func NotFound(err error, issueID, itemID string, host hosts.Host) error {
 	if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("work item %s not found on issue %s on %s (or you cannot see it)", itemID, issueID, host.Key)
+		return issueshared.NotFoundf(apiErr, "work item %s not found on issue %s on %s (or you cannot see it)", itemID, issueID, host.Key)
 	}
 	return err
 }

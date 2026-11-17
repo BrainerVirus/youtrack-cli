@@ -81,7 +81,7 @@ JSON fields:
 			if err := shared.UseRefHostForWrite(f, ref); err != nil {
 				return err
 			}
-			return run(cmd, f, opts)
+			return f.WithIssueHostForWrite(cmd.Context(), ref.ID, func() error { return run(cmd, f, opts) })
 		},
 	}
 	fl := cmd.Flags()
@@ -103,15 +103,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	if err != nil {
 		return err
 	}
-	// Only the first issue request's 404 may point at another host: after
-	// that the issue was found here, and a change may already be made.
-	found := false
-	notFound := func(err error) error {
-		if found {
-			return shared.NotFound(err, id, host)
-		}
-		return shared.NotFoundElsewhere(ctx, f, err, id, host)
-	}
+	notFound := func(err error) error { return shared.NotFound(err, id, host) }
 
 	var changed []string
 	ch := adapter.IssueChange{}
@@ -121,7 +113,6 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if err != nil {
 			return notFound(err)
 		}
-		found = true
 		zone, err := shared.Zone(f)
 		if err != nil {
 			return err
@@ -154,7 +145,6 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			if err != nil {
 				return notFound(err)
 			}
-			found = true
 			initial = cur.Description
 		}
 		text, err := opts.description.Read(f, initial)
@@ -176,13 +166,12 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if issue, err = adapter.UpdateIssue(ctx, client, id, ch, attrs); err != nil {
 			return notFound(err)
 		}
-		found, fresh = true, true
+		fresh = true
 	}
 	for _, t := range addTags {
 		if err := adapter.AddIssueTag(ctx, client, id, t.ID); err != nil {
 			return notFound(err)
 		}
-		found = true
 		changed, fresh = append(changed, "+"+t.Name), false
 	}
 	for _, t := range removeTags {

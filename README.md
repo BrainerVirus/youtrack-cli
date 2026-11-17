@@ -244,11 +244,25 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   4 authentication required.
 - Environment: `YTRACK_HOST`, `YTRACK_TOKEN` (runtime override, never saved),
   `YTRACK_DEBUG=1` (request log with credentials redacted, same as `--debug`),
-  `YTRACK_CONFIG_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`,
+  `YTRACK_CONFIG_DIR`, `YTRACK_CACHE_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`,
   `YTRACK_NO_UPDATE_NOTIFIER=1` (no new-release notice).
 - Host precedence: `--host`, the host of an issue URL argument,
   `YTRACK_HOST`, the host whose `auth paths` match the current folder (in any
   case on macOS and Windows, case-sensitively elsewhere), the default host.
+  When the folder or the default host picked a host that does not have an
+  issue key's project (`APP` in `APP-123`) and exactly one other logged-in
+  host does, issue and work item commands use that host and print
+  `using <host> for APP-* (the folder rule picked <other>)` on stderr. Reads
+  try the picked host first and look the project up only after a 404; writes
+  look it up first, so they never reach a host that does not own the key,
+  and recheck the picked host before acting on a cached "it lacks the
+  project". Answers are cached for 7 days per host URL and project in
+  `~/.cache/ytrack/projects.json` (`$YTRACK_CACHE_DIR/projects.json`,
+  `$XDG_CACHE_HOME/ytrack/projects.json`; `~/Library/Caches/ytrack` on macOS,
+  `%LocalAppData%\ytrack` on Windows); delete that file to clear them. `--host`, `YTRACK_HOST`,
+  an issue URL and `YTRACK_TOKEN` turn this off. With more than one logged-in
+  host, HTTP errors name the host that answered and why it was chosen, and
+  suggest `--host` for the others.
   Token
   precedence: `YTRACK_TOKEN`, then the stored token. `YTRACK_TOKEN` goes to
   a host named by `--host` or `YTRACK_HOST` without a warning (the CI setup),

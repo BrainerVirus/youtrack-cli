@@ -40,6 +40,29 @@ func ListProjects(ctx context.Context, c *transport.Client) ([]ProjectInfo, erro
 	return out, err
 }
 
+// HasProject reports whether the user can see a project with shortName
+// (case-insensitive) on c's host. It pages through the documented project
+// list with fields=shortName and stops at the first match.
+func HasProject(ctx context.Context, c *transport.Client, shortName string) (bool, error) {
+	found := false
+	_, err := transport.Paginate(0, PageSize, 0, func(skip, top int) ([]struct{}, error) {
+		var page []struct {
+			ShortName string `json:"shortName"`
+		}
+		if err := c.GetJSON(ctx, fmt.Sprintf("/api/admin/projects?fields=shortName&$skip=%d&$top=%d", skip, top), &page); err != nil {
+			return nil, err
+		}
+		for _, p := range page {
+			if strings.EqualFold(p.ShortName, shortName) {
+				found = true
+				return nil, nil // an empty page ends the paging
+			}
+		}
+		return make([]struct{}, len(page)), nil
+	})
+	return found, err
+}
+
 // ProjectFields returns the custom field definitions of a project, by
 // database ID.
 func ProjectFields(ctx context.Context, c *transport.Client, projectID string) ([]customfields.Definition, error) {

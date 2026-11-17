@@ -45,6 +45,9 @@ type Factory struct {
 	urlHost string
 	// explicitHost is the key of the host named by --host or $YTRACK_HOST.
 	explicitHost string
+	// keyHost is the host that owns the issue key's project (see
+	// WithIssueHost), and keyProject that project.
+	keyHost, keyProject string
 }
 
 // Clock returns the current time from Now, or time.Now.
@@ -82,6 +85,7 @@ const (
 	HostFromFlag    = "flag"    // --host
 	HostFromURL     = "url"     // an issue URL argument
 	HostFromEnv     = "env"     // $YTRACK_HOST
+	HostFromKey     = "key"     // the logged-in host that has the issue key's project
 	HostFromPath    = "path"    // a hosts.yml path glob matching the working directory
 	HostFromDefault = "default" // default_host in hosts.yml
 )
@@ -92,6 +96,25 @@ type Resolution struct {
 	Source string
 	// Glob is the matching path glob when Source is HostFromPath.
 	Glob string
+	// Project is the issue key's project when Source is HostFromKey.
+	Project string
+}
+
+// Why completes "<host> chosen ..." for messages that explain the choice.
+func (r Resolution) Why() string {
+	switch r.Source {
+	case HostFromFlag:
+		return "by --host"
+	case HostFromURL:
+		return "by the issue URL"
+	case HostFromEnv:
+		return "by YTRACK_HOST"
+	case HostFromKey:
+		return "because it has project " + r.Project
+	case HostFromPath:
+		return "by the folder rule " + r.Glob
+	}
+	return "as the default host"
 }
 
 // ResolveHost picks the host to talk to (see HostResolution).
@@ -102,8 +125,9 @@ func (f *Factory) ResolveHost(cfg *config.Config) (hosts.Host, error) {
 
 // HostResolution picks the host to talk to and says why: --host, then the
 // host of an issue URL argument, then $YTRACK_HOST, then the logged-in host
-// whose path glob matches the working directory, then the default host from
-// hosts.yml. A known host keeps its stored URL (scheme and path prefix); an
+// that owns the issue key's project (see WithIssueHost), then the logged-in
+// host whose path glob matches the working directory, then the default host
+// from hosts.yml. A known host keeps its stored URL (scheme and path prefix); an
 // unknown one is normalized from the input.
 func (f *Factory) HostResolution(cfg *config.Config) (hosts.Host, Resolution, error) {
 	var res Resolution
@@ -117,6 +141,9 @@ func (f *Factory) HostResolution(cfg *config.Config) (hosts.Host, Resolution, er
 			input, res.Source = c.value, c.source
 			break
 		}
+	}
+	if input == "" && f.keyHost != "" {
+		input, res = f.keyHost, Resolution{Source: HostFromKey, Project: f.keyProject}
 	}
 	if input == "" {
 		m, ok, err := cfg.HostForPath(f.workDirs()...)
@@ -195,6 +222,31 @@ func (f *Factory) DebugEnabled() bool {
 // NewClient returns an API client for host using token. It warns when the
 // host is reached over plain http and is not loopback.
 func (f *Factory) NewClient(host hosts.Host, token string) *transport.Client {
+	return f.newClient(host, token, nil)
+}
+
+// origin names host, why res picked it and the other logged-in hosts, for
+// API errors; nil when host is the only host in play.
+func origin(cfg *config.Config, host hosts.Host, res Resolution) *transport.Origin {
+	others := otherHosts(cfg, host.Key)
+	if len(others) == 0 {
+		return nil
+	}
+	return &transport.Origin{Host: host.Key, Why: res.Why(), Others: others}
+}
+
+// otherHosts returns the logged-in host keys other than key.
+func otherHosts(cfg *config.Config, key string) []string {
+	var out []string
+	for _, k := range cfg.HostKeys() {
+		if k != key {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+func (f *Factory) newClient(host hosts.Host, token string, o *transport.Origin) *transport.Client {
 	if host.PlainHTTP() {
 		f.Warnf("%s uses plain http; requests and tokens are sent unencrypted", host.URL)
 	}
@@ -203,6 +255,7 @@ func (f *Factory) NewClient(host hosts.Host, token string) *transport.Client {
 		Token:        token,
 		UserAgent:    "ytrack/" + f.AppVersion,
 		RoundTripper: f.RoundTripper,
+		Origin:       o,
 	}
 	if f.DebugEnabled() {
 		opts.DebugLog = f.IOStreams.ErrOut
@@ -217,7 +270,7 @@ func (f *Factory) APIClient() (*transport.Client, hosts.Host, error) {
 	if err != nil {
 		return nil, hosts.Host{}, err
 	}
-	host, err := f.ResolveHost(cfg)
+	host, res, err := f.HostResolution(cfg)
 	if err != nil {
 		return nil, hosts.Host{}, err
 	}
@@ -228,5 +281,5 @@ func (f *Factory) APIClient() (*transport.Client, hosts.Host, error) {
 	if token == "" {
 		return nil, hosts.Host{}, clierr.AuthErrorf("not logged in to %s; run `ytrack auth login --host %s` or set YTRACK_TOKEN", host.Key, host.Key)
 	}
-	return f.NewClient(host, token), host, nil
+	return f.newClient(host, token, origin(cfg, host, res)), host, nil
 }

@@ -198,7 +198,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if opts.include {
 			printHeaders(ios.Out, resp)
 		}
-		if err := transport.CheckResponse(resp); err != nil {
+		if err := client.CheckResponse(resp); err != nil {
 			_ = resp.Body.Close()
 			return nil, err
 		}

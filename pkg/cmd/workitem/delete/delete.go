@@ -49,7 +49,7 @@ it; otherwise --yes is required.`,
 			if err := issueshared.UseRefHost(f, ref, true); err != nil {
 				return err
 			}
-			return run(cmd, f, opts)
+			return f.WithIssueHostForWrite(cmd.Context(), ref.ID, func() error { return run(cmd, f, opts) })
 		},
 	}
 	cmd.Flags().BoolVarP(&opts.yes, "yes", "y", false, "Delete without asking for confirmation")

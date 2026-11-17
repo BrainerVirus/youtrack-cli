@@ -70,6 +70,22 @@ disagrees, these win.
      when they are the most specific globs matching the folder; a narrower
      glob still wins. `auth status` reports which one applies and
      why.
+   - Host by issue key: when a path glob or the default host picked the
+     host (no `--host`, issue URL, `YTRACK_HOST` or `YTRACK_TOKEN`), more
+     than one host is logged in, and the picked host does not have the
+     issue key's project while exactly one other logged-in host does, a
+     command on that key uses that host and prints `using <host> for
+     <PREFIX>-* (the folder rule picked <other>)` (or `(the default host is
+     <other>)`) on stderr. Whether a host has a project comes from the
+     documented `GET /api/admin/projects?fields=shortName&$skip&$top`, paged
+     with each host's stored token until a match, and is cached per host
+     service URL and project for 7 days in `projects.json` in the cache dir (`YTRACK_CACHE_DIR`, else
+     `XDG_CACHE_HOME/ytrack`, else the OS user cache dir). Reads look it up
+     only after a 404 on the picked host, then rerun once; writes look it up
+     before the first request, so they never reach a host that does not own
+     the key, and recheck the picked host live before acting on a cached
+     "the picked host lacks the project". With more than one logged-in host, an HTTP error names the host
+     that answered, why it was chosen and the others (`try --host <h>`).
    - Token precedence: `YTRACK_TOKEN` (a runtime override for CI that is never
      saved by `auth login`), then the keyring entry for the host.
    - Config is YAML in the user config dir (`ytrack/config.yml` plus
