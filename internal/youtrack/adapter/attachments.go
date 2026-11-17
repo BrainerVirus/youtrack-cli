@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 
@@ -40,27 +41,6 @@ type LocalFile struct {
 // AttachToIssue uploads files to the issue in one request and returns the
 // attachments YouTrack created.
 func AttachToIssue(ctx context.Context, c *transport.Client, issueID string, files []LocalFile) ([]Attachment, error) {
-	return upload(ctx, c, "/api/issues/"+url.PathEscape(issueID)+"/attachments?fields=id,name,size,mimeType", files)
-}
-
-// AttachToComment uploads files to an existing comment in one request, the
-// way the web UI does. YouTrack ignores files sent inside the JSON that
-// creates a comment, so a comment gets its files only through this upload.
-func AttachToComment(ctx context.Context, c *transport.Client, issueID, commentID string, files []LocalFile) error {
-	_, err := upload(ctx, c, "/api/issues/"+url.PathEscape(issueID)+"/comments/"+url.PathEscape(commentID)+"/attachments?fields=id,name", files)
-	return err
-}
-
-// CommentAttachments reads the attachments a comment has.
-func CommentAttachments(ctx context.Context, c *transport.Client, issueID, commentID string) ([]Attachment, error) {
-	var w struct {
-		Attachments []Attachment `json:"attachments"`
-	}
-	err := c.GetJSON(ctx, "/api/issues/"+url.PathEscape(issueID)+"/comments/"+url.PathEscape(commentID)+"?fields=attachments(id,name)", &w)
-	return w.Attachments, err
-}
-
-func upload(ctx context.Context, c *transport.Client, path string, files []LocalFile) ([]Attachment, error) {
 	parts := make([]transport.FilePart, len(files))
 	for i, f := range files {
 		open := openFile(f.Path)
@@ -70,8 +50,33 @@ func upload(ctx context.Context, c *transport.Client, path string, files []Local
 		parts[i] = transport.FilePart{Name: f.Name, ContentType: f.MimeType, Size: f.Size, Open: open}
 	}
 	var out []Attachment
-	err := c.SendMultipart(ctx, path, parts, &out)
+	err := c.SendMultipart(ctx, "/api/issues/"+url.PathEscape(issueID)+"/attachments?fields=id,name,size,mimeType", parts, &out)
 	return out, err
+}
+
+// LinkToComment makes attachments already uploaded to the issue the
+// comment's attachments. YouTrack has no upload endpoint for a comment and ignores files sent
+// inside the JSON that creates one, so a comment gets its files by
+// uploading them to the issue and linking them here.
+func LinkToComment(ctx context.Context, c *transport.Client, issueID, commentID string, attachments []Attachment) error {
+	ids := make([]map[string]string, len(attachments))
+	for i, a := range attachments {
+		ids[i] = map[string]string{"id": a.ID}
+	}
+	return c.SendJSON(ctx, http.MethodPost, commentPath(issueID, commentID)+"?fields=attachments(id,name)", map[string]any{"attachments": ids}, nil)
+}
+
+// CommentAttachments reads the attachments a comment has.
+func CommentAttachments(ctx context.Context, c *transport.Client, issueID, commentID string) ([]Attachment, error) {
+	var w struct {
+		Attachments []Attachment `json:"attachments"`
+	}
+	err := c.GetJSON(ctx, commentPath(issueID, commentID)+"?fields=attachments(id,name)", &w)
+	return w.Attachments, err
+}
+
+func commentPath(issueID, commentID string) string {
+	return "/api/issues/" + url.PathEscape(issueID) + "/comments/" + url.PathEscape(commentID)
 }
 
 // inMemory serves a pipe's content, read once in full when it was checked,

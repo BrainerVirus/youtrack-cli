@@ -1,6 +1,7 @@
 package cmdtest
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -76,35 +77,46 @@ func (yt *FakeYouTrack) getComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// attachToComment stores the files of a multipart request as the comment's
-// attachments, dropping those named in DropCommentAttachments.
-func (yt *FakeYouTrack) attachToComment(w http.ResponseWriter, r *http.Request) {
+// linkToComment applies {"attachments": [{"id"}]} to the comment: each
+// issue attachment named by ID becomes the comment's, except those named in
+// DropCommentAttachments. RejectCommentLinks makes it a 400.
+func (yt *FakeYouTrack) linkToComment(w http.ResponseWriter, r *http.Request) {
 	c, ok := yt.comment(w, r)
 	if !ok {
 		return
 	}
-	parts, ok := readParts(w, r)
-	if !ok {
+	var body struct {
+		Attachments []struct {
+			ID string `json:"id"`
+		} `json:"attachments"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": err.Error()})
 		return
 	}
 	yt.mu.Lock()
 	defer yt.mu.Unlock()
-	stored, _ := c["attachments"].([]any)
-	created := []map[string]any{}
-	for _, p := range parts {
-		if slices.Contains(yt.DropCommentAttachments, p.name) {
+	if yt.RejectCommentLinks {
+		writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "cannot update attachments"})
+		return
+	}
+	issueID := c["issue"].(map[string]any)["idReadable"].(string)
+	linked := []any{}
+	for _, ref := range body.Attachments {
+		i := slices.IndexFunc(yt.Attachments[issueID], func(a map[string]any) bool { return a["id"] == ref.ID })
+		if i < 0 {
+			writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "no attachment " + ref.ID})
+			return
+		}
+		a := yt.Attachments[issueID][i]
+		if slices.Contains(yt.DropCommentAttachments, fmt.Sprint(a["name"])) {
 			continue
 		}
-		a := map[string]any{
-			"id":   fmt.Sprintf("8-%d", 200+len(stored)),
-			"name": p.name, "size": len(p.data), "mimeType": p.mimeType,
-			"content": string(p.data), "$type": "IssueAttachment",
-		}
-		stored = append(stored, a)
-		created = append(created, a)
+		a["comment"] = map[string]any{"id": c["id"], "$type": "IssueComment"}
+		linked = append(linked, a)
 	}
-	c["attachments"] = stored
-	writeProjected(w, r, 200, created)
+	c["attachments"] = linked
+	writeProjected(w, r, 200, c)
 }
 
 type filePart struct {

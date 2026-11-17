@@ -56,15 +56,15 @@ input) or from your editor with --editor. With none of them, the editor
 opens when ytrack runs in a terminal. The editor is $YTRACK_EDITOR,
 $GIT_EDITOR, $VISUAL or $EDITOR.
 
---attach adds a file to the comment (repeat it for more files); they are
-uploaded to the comment right after it is posted. The comment text shows
-an attached file inline when it refers to it by name: ![](shot.png) for an
-image, [notes](notes.html) for a link. A reference to the path you gave,
-such as ![](shots/shot.png), is rewritten to the name. Files the text does
-not mention appear as the comment's attachments. A missing or unreadable
-file stops the command before anything is posted. If the comment is posted
-but any file did not attach, the command names the missing files and exits
-1.
+--attach adds a file to the comment (repeat it for more files): once the
+comment is posted, the files are uploaded to the issue and linked to the
+comment. The comment text shows an attached file inline when it refers to
+it by name: ![](shot.png) for an image, [notes](notes.html) for a link. A
+reference to the path you gave, such as ![](shots/shot.png), is rewritten
+to the name. Files the text does not mention appear as the comment's
+attachments. A missing or unreadable file stops the command before
+anything is posted. If the comment is posted but any file did not attach,
+the command names the missing files and exits 1.
 
 JSON fields:
   id     comment ID
@@ -148,19 +148,34 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	return nil
 }
 
-// attach uploads files to the comment and reads its attachments back, so a
-// file YouTrack drops fails the command instead of passing silently.
+// attach uploads files to the issue, links them to the comment and reads
+// the comment's attachments back, so a file YouTrack drops fails the command
+// instead of passing silently. YouTrack ignores files sent with the comment
+// itself and has no upload endpoint for a comment.
 func attach(cmd *cobra.Command, client *transport.Client, issueID, commentID string, files []adapter.LocalFile) error {
 	if len(files) == 0 {
 		return nil
 	}
-	if err := adapter.AttachToComment(cmd.Context(), client, issueID, commentID, files); err != nil {
-		return fmt.Errorf("attaching its files failed: %w", err)
+	ctx := cmd.Context()
+	uploaded, err := adapter.AttachToIssue(ctx, client, issueID, files)
+	if err != nil {
+		return fmt.Errorf("uploading its files failed: %w", err)
 	}
-	got, err := adapter.CommentAttachments(cmd.Context(), client, issueID, commentID)
+	if err := adapter.LinkToComment(ctx, client, issueID, commentID, uploaded); err != nil {
+		return fmt.Errorf("its files are attached to the issue %s but not linked to the comment: %w", issueID, err)
+	}
+	got, err := adapter.CommentAttachments(ctx, client, issueID, commentID)
 	if err != nil {
 		return fmt.Errorf("checking its attachments failed: %w", err)
 	}
+	if missing := missingNames(files, got); len(missing) > 0 {
+		return fmt.Errorf("%d of %d files did not attach to it: %s", len(missing), len(files), strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+// missingNames lists the files with no attachment of their name.
+func missingNames(files []adapter.LocalFile, got []adapter.Attachment) []string {
 	have := make(map[string]bool, len(got))
 	for _, a := range got {
 		have[a.Name] = true
@@ -171,10 +186,7 @@ func attach(cmd *cobra.Command, client *transport.Client, issueID, commentID str
 			missing = append(missing, f.Name)
 		}
 	}
-	if len(missing) > 0 {
-		return fmt.Errorf("%d of %d files did not attach: %s", len(missing), len(files), strings.Join(missing, ", "))
-	}
-	return nil
+	return missing
 }
 
 // saveDraft keeps text written in the editor when posting it failed, so the

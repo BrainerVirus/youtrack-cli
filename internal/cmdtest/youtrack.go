@@ -46,9 +46,10 @@ type Request struct {
 //	POST /api/issues/{id}/comments  appends {"text"} to Comments and returns it;
 //	                                like YouTrack, it ignores an "attachments" field
 //	GET  /api/issues/{id}/comments/{comment}  one of Comments
-//	POST /api/issues/{id}/comments/{comment}/attachments  stores multipart files
-//	                                as the comment's attachments, except those named
-//	                                in DropCommentAttachments, and returns them
+//	POST /api/issues/{id}/comments/{comment}  sets the comment's attachments to
+//	                                the issue attachments named by {"attachments":
+//	                                [{"id"}]}, except those named in
+//	                                DropCommentAttachments; 400 if RejectCommentLinks
 //	POST /api/issues/{id}/attachments  stores multipart files in Attachments and
 //	                                returns them
 //	GET  /api/issues/{id}/timeTracking/workItems         WorkItems[idReadable], paged
@@ -79,9 +80,11 @@ type FakeYouTrack struct {
 	Comments map[string][]map[string]any
 	// Attachments holds each issue's issue-level attachments by readable ID.
 	Attachments map[string][]map[string]any
-	// DropCommentAttachments names files a comment upload accepts but does
-	// not store, as a server that loses them would.
+	// DropCommentAttachments names files that linking to a comment accepts
+	// but does not keep, as a server that loses them would.
 	DropCommentAttachments []string
+	// RejectCommentLinks makes linking attachments to a comment fail.
+	RejectCommentLinks bool
 	// WorkItems holds each issue's work items by readable ID.
 	WorkItems map[string][]map[string]any
 	// TimeTracking holds project time tracking settings by project ID.
@@ -171,7 +174,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 	})
 	mux.HandleFunc("POST /api/issues/{id}/attachments", yt.attachToIssue)
 	mux.HandleFunc("GET /api/issues/{id}/comments/{comment}", yt.getComment)
-	mux.HandleFunc("POST /api/issues/{id}/comments/{comment}/attachments", yt.attachToComment)
+	mux.HandleFunc("POST /api/issues/{id}/comments/{comment}", yt.linkToComment)
 	yt.workItemRoutes(mux)
 	yt.issueWriteRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
