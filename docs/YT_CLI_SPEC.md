@@ -1155,12 +1155,15 @@ yt issue comment APP-123 --body 'Reproduced on 2026.2'
 ytrack issue comment APP-123 --body 'Repro: ![](shot.png)' --attach shot.png --attach notes.html
 ```
 
-`--attach` (repeatable) sends the files in the same `POST
-/issues/{id}/comments` request as `IssueComment.attachments` (`name` and a
-`data:<type>;base64,` `base64Content`), so the comment and its files land
-together. `![](name)` or `[text](name)` in the text shows an attached file
-inline; a reference to the path given to `--attach` is rewritten to the
-file's base name, which must be unique.
+`--attach` (repeatable) first posts the comment (`POST
+/issues/{id}/comments`, text only: YouTrack silently ignores
+`IssueComment.attachments` in that body), then uploads the files in one
+multipart `POST /issues/{id}/comments/{commentId}/attachments`, then reads
+`attachments(id,name)` back from the comment. A file missing from that list
+fails the command (exit 1) with the comment's URL and the missing names;
+the comment itself stays posted. `![](name)` or `[text](name)` in the text
+shows an attached file inline; a reference to the path given to `--attach`
+is rewritten to the file's base name, which must be unique.
 
 ## 14.7 Attachments
 

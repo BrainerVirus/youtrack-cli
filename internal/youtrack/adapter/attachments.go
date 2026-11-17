@@ -3,7 +3,6 @@ package adapter
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"net/url"
@@ -12,16 +11,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 )
 
-// File is a file to attach to an issue or a comment.
-type File struct {
-	// Name is the attachment name; a comment's text shows it inline with
-	// ![](Name).
-	Name     string
-	MimeType string
-	Data     []byte
-}
-
-// Attachment is a file attached to an issue.
+// Attachment is a file attached to an issue or a comment.
 type Attachment struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -29,9 +19,12 @@ type Attachment struct {
 	MimeType string `json:"mimeType"`
 }
 
-// LocalFile is a file on disk to upload as an issue attachment. The upload
-// streams a regular file from Path rather than holding it in memory.
+// LocalFile is a file on disk to upload as an issue or comment attachment.
+// The upload streams a regular file from Path rather than holding it in
+// memory.
 type LocalFile struct {
+	// Name is the attachment name; a comment's text shows it inline with
+	// ![](Name).
 	Name     string
 	MimeType string
 	Path     string
@@ -47,6 +40,27 @@ type LocalFile struct {
 // AttachToIssue uploads files to the issue in one request and returns the
 // attachments YouTrack created.
 func AttachToIssue(ctx context.Context, c *transport.Client, issueID string, files []LocalFile) ([]Attachment, error) {
+	return upload(ctx, c, "/api/issues/"+url.PathEscape(issueID)+"/attachments?fields=id,name,size,mimeType", files)
+}
+
+// AttachToComment uploads files to an existing comment in one request, the
+// way the web UI does. YouTrack ignores files sent inside the JSON that
+// creates a comment, so a comment gets its files only through this upload.
+func AttachToComment(ctx context.Context, c *transport.Client, issueID, commentID string, files []LocalFile) error {
+	_, err := upload(ctx, c, "/api/issues/"+url.PathEscape(issueID)+"/comments/"+url.PathEscape(commentID)+"/attachments?fields=id,name", files)
+	return err
+}
+
+// CommentAttachments reads the attachments a comment has.
+func CommentAttachments(ctx context.Context, c *transport.Client, issueID, commentID string) ([]Attachment, error) {
+	var w struct {
+		Attachments []Attachment `json:"attachments"`
+	}
+	err := c.GetJSON(ctx, "/api/issues/"+url.PathEscape(issueID)+"/comments/"+url.PathEscape(commentID)+"?fields=attachments(id,name)", &w)
+	return w.Attachments, err
+}
+
+func upload(ctx context.Context, c *transport.Client, path string, files []LocalFile) ([]Attachment, error) {
 	parts := make([]transport.FilePart, len(files))
 	for i, f := range files {
 		open := openFile(f.Path)
@@ -56,7 +70,7 @@ func AttachToIssue(ctx context.Context, c *transport.Client, issueID string, fil
 		parts[i] = transport.FilePart{Name: f.Name, ContentType: f.MimeType, Size: f.Size, Open: open}
 	}
 	var out []Attachment
-	err := c.SendMultipart(ctx, "/api/issues/"+url.PathEscape(issueID)+"/attachments?fields=id,name,size,mimeType", parts, &out)
+	err := c.SendMultipart(ctx, path, parts, &out)
 	return out, err
 }
 
@@ -74,21 +88,4 @@ func openFile(path string) func() (io.ReadCloser, error) {
 		}
 		return f, nil
 	}
-}
-
-// commentAttachments encodes files as IssueComment attachments: YouTrack
-// takes base64Content as a data URI, which carries the media type.
-func commentAttachments(files []File) []map[string]string {
-	out := make([]map[string]string, len(files))
-	for i, f := range files {
-		mt := f.MimeType
-		if mt == "" {
-			mt = "application/octet-stream"
-		}
-		out[i] = map[string]string{
-			"name":          f.Name,
-			"base64Content": "data:" + mt + ";base64," + base64.StdEncoding.EncodeToString(f.Data),
-		}
-	}
-	return out
 }

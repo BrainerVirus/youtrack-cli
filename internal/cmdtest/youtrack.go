@@ -43,9 +43,12 @@ type Request struct {
 //	GET  /api/issues/{id}           the issue in Issues with that idReadable or id,
 //	                                with commentsCount; 404 with a YouTrack body if none
 //	GET  /api/issues/{id}/comments  Comments[idReadable], paged with $skip/$top
-//	POST /api/issues/{id}/comments  appends {"text", "attachments"} to Comments and
-//	                                returns it; an attachment needs a name and a
-//	                                data URI base64Content (400 otherwise)
+//	POST /api/issues/{id}/comments  appends {"text"} to Comments and returns it;
+//	                                like YouTrack, it ignores an "attachments" field
+//	GET  /api/issues/{id}/comments/{comment}  one of Comments
+//	POST /api/issues/{id}/comments/{comment}/attachments  stores multipart files
+//	                                as the comment's attachments, except those named
+//	                                in DropCommentAttachments, and returns them
 //	POST /api/issues/{id}/attachments  stores multipart files in Attachments and
 //	                                returns them
 //	GET  /api/issues/{id}/timeTracking/workItems         WorkItems[idReadable], paged
@@ -76,6 +79,9 @@ type FakeYouTrack struct {
 	Comments map[string][]map[string]any
 	// Attachments holds each issue's issue-level attachments by readable ID.
 	Attachments map[string][]map[string]any
+	// DropCommentAttachments names files a comment upload accepts but does
+	// not store, as a server that loses them would.
+	DropCommentAttachments []string
 	// WorkItems holds each issue's work items by readable ID.
 	WorkItems map[string][]map[string]any
 	// TimeTracking holds project time tracking settings by project ID.
@@ -141,26 +147,11 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			return
 		}
 		var body struct {
-			Text        string `json:"text"`
-			Attachments []struct {
-				Name          string `json:"name"`
-				Base64Content string `json:"base64Content"`
-			} `json:"attachments"`
+			Text string `json:"text"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": err.Error()})
 			return
-		}
-		attachments := []any{}
-		for i, a := range body.Attachments {
-			mt, data, ok := parseDataURI(a.Base64Content)
-			if a.Name == "" || !ok {
-				writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "invalid attachment " + a.Name})
-				return
-			}
-			attachments = append(attachments, map[string]any{
-				"id": fmt.Sprintf("8-%d", 200+i), "name": a.Name, "mimeType": mt, "size": len(data), "$type": "IssueAttachment",
-			})
 		}
 		id := is["idReadable"].(string)
 		yt.mu.Lock()
@@ -172,13 +163,15 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			"author":  map[string]any{"login": yt.Login, "fullName": yt.FullName, "$type": "User"},
 			"created": 1791374400000, "updated": nil,
 			"issue":       map[string]any{"id": is["id"], "idReadable": id, "$type": "Issue"},
-			"attachments": attachments,
+			"attachments": []any{},
 		}
 		yt.Comments[id] = append(yt.Comments[id], c)
 		yt.mu.Unlock()
 		writeProjected(w, r, 200, c)
 	})
 	mux.HandleFunc("POST /api/issues/{id}/attachments", yt.attachToIssue)
+	mux.HandleFunc("GET /api/issues/{id}/comments/{comment}", yt.getComment)
+	mux.HandleFunc("POST /api/issues/{id}/comments/{comment}/attachments", yt.attachToComment)
 	yt.workItemRoutes(mux)
 	yt.issueWriteRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
