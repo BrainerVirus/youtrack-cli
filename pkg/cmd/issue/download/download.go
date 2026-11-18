@@ -89,7 +89,7 @@ func run(ctx context.Context, f *cmdutil.Factory, opts *options) error {
 		fmt.Fprintf(ios.ErrOut, "%s has no attachments\n", opts.ref.ID)
 		return nil
 	}
-	if err := os.MkdirAll(opts.dir, 0o755); err != nil {
+	if err := os.MkdirAll(opts.dir, 0o750); err != nil {
 		return err
 	}
 	var failed []string
@@ -181,7 +181,8 @@ func safeName(name string) string {
 // save downloads a to path. Without clobber the file is created only if it
 // does not exist; with clobber the download goes to a temporary file that
 // then replaces path, so a failed download leaves the old file in place.
-// A failed download removes what it wrote.
+// A failed download removes what it wrote. Files are private to the user
+// (0600), like the temporary file, since attachments can hold anything.
 func save(ctx context.Context, client *transport.Client, a adapter.IssueAttachment, path string, clobber bool) (int64, error) {
 	var (
 		file *os.File
@@ -190,7 +191,7 @@ func save(ctx context.Context, client *transport.Client, a adapter.IssueAttachme
 	if clobber {
 		file, err = os.CreateTemp(filepath.Dir(path), ".ytrack-download-*")
 	} else {
-		file, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		file, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 		if errors.Is(err, fs.ErrExist) {
 			return 0, fmt.Errorf("%s already exists; pass --clobber to overwrite it", path)
 		}
@@ -203,9 +204,7 @@ func save(ctx context.Context, client *transport.Client, a adapter.IssueAttachme
 		err = cerr
 	}
 	if err == nil && clobber {
-		if err = os.Chmod(file.Name(), 0o644); err == nil {
-			err = os.Rename(file.Name(), path)
-		}
+		err = os.Rename(file.Name(), path)
 	}
 	if err != nil {
 		_ = os.Remove(file.Name())

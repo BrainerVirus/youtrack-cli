@@ -59,7 +59,7 @@ func TestDownload(t *testing.T) {
 		var buf bytes.Buffer
 		_, err := New(Options{BaseURL: srv.URL}).Download(context.Background(), "/api/files/8-1", &buf)
 		var apiErr *APIError
-		if !errors.As(err, &apiErr) || apiErr.StatusCode != 404 || buf.Len() != 0 {
+		if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusNotFound || buf.Len() != 0 {
 			t.Errorf("err = %v, wrote %q", err, buf.String())
 		}
 	})
