@@ -322,6 +322,28 @@ func TestInstallLock(t *testing.T) {
 	})
 }
 
+func TestInstallNoWait(t *testing.T) {
+	t.Run("given another install holding the directory, it returns ErrBusy at once and changes nothing", func(t *testing.T) {
+		root := t.TempDir()
+		if _, err := skill.Install(root, "1.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		writeFile(t, filepath.Join(root, ".ytrack-install.lock"), "1\n")
+		before := snapshot(t, filepath.Join(root, "ytrack"))
+		start := time.Now()
+		if _, err := skill.InstallNoWait(root, "1.1.0"); !errors.Is(err, skill.ErrBusy) {
+			t.Fatalf("err = %v, want ErrBusy", err)
+		}
+		if took := time.Since(start); took > 100*time.Millisecond {
+			t.Errorf("took %s", took)
+		}
+		if after := snapshot(t, filepath.Join(root, "ytrack")); after != before {
+			t.Error("the copy changed")
+		}
+		assertNoStaging(t, root)
+	})
+}
+
 // assertComplete fails unless dir holds every file of the embedded skill,
 // stamped with version.
 func assertComplete(t *testing.T, dir, version string) {

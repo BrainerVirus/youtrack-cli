@@ -121,6 +121,21 @@ func (e *ForeignError) Error() string {
 // racing on one directory (two ytrack processes refreshing the same copy)
 // all succeed and leave one complete copy and no temporary directories.
 func Install(root, version string) (string, error) {
+	return install(root, version, true)
+}
+
+// ErrBusy reports that InstallNoWait found another install working on the
+// directory and left it alone.
+var ErrBusy = errors.New("another install is updating this skill directory")
+
+// InstallNoWait is Install for the background refresh, which must never
+// delay a command: when another install holds the directory it returns
+// ErrBusy at once and changes nothing.
+func InstallNoWait(root, version string) (string, error) {
+	return install(root, version, false)
+}
+
+func install(root, version string, wait bool) (string, error) {
 	skillMD, err := Render(version)
 	if err != nil {
 		return "", err
@@ -141,7 +156,17 @@ func Install(root, version string) (string, error) {
 	// directory another install is renaming. Without the lock (a read-only
 	// directory, or a holder slower than installLockWait) swapIn still
 	// copes with the race.
-	if unlock, ok := lockFile(filepath.Join(parent, installLockName), installLockWait); ok {
+	lock := filepath.Join(parent, installLockName)
+	var unlock func()
+	if wait {
+		unlock, _ = lockFile(lock, installLockWait)
+	} else {
+		var busy bool
+		if unlock, busy = tryLockFile(lock); unlock == nil && busy {
+			return "", ErrBusy
+		}
+	}
+	if unlock != nil {
 		defer unlock()
 		// Another install may have changed the copy while this one waited.
 		if dir, _, err = resolveTarget(path); err != nil {

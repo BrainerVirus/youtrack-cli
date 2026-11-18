@@ -310,6 +310,17 @@ type SyncResult struct {
 // per directory, and whether it all succeeded. The caller saves the
 // registry.
 func (r *Registry) Sync(version string) ([]SyncResult, bool) {
+	return r.sync(version, Install)
+}
+
+// SyncNoWait is Sync for the background refresh: a copy another install is
+// updating is skipped (SyncFailed with ErrBusy, so Synced stays and the next
+// run retries) instead of waited for.
+func (r *Registry) SyncNoWait(version string) ([]SyncResult, bool) {
+	return r.sync(version, InstallNoWait)
+}
+
+func (r *Registry) sync(version string, install func(root, version string) (string, error)) ([]SyncResult, bool) {
 	var results []SyncResult
 	ok := true
 	keep := r.Dirs[:0:0]
@@ -327,7 +338,7 @@ func (r *Registry) Sync(version string) ([]SyncResult, bool) {
 		default:
 			id, _ := copyID(d)
 			if !done[id] {
-				if _, err := Install(d, version); err != nil {
+				if _, err := install(d, version); err != nil {
 					res.Action, res.Err, ok = SyncFailed, err, false
 					break
 				}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/build"
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
@@ -240,6 +241,37 @@ func TestSkillRefresh(t *testing.T) {
 		}
 		if v := copyVersion(t, filepath.Join(agents, "ytrack")); v != "0.6.0" {
 			t.Errorf("the newer copy was rewritten to %s", v)
+		}
+	})
+
+	t.Run("given another install holding a recorded dir, the command does not wait and the stamp stays", func(t *testing.T) {
+		e, home := syncEnv(t, "0.5.4")
+		claude := filepath.Join(home, ".claude", "skills")
+		installAt(t, claude, "0.4.0")
+		saveRegistry(t, "0.4.0", claude)
+		if err := os.WriteFile(filepath.Join(claude, ".ytrack-install.lock"), []byte("1\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+
+		start := time.Now()
+		code := e.Run("version")
+		if took := time.Since(start); took > 200*time.Millisecond {
+			t.Errorf("took %s, want under 200ms", took)
+		}
+		if code != 0 || e.Stderr.Len() != 0 {
+			t.Fatalf("exit %d, stderr %q", code, e.Stderr)
+		}
+		if v := copyVersion(t, filepath.Join(claude, "ytrack")); v != "0.4.0" {
+			t.Errorf("the held copy was rewritten to %s", v)
+		}
+		if reg := openRegistry(t); reg.Synced != "0.4.0" || !slices.Equal(reg.Dirs, []string{claude}) {
+			t.Errorf("registry = %+v", reg)
+		}
+		entries, _ := os.ReadDir(claude)
+		for _, en := range entries {
+			if strings.HasPrefix(en.Name(), ".ytrack-skill-") {
+				t.Errorf("left %s", en.Name())
+			}
 		}
 	})
 

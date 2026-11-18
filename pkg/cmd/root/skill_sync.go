@@ -24,9 +24,10 @@ var skillSyncOff = testing.Testing()
 // installed in the home-level skills directories. When this binary is a
 // release newer than the version the copies were last synced to, and no
 // managed copy is newer than it, it takes the registry lock without waiting
-// (skipping when another ytrack holds it) and rewrites every managed copy (skill.Registry.Sync): a copy the user
-// deleted is forgotten, never re-created, and a copy in a repository is left
-// for `ytrack skill install --dir`. The synced version advances only when
+// (skipping when another ytrack holds it) and rewrites every managed copy
+// (skill.Registry.SyncNoWait): a copy another install is updating is skipped,
+// not waited for, a copy the user deleted is forgotten, never re-created,
+// and a copy in a repository is left for `ytrack skill install --dir`. The synced version advances only when
 // every copy was rewritten. Development builds, and a release equal to or
 // older than the synced one, write no copy, so two ytrack binaries on PATH
 // never undo each other.
@@ -60,7 +61,7 @@ func refreshSkills(cmd *cobra.Command) {
 		return
 	}
 	before := reg.Clone()
-	_, _ = reg.Sync(build.Version)
+	_, _ = reg.SyncNoWait(build.Version)
 	if !reg.Equal(before) {
 		_ = reg.Save()
 	}
