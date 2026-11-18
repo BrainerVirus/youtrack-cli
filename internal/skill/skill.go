@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -115,7 +117,9 @@ func (e *ForeignError) Error() string {
 // target updated.
 //
 // The new copy is written to a temporary sibling directory and renamed into
-// place, so a failed install leaves the earlier skill as it was.
+// place, so a failed install leaves the earlier skill as it was. Installs
+// racing on one directory (two ytrack processes refreshing the same copy)
+// all succeed and leave one complete copy and no temporary directories.
 func Install(root, version string) (string, error) {
 	skillMD, err := Render(version)
 	if err != nil {
@@ -128,13 +132,14 @@ func Install(root, version string) (string, error) {
 		return "", err
 	}
 	path := filepath.Join(root, Name)
-	dir, exists, err := resolveTarget(path)
+	dir, _, err := resolveTarget(path)
 	if err != nil {
 		return "", err
 	}
 
 	parent := filepath.Dir(dir)
-	stage, err := os.MkdirTemp(parent, ".ytrack-skill-new-")
+	sweepStale(parent)
+	stage, err := os.MkdirTemp(parent, stagePrefix+"new-")
 	if err != nil {
 		return "", err
 	}
@@ -142,32 +147,103 @@ func Install(root, version string) (string, error) {
 	if err := writeTree(stage, skillMD); err != nil {
 		return "", err
 	}
-	if !exists {
-		return path, rename(stage, dir)
-	}
+	// The stage's name is unique, so the earlier copy's parking place is too.
+	old := filepath.Join(parent, stagePrefix+"old-"+strings.TrimPrefix(filepath.Base(stage), stagePrefix+"new-"))
+	defer func() { _ = os.RemoveAll(old) }()
+	return path, swapIn(stage, dir, old)
+}
 
-	old, err := os.MkdirTemp(parent, ".ytrack-skill-old-")
-	if err != nil {
-		return "", err
-	}
-	// MkdirTemp reserved a unique name; rename needs it free.
-	if err := os.Remove(old); err != nil {
-		return "", err
-	}
-	if err := rename(dir, old); err != nil {
-		return "", err
-	}
-	if err := rename(stage, dir); err != nil {
+// stagePrefix starts the name of every temporary directory Install makes.
+const stagePrefix = ".ytrack-skill-"
+
+// swapAttempts bounds how often swapIn restarts after losing a race.
+const swapAttempts = 50
+
+// swapIn moves stage to dir, first parking an existing dir at old. Another
+// process may move dir away or put its own copy there at any step; each such
+// lost race restarts the swap. When stage cannot be moved in for any other
+// reason, the parked copy goes back.
+func swapIn(stage, dir, old string) error {
+	var err error
+	for range swapAttempts {
+		if !exists(dir) {
+			if err = rename(stage, dir); err == nil || !occupied(err, dir) {
+				return err
+			}
+			continue // another install got there first; replace its copy
+		}
+		if err = rename(dir, old); err != nil {
+			if !errors.Is(err, fs.ErrNotExist) && exists(dir) {
+				return err
+			}
+			continue // another install moved dir away first
+		}
+		if err = rename(stage, dir); err == nil {
+			return nil
+		}
+		if occupied(err, dir) {
+			_ = os.RemoveAll(old) // another install put a copy in; retry over it
+			continue
+		}
 		_ = rename(old, dir)
-		return "", err
+		return err
 	}
-	return path, os.RemoveAll(old)
+	return fmt.Errorf("installing into %s: too many concurrent installs: %w", dir, err)
+}
+
+// occupied reports whether a rename onto dir failed because dir exists, as
+// it does when another install put its copy there first.
+func occupied(err error, dir string) bool {
+	return errors.Is(err, fs.ErrExist) || exists(dir)
+}
+
+func exists(p string) bool {
+	_, err := os.Lstat(p)
+	return err == nil
+}
+
+// staleAfter is how old a temporary directory must be before an install
+// takes it for the litter of a killed install and removes it.
+const staleAfter = 10 * time.Minute
+
+// sweepStale removes temporary directories that an install killed midway
+// left in parent.
+func sweepStale(parent string) {
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() || !strings.HasPrefix(e.Name(), stagePrefix) {
+			continue
+		}
+		if fi, err := e.Info(); err == nil && time.Since(fi.ModTime()) > staleAfter {
+			_ = os.RemoveAll(filepath.Join(parent, e.Name()))
+		}
+	}
 }
 
 // resolveTarget returns the directory to write: path itself, or the target
-// of a symlink at path. exists reports whether it holds the ytrack skill
+// of a symlink at path. installed reports whether it holds the ytrack skill
 // already; a directory holding anything else is an error.
-func resolveTarget(path string) (dir string, exists bool, err error) {
+func resolveTarget(path string) (dir string, installed bool, err error) {
+	// A SKILL.md that vanishes between the checks is most likely another
+	// install swapping its copy in; look again before calling it foreign.
+	for range 5 {
+		dir, installed, err = resolveOnce(path)
+		if !errors.Is(err, errVanished) {
+			break
+		}
+	}
+	if errors.Is(err, errVanished) {
+		return "", false, &ForeignError{Dir: path}
+	}
+	return dir, installed, err
+}
+
+var errVanished = errors.New("SKILL.md vanished")
+
+func resolveOnce(path string) (dir string, installed bool, err error) {
 	fi, err := os.Lstat(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return path, false, nil
@@ -188,6 +264,9 @@ func resolveTarget(path string) (dir string, exists bool, err error) {
 		return "", false, &ForeignError{Dir: path}
 	}
 	b, err := os.ReadFile(filepath.Join(dir, EntryFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", false, errVanished
+	}
 	if err != nil {
 		return "", false, &ForeignError{Dir: path}
 	}
@@ -217,4 +296,26 @@ func writeTree(dir string, skillMD []byte) error {
 		}
 		return os.WriteFile(dst, data, 0o600)
 	})
+}
+
+// Uninstall removes <root>/ytrack: the symlink itself when it is one, else
+// the directory, which must hold the ytrack skill; anything else there is
+// refused with a *ForeignError and left untouched. It reports whether there
+// was anything to remove.
+func Uninstall(root string) (bool, error) {
+	path := filepath.Join(root, Name)
+	fi, err := os.Lstat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if fi.Mode()&fs.ModeSymlink != 0 {
+		return true, os.Remove(path)
+	}
+	if _, _, err := resolveTarget(path); err != nil {
+		return false, err
+	}
+	return true, os.RemoveAll(path)
 }
