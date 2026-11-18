@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/skill"
 	"github.com/BrainerVirus/youtrack-cli/skills"
@@ -229,6 +231,195 @@ func TestInstall(t *testing.T) {
 		}
 		if v := readMeta(t, target).Metadata["version"]; v != "1.1.0" {
 			t.Errorf("target version = %q, want 1.1.0", v)
+		}
+	})
+}
+
+func TestInstallConcurrently(t *testing.T) {
+	t.Run("given 20 installs racing on one directory, all succeed and leave one complete copy", func(t *testing.T) {
+		root := t.TempDir()
+		if _, err := skill.Install(root, "1.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		var wg sync.WaitGroup
+		errs := make(chan error, 20)
+		for range 20 {
+			wg.Go(func() {
+				if _, err := skill.Install(root, "1.1.0"); err != nil {
+					errs <- err
+				}
+			})
+		}
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			t.Error(err)
+		}
+		assertComplete(t, filepath.Join(root, "ytrack"), "1.1.0")
+		assertNoStaging(t, root)
+	})
+}
+
+func TestInstallWindowsSharing(t *testing.T) {
+	t.Run("given renames refused transiently, as Windows does while a directory is open, it retries and installs", func(t *testing.T) {
+		root := t.TempDir()
+		if _, err := skill.Install(root, "1.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		denied := errors.New("access is denied")
+		refusals := 0
+		restoreRename := skill.SetRename(func(oldpath, newpath string) error {
+			if refusals < 4 {
+				refusals++
+				return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: denied}
+			}
+			return os.Rename(oldpath, newpath)
+		})
+		defer restoreRename()
+		defer skill.SetTransientRename(func(err error) bool { return errors.Is(err, denied) })()
+		if _, err := skill.Install(root, "1.1.0"); err != nil {
+			t.Fatal(err)
+		}
+		if refusals != 4 {
+			t.Errorf("%d refusals, want 4", refusals)
+		}
+		assertComplete(t, filepath.Join(root, "ytrack"), "1.1.0")
+		assertNoStaging(t, root)
+	})
+}
+
+func TestInstallLock(t *testing.T) {
+	t.Run("given another install holding the directory, it waits for it to finish", func(t *testing.T) {
+		root := t.TempDir()
+		if _, err := skill.Install(root, "1.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		lock := filepath.Join(root, ".ytrack-install.lock")
+		writeFile(t, lock, "1\n")
+		done := make(chan error, 1)
+		go func() {
+			_, err := skill.Install(root, "1.1.0")
+			done <- err
+		}()
+		select {
+		case err := <-done:
+			t.Fatalf("installed while the lock was held: %v", err)
+		case <-time.After(150 * time.Millisecond):
+		}
+		if v := readMeta(t, filepath.Join(root, "ytrack")).Metadata["version"]; v != "1.0.0" {
+			t.Errorf("version = %q while the lock was held", v)
+		}
+		if err := os.Remove(lock); err != nil {
+			t.Fatal(err)
+		}
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+		assertComplete(t, filepath.Join(root, "ytrack"), "1.1.0")
+		if _, err := os.Lstat(lock); err == nil {
+			t.Error("the install left its lock behind")
+		}
+	})
+}
+
+func TestInstallNoWait(t *testing.T) {
+	t.Run("given another install holding the directory, it returns ErrBusy at once and changes nothing", func(t *testing.T) {
+		root := t.TempDir()
+		if _, err := skill.Install(root, "1.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		writeFile(t, filepath.Join(root, ".ytrack-install.lock"), "1\n")
+		before := snapshot(t, filepath.Join(root, "ytrack"))
+		start := time.Now()
+		if _, err := skill.InstallNoWait(root, "1.1.0"); !errors.Is(err, skill.ErrBusy) {
+			t.Fatalf("err = %v, want ErrBusy", err)
+		}
+		if took := time.Since(start); took > 100*time.Millisecond {
+			t.Errorf("took %s", took)
+		}
+		if after := snapshot(t, filepath.Join(root, "ytrack")); after != before {
+			t.Error("the copy changed")
+		}
+		assertNoStaging(t, root)
+	})
+}
+
+// assertComplete fails unless dir holds every file of the embedded skill,
+// stamped with version.
+func assertComplete(t *testing.T, dir, version string) {
+	t.Helper()
+	if v := readMeta(t, dir).Metadata["version"]; v != version {
+		t.Errorf("version = %q, want %q", v, version)
+	}
+	err := fs.WalkDir(skill.Files(), ".", func(p string, _ fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(p))); err != nil {
+			t.Errorf("missing %s: %v", p, err)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUninstall(t *testing.T) {
+	t.Run("given an installed skill, it removes it", func(t *testing.T) {
+		root := t.TempDir()
+		dir, err := skill.Install(root, "1.0.0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if removed, err := skill.Uninstall(root); err != nil || !removed {
+			t.Fatalf("removed %v, err %v", removed, err)
+		}
+		if _, err := os.Lstat(dir); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("%s survived: %v", dir, err)
+		}
+	})
+
+	t.Run("given a foreign ytrack directory, it refuses and leaves it untouched", func(t *testing.T) {
+		root := t.TempDir()
+		mine := filepath.Join(root, "ytrack", "SKILL.md")
+		if err := os.MkdirAll(filepath.Dir(mine), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		writeFile(t, mine, "---\nname: other\n---\n")
+		if _, err := skill.Uninstall(root); !errors.As(err, new(*skill.ForeignError)) {
+			t.Fatalf("err = %v, want a ForeignError", err)
+		}
+		if _, err := os.Stat(mine); err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("given a symlinked copy, it removes the link and keeps the target", func(t *testing.T) {
+		base := t.TempDir()
+		target, err := skill.Install(filepath.Join(base, "agents"), "1.0.0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		root := filepath.Join(base, "claude")
+		if err := os.Mkdir(root, 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(target, filepath.Join(root, "ytrack")); err != nil {
+			t.Skipf("symlinks unavailable: %v", err)
+		}
+		if removed, err := skill.Uninstall(root); err != nil || !removed {
+			t.Fatalf("removed %v, err %v", removed, err)
+		}
+		if _, err := os.Lstat(filepath.Join(root, "ytrack")); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("link survived: %v", err)
+		}
+		assertComplete(t, target, "1.0.0")
+	})
+
+	t.Run("given nothing installed, it reports nothing removed", func(t *testing.T) {
+		if removed, err := skill.Uninstall(t.TempDir()); err != nil || removed {
+			t.Fatalf("removed %v, err %v", removed, err)
 		}
 	})
 }

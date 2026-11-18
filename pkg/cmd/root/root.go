@@ -87,7 +87,10 @@ func Execute(f *cmdutil.Factory, args []string) clierr.ExitCode {
 	notice := &updateNotice{f: f}
 	// Runs once the command and its flags are parsed, so help and usage
 	// errors never check, and --json is known.
-	cmd.PersistentPreRun = func(c *cobra.Command, _ []string) { notice.start(c) }
+	cmd.PersistentPreRun = func(c *cobra.Command, _ []string) {
+		refreshSkills(c)
+		notice.start(c)
+	}
 	ran, err := cmd.ExecuteC()
 	defer notice.print()
 	if err == nil {

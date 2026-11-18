@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -30,6 +31,11 @@ func env(t *testing.T) *cmdtest.Env {
 	t.Cleanup(func() { build.Version = old })
 	e := cmdtest.New(t)
 	e.Factory.RoundTripper = offline{t}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("XDG_STATE_HOME", filepath.Join(home, ".local", "state"))
+	t.Setenv("LocalAppData", filepath.Join(home, "AppData", "Local"))
 	return e
 }
 
@@ -121,10 +127,89 @@ func TestSkillInstall(t *testing.T) {
 		}
 	})
 
-	t.Run("given no --dir, it is a usage error", func(t *testing.T) {
+	t.Run("given no --dir, it installs into ~/.agents/skills and ~/.claude/skills and records both", func(t *testing.T) {
 		e := env(t)
-		if code := e.Run("skill", "install"); !e.IsUsageError(code) {
+		home, _ := os.UserHomeDir()
+		if code := e.Run("skill", "install", "--json"); code != 0 {
+			t.Fatalf("exit %d: %s", code, e.Stderr)
+		}
+		agents := filepath.Join(home, ".agents", "skills")
+		claude := filepath.Join(home, ".claude", "skills")
+		var paths []string
+		dec := json.NewDecoder(e.Stdout)
+		for dec.More() {
+			var got struct{ Path, Version string }
+			if err := dec.Decode(&got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Version != "1.2.3" {
+				t.Errorf("version %q", got.Version)
+			}
+			paths = append(paths, got.Path)
+		}
+		if want := []string{filepath.Join(agents, "ytrack"), filepath.Join(claude, "ytrack")}; !slices.Equal(paths, want) {
+			t.Errorf("paths = %q, want %q", paths, want)
+		}
+		for _, p := range paths {
+			if v := version(t, p); v != "1.2.3" {
+				t.Errorf("%s holds %q", p, v)
+			}
+		}
+		if got := recorded(t); !slices.Equal(got, []string{agents, claude}) {
+			t.Errorf("recorded %q", got)
+		}
+		if reg, _ := skill.OpenRegistry(); reg.Synced != "1.2.3" {
+			t.Errorf("synced = %q, want the installed version 1.2.3", reg.Synced)
+		}
+	})
+
+	t.Run("given a relative --dir, it records the absolute directory", func(t *testing.T) {
+		e := env(t)
+		t.Chdir(t.TempDir())
+		wd, _ := os.Getwd()
+		if code := e.Run("skill", "install", "--dir", ".claude/skills"); code != 0 {
+			t.Fatalf("exit %d: %s", code, e.Stderr)
+		}
+		if got, want := recorded(t), []string{filepath.Join(wd, ".claude", "skills")}; !slices.Equal(got, want) {
+			t.Errorf("recorded %q, want %q", got, want)
+		}
+	})
+
+	t.Run("given an empty --dir, it is a usage error", func(t *testing.T) {
+		e := env(t)
+		if code := e.Run("skill", "install", "--dir="); !e.IsUsageError(code) {
 			t.Fatalf("exit %d: %s", code, e.Stderr)
 		}
 	})
+}
+
+// version returns metadata.version of the skill in dir.
+func version(t *testing.T, dir string) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(dir, "SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := skill.ParseMeta(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return m.Metadata["version"]
+}
+
+// recorded returns the directories in the registry file.
+func recorded(t *testing.T) []string {
+	t.Helper()
+	path, err := skill.RegistryPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("no registry file: %v", err)
+	}
+	reg, err := skill.OpenRegistry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return reg.Dirs
 }

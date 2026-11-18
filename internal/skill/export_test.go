@@ -6,3 +6,10 @@ func SetRename(f func(oldpath, newpath string) error) (restore func()) {
 	rename = f
 	return func() { rename = old }
 }
+
+// SetTransientRename replaces the check for a rename worth retrying.
+func SetTransientRename(f func(error) bool) (restore func()) {
+	old := transientRename
+	transientRename = f
+	return func() { transientRename = old }
+}

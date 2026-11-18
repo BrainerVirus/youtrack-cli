@@ -184,3 +184,11 @@ refuses POST). Details: [references/api.md](references/api.md).
 - Issue IDs are `APP-123`, never `#123`; `#` starts a query tag such as `#Unresolved`.
 - `--state open|closed` does not exist: states are project values (`Open`,
   `In Progress`, `Fixed`); use `#Unresolved` or `--all`.
+
+## This skill's version
+
+`metadata.version` above is the ytrack that wrote this copy; ytrack rewrites
+the copies in the home directory when a newer release first runs. If
+`ytrack version` differs and a command here fails, run `ytrack skill list`:
+a `manual` copy (in a repository) is updated with
+`ytrack skill install --dir <dir>`, but only when the user asks.

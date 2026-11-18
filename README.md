@@ -311,23 +311,37 @@ npx skills add BrainerVirus/youtrack-cli
 ```
 
 Or from the binary, which installs the skill matching its own version
-(`metadata.version` in `SKILL.md`); rerun it after `ytrack upgrade`:
+(`metadata.version` in `SKILL.md`) and keeps it there:
 
 ```sh
-ytrack skill install --dir ~/.claude/skills          # Claude Code
-ytrack skill install --dir ~/.codex/skills           # Codex
-ytrack skill install --dir ~/.cursor/skills          # Cursor
-ytrack skill install --dir ~/.config/opencode/skills # OpenCode
-ytrack skill install --dir ~/.pi/agent/skills        # Pi
-ytrack skill install --dir ~/.agents/skills          # agents that read ~/.agents/skills
+ytrack skill install                                 # ~/.agents/skills and ~/.claude/skills
+ytrack skill install --dir ~/.cursor/skills          # one more agent dir
 ytrack skill install --dir .claude/skills --json     # one project; prints {"path", "version"}
+ytrack skill list                                    # every copy, its version and state
+ytrack skill sync                                    # update the home copies now
+ytrack skill uninstall --dir ~/.cursor/skills        # remove a copy and forget it
 ytrack skill print                                   # SKILL.md on stdout
 ```
 
-`ytrack skill install` writes `<dir>/ytrack/SKILL.md` and `references/`,
-replacing an earlier ytrack skill there by renaming the new copy into place;
-it refuses a `ytrack` directory that holds anything else and leaves it
-untouched. Both commands work offline and logged out.
+Without `--dir`, `ytrack skill install` writes `~/.agents/skills`, which
+Codex, Cursor, OpenCode and Pi read, and `~/.claude/skills` for Claude Code
+(with `--json`, one object per line). It writes `<dir>/ytrack/SKILL.md` and
+`references/`, replacing an earlier ytrack skill there by renaming the new
+copy into place; it refuses a `ytrack` directory that holds anything else and
+leaves it untouched.
+
+ytrack remembers every directory it installed the skill into (in
+`~/.local/state/ytrack/skills.yml`), and on its first run also records
+copies already in the agents' home skills directories. The first command a
+newer ytrack release runs rewrites the copies in your home directory, so
+after `ytrack upgrade` no agent reads an older skill; an older ytrack on
+your PATH never rewrites a newer copy. A copy you deleted is
+forgotten, not put back. A copy in a repository (a `--dir` inside a git work
+tree) changes only when you install it there again: `ytrack skill list`
+marks it `manual` and prints the command when it is stale. The refresh is
+silent and never changes a command's output or exit code; where it cannot
+write, `ytrack skill list` shows the copy as `stale`. All `skill` commands
+work offline and logged out.
 
 [Workit](https://github.com/BrainerVirus/workit) installs and updates the
 skill for the agents it sets up, so with Workit you need neither command.
