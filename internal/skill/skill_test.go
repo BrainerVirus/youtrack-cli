@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/skill"
 	"github.com/BrainerVirus/youtrack-cli/skills"
@@ -256,6 +257,68 @@ func TestInstallConcurrently(t *testing.T) {
 		}
 		assertComplete(t, filepath.Join(root, "ytrack"), "1.1.0")
 		assertNoStaging(t, root)
+	})
+}
+
+func TestInstallWindowsSharing(t *testing.T) {
+	t.Run("given renames refused transiently, as Windows does while a directory is open, it retries and installs", func(t *testing.T) {
+		root := t.TempDir()
+		if _, err := skill.Install(root, "1.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		denied := errors.New("access is denied")
+		refusals := 0
+		restoreRename := skill.SetRename(func(oldpath, newpath string) error {
+			if refusals < 4 {
+				refusals++
+				return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: denied}
+			}
+			return os.Rename(oldpath, newpath)
+		})
+		defer restoreRename()
+		defer skill.SetTransientRename(func(err error) bool { return errors.Is(err, denied) })()
+		if _, err := skill.Install(root, "1.1.0"); err != nil {
+			t.Fatal(err)
+		}
+		if refusals != 4 {
+			t.Errorf("%d refusals, want 4", refusals)
+		}
+		assertComplete(t, filepath.Join(root, "ytrack"), "1.1.0")
+		assertNoStaging(t, root)
+	})
+}
+
+func TestInstallLock(t *testing.T) {
+	t.Run("given another install holding the directory, it waits for it to finish", func(t *testing.T) {
+		root := t.TempDir()
+		if _, err := skill.Install(root, "1.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		lock := filepath.Join(root, ".ytrack-install.lock")
+		writeFile(t, lock, "1\n")
+		done := make(chan error, 1)
+		go func() {
+			_, err := skill.Install(root, "1.1.0")
+			done <- err
+		}()
+		select {
+		case err := <-done:
+			t.Fatalf("installed while the lock was held: %v", err)
+		case <-time.After(150 * time.Millisecond):
+		}
+		if v := readMeta(t, filepath.Join(root, "ytrack")).Metadata["version"]; v != "1.0.0" {
+			t.Errorf("version = %q while the lock was held", v)
+		}
+		if err := os.Remove(lock); err != nil {
+			t.Fatal(err)
+		}
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+		assertComplete(t, filepath.Join(root, "ytrack"), "1.1.0")
+		if _, err := os.Lstat(lock); err == nil {
+			t.Error("the install left its lock behind")
+		}
 	})
 }
 

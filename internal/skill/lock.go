@@ -5,13 +5,14 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 )
 
-// lockFile, next to the registry, is held while a process syncs copies or
-// changes the registry.
-const lockFile = "skills.lock"
+// lockFileName, next to the registry, is held while a process syncs copies
+// or changes the registry.
+const lockFileName = "skills.lock"
 
 // lockStale is how old a lock must be before it is taken for the leftover of
 // a killed process. A sync takes milliseconds.
@@ -21,33 +22,53 @@ const lockStale = time.Minute
 // another process holds it or the lock cannot be made (a read-only state
 // directory); the caller then skips its work.
 func TryLock() (unlock func(), ok bool) {
-	unlock, _ = tryLock()
+	path, err := registryLockPath()
+	if err != nil {
+		return nil, false
+	}
+	unlock, _ = tryLockFile(path)
 	return unlock, unlock != nil
 }
 
 // Lock takes the registry lock, waiting up to wait for another process to
 // release it. It reports false at once when the lock cannot be made at all.
 func Lock(wait time.Duration) (unlock func(), ok bool) {
+	path, err := registryLockPath()
+	if err != nil {
+		return nil, false
+	}
+	return lockFile(path, wait)
+}
+
+func registryLockPath() (string, error) {
+	path, err := RegistryPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(path), lockFileName), nil
+}
+
+// lockFile takes the lock file at path, waiting up to wait for another
+// holder to release it. It reports false at once when the lock cannot be
+// made at all (a read-only directory).
+func lockFile(path string, wait time.Duration) (unlock func(), ok bool) {
 	deadline := time.Now().Add(wait)
 	for {
-		unlock, busy := tryLock()
+		unlock, busy := tryLockFile(path)
 		if unlock != nil {
 			return unlock, true
 		}
 		if !busy || time.Now().After(deadline) {
 			return nil, false
 		}
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
-// tryLock takes the lock, or reports whether another process holds it.
-func tryLock() (unlock func(), busy bool) {
-	path, err := RegistryPath()
-	if err != nil {
-		return nil, false
-	}
-	path = filepath.Join(filepath.Dir(path), lockFile)
+// tryLockFile creates the lock file at path, or reports whether another
+// holder has it. A lock older than lockStale is a killed holder's and is
+// taken over.
+func tryLockFile(path string) (unlock func(), busy bool) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, false
 	}
@@ -58,15 +79,20 @@ func tryLock() (unlock func(), busy bool) {
 			_ = f.Close()
 			return func() { _ = os.Remove(path) }, false
 		}
-		if !errors.Is(err, fs.ErrExist) {
+		denied := errors.Is(err, fs.ErrPermission)
+		if !errors.Is(err, fs.ErrExist) && !denied {
 			return nil, false
 		}
 		fi, err := os.Stat(path)
 		switch {
+		case denied && errors.Is(err, fs.ErrNotExist):
+			// A read-only directory; on Windows, also a lock file its holder
+			// is deleting, which is free a moment later.
+			return nil, runtime.GOOS == "windows"
 		case errors.Is(err, fs.ErrNotExist):
 			continue // released meanwhile
 		case err != nil:
-			return nil, false
+			return nil, true // Windows: being deleted by its holder
 		case time.Since(fi.ModTime()) < lockStale:
 			return nil, true
 		}

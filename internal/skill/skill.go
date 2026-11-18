@@ -136,8 +136,20 @@ func Install(root, version string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	parent := filepath.Dir(dir)
+	// Installs into one directory take turns: Windows refuses to rename a
+	// directory another install is renaming. Without the lock (a read-only
+	// directory, or a holder slower than installLockWait) swapIn still
+	// copes with the race.
+	if unlock, ok := lockFile(filepath.Join(parent, installLockName), installLockWait); ok {
+		defer unlock()
+		// Another install may have changed the copy while this one waited.
+		if dir, _, err = resolveTarget(path); err != nil {
+			return "", err
+		}
+		parent = filepath.Dir(dir)
+	}
+
 	sweepStale(parent)
 	stage, err := os.MkdirTemp(parent, stagePrefix+"new-")
 	if err != nil {
@@ -156,6 +168,41 @@ func Install(root, version string) (string, error) {
 // stagePrefix starts the name of every temporary directory Install makes.
 const stagePrefix = ".ytrack-skill-"
 
+// installLockName, next to the skill directory, is held while one install
+// swaps its copy in.
+const installLockName = ".ytrack-install.lock"
+
+// installLockWait bounds how long an install waits for another into the
+// same directory, which takes milliseconds.
+const installLockWait = 10 * time.Second
+
+// renameRetryFor bounds how long a rename refused by a transient Windows
+// sharing violation (an indexer, antivirus or another install holding the
+// directory open) is retried.
+const renameRetryFor = 2 * time.Second
+
+// transientRename reports whether a failed rename is worth retrying: on
+// Windows, access denied or a sharing violation. A var so tests can make
+// any error transient.
+var transientRename = isTransientRename
+
+// renameRetry is rename, retried with a short backoff while it fails
+// transiently.
+func renameRetry(oldpath, newpath string) error {
+	deadline := time.Now().Add(renameRetryFor)
+	backoff := 5 * time.Millisecond
+	for {
+		err := rename(oldpath, newpath)
+		// A rename onto an existing directory is refused for good, not
+		// transiently: swapIn handles that.
+		if err == nil || !transientRename(err) || exists(newpath) || time.Now().After(deadline) {
+			return err
+		}
+		time.Sleep(backoff)
+		backoff = min(2*backoff, 200*time.Millisecond)
+	}
+}
+
 // swapAttempts bounds how often swapIn restarts after losing a race.
 const swapAttempts = 50
 
@@ -167,25 +214,25 @@ func swapIn(stage, dir, old string) error {
 	var err error
 	for range swapAttempts {
 		if !exists(dir) {
-			if err = rename(stage, dir); err == nil || !occupied(err, dir) {
+			if err = renameRetry(stage, dir); err == nil || !occupied(err, dir) {
 				return err
 			}
 			continue // another install got there first; replace its copy
 		}
-		if err = rename(dir, old); err != nil {
+		if err = renameRetry(dir, old); err != nil {
 			if !errors.Is(err, fs.ErrNotExist) && exists(dir) {
 				return err
 			}
 			continue // another install moved dir away first
 		}
-		if err = rename(stage, dir); err == nil {
+		if err = renameRetry(stage, dir); err == nil {
 			return nil
 		}
 		if occupied(err, dir) {
 			_ = os.RemoveAll(old) // another install put a copy in; retry over it
 			continue
 		}
-		_ = rename(old, dir)
+		_ = renameRetry(old, dir)
 		return err
 	}
 	return fmt.Errorf("installing into %s: too many concurrent installs: %w", dir, err)
