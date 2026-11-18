@@ -28,6 +28,9 @@ type endpoint struct {
 
 type contract struct {
 	Endpoints []endpoint `json:"endpoints"`
+	// Undocumented are endpoints ytrack needs that /api/openapi.json does
+	// not list, so the openapi check skips them.
+	Undocumented []endpoint `json:"undocumented"`
 	// Files are signed file URLs YouTrack returns, fetched as given; they
 	// are outside /api/openapi.json.
 	Files []endpoint `json:"files"`
@@ -56,7 +59,7 @@ func (c *contract) endpoint(method, apiPath string) (endpoint, bool) {
 	segs := strings.Split(strings.TrimPrefix(apiPath, "/api"), "/")
 	var best endpoint
 	bestVars := len(segs) + 1
-	for _, e := range slices.Concat(c.Endpoints, c.Files) {
+	for _, e := range slices.Concat(c.Endpoints, c.Undocumented, c.Files) {
 		ts := strings.Split(e.Path, "/")
 		if e.Method != method || len(ts) != len(segs) {
 			continue
@@ -286,7 +289,7 @@ func TestRequestsMatchTheContract(t *testing.T) {
 			}
 		}
 	}
-	for _, e := range slices.Concat(c.Endpoints, c.Files) {
+	for _, e := range slices.Concat(c.Endpoints, c.Undocumented, c.Files) {
 		if !covered[e.Method+" "+e.Path] {
 			t.Errorf("no request exercised %s %s; drop it from the contract or test it", e.Method, e.Path)
 		}

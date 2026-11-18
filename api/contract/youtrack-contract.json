@@ -7,7 +7,6 @@
     {"method": "GET", "path": "/issues/{id}/comments", "query": ["fields", "$skip", "$top"], "response": "IssueComment"},
     {"method": "POST", "path": "/issues/{id}/comments", "query": ["fields"], "response": "IssueComment"},
     {"method": "GET", "path": "/issues/{id}/comments/{issueCommentId}", "query": ["fields"], "response": "IssueComment"},
-    {"method": "POST", "path": "/issues/{id}/comments/{issueCommentId}", "query": ["fields"], "response": "IssueComment"},
     {"method": "POST", "path": "/issues/{id}/attachments", "query": ["fields"], "response": "IssueAttachment"},
     {"method": "GET", "path": "/issues/{id}/attachments", "query": ["fields", "$skip", "$top"], "response": "IssueAttachment"},
     {"method": "GET", "path": "/issues/{id}/timeTracking/workItems", "query": ["fields", "$skip", "$top"], "response": "IssueWorkItem"},
@@ -26,6 +25,9 @@
     {"method": "GET", "path": "/admin/projects/{id}/customFields/{projectCustomFieldId}", "query": ["fields"], "response": "ProjectCustomField"},
     {"method": "POST", "path": "/commands", "query": ["fields"], "response": "CommandList"},
     {"method": "POST", "path": "/commands/assist", "query": ["fields"], "response": "CommandList"}
+  ],
+  "undocumented": [
+    {"$comment": "Uploads files to a comment (multipart, like POST /issues/{id}/attachments). The comment's attachments collection is missing from /api/openapi.json, so the openapi-contract workflow does not check it; a GET of it answers the comment's files on YouTrack Cloud (an unknown sub-resource answers 'No subresource for path'), and YouTrack ignores the other ways to attach a file to a comment (files inside the create-comment JSON, attachment IDs in a comment update; issues #31 and #44).", "method": "POST", "path": "/issues/{id}/comments/{issueCommentId}/attachments", "query": ["fields"], "response": "IssueAttachment"}
   ],
   "files": [
     {"$comment": "An attachment's signed url (IssueAttachment.url): a path from the server root, service path included, that ytrack fetches as is. It serves the file's bytes and is not part of /api/openapi.json, so the openapi-contract workflow does not check it.", "method": "GET", "path": "/files/{fileId}", "query": ["sign", "updated"], "response": ""}
@@ -62,7 +64,8 @@
       "updated": [],
       "deleted": [],
       "issue": ["Issue"],
-      "attachments": ["IssueAttachment"]
+      "attachments": ["IssueAttachment"],
+      "textPreview": []
     },
     "IssueAttachment": {
       "id": [],

@@ -3,9 +3,11 @@ package cmdtest
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"maps"
 	"net/http"
+	"regexp"
 	"slices"
 	"sync"
 )
@@ -32,23 +34,61 @@ func (yt *FakeYouTrack) attachToIssue(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	id := is["idReadable"].(string)
 	yt.mu.Lock()
 	defer yt.mu.Unlock()
+	writeProjected(w, r, 200, yt.storeParts(is["idReadable"].(string), r, parts, nil))
+}
+
+// attachToComment stores the files of a multipart request as the comment's
+// attachments. With CommentUploadsToIssue it keeps them on the issue only;
+// with RejectCommentUploads it answers as a server without the endpoint.
+func (yt *FakeYouTrack) attachToComment(w http.ResponseWriter, r *http.Request) {
+	if yt.RejectCommentUploads {
+		writeJSON(w, http.StatusNotFound, map[string]any{"error": "Not Found", "error_description": "No subresource for path attachments"})
+		return
+	}
+	c, ok := yt.comment(w, r)
+	if !ok {
+		return
+	}
+	parts, ok := readParts(w, r)
+	if !ok {
+		return
+	}
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	issueID := c["issue"].(map[string]any)["idReadable"].(string)
+	if yt.CommentUploadsToIssue {
+		c = nil
+	}
+	writeProjected(w, r, 200, yt.storeParts(issueID, r, parts, c))
+}
+
+// storeParts adds parts to the issue's attachments, and to comment c unless
+// it is nil, and returns those it created. A file named in DropUploads is
+// accepted but not kept. The caller holds yt.mu.
+func (yt *FakeYouTrack) storeParts(issueID string, r *http.Request, parts []filePart, c map[string]any) []map[string]any {
 	if yt.Attachments == nil {
 		yt.Attachments = map[string][]map[string]any{}
 	}
 	created := []map[string]any{}
 	for _, p := range parts {
+		if slices.Contains(yt.DropUploads, p.name) {
+			continue
+		}
 		a := map[string]any{
-			"id":   fmt.Sprintf("8-%d", 300+len(yt.Attachments[id])),
+			"id":   fmt.Sprintf("8-%d", 300+len(yt.Attachments[issueID])),
 			"name": p.name, "size": len(p.data), "mimeType": p.mimeType,
 			"content": string(p.data), "requestContentLength": r.ContentLength, "$type": "IssueAttachment",
 		}
-		yt.Attachments[id] = append(yt.Attachments[id], a)
+		if c != nil {
+			a["comment"] = map[string]any{"id": c["id"], "$type": "IssueComment"}
+			c["attachments"] = append(c["attachments"].([]any), a)
+		}
+		yt.Attachments[issueID] = append(yt.Attachments[issueID], a)
 		created = append(created, a)
 	}
-	writeProjected(w, r, 200, created)
+	return created
 }
 
 // comment returns the stored comment with that ID on the issue, or writes a
@@ -70,54 +110,48 @@ func (yt *FakeYouTrack) comment(w http.ResponseWriter, r *http.Request) (map[str
 	return nil, false
 }
 
+// getComment answers a comment with its textPreview rendered as YouTrack
+// does it for attachment references.
 func (yt *FakeYouTrack) getComment(w http.ResponseWriter, r *http.Request) {
 	if c, ok := yt.comment(w, r); ok {
 		yt.mu.Lock()
 		defer yt.mu.Unlock()
+		c = maps.Clone(c)
+		c["textPreview"] = yt.textPreview(c["issue"].(map[string]any)["idReadable"].(string), fmt.Sprint(c["text"]))
 		writeProjected(w, r, 200, c)
 	}
 }
 
-// linkToComment applies {"attachments": [{"id"}]} to the comment: each
-// issue attachment named by ID becomes the comment's, except those named in
-// DropCommentAttachments. RejectCommentLinks makes it a 400.
-func (yt *FakeYouTrack) linkToComment(w http.ResponseWriter, r *http.Request) {
-	c, ok := yt.comment(w, r)
-	if !ok {
-		return
-	}
-	var body struct {
-		Attachments []struct {
-			ID string `json:"id"`
-		} `json:"attachments"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": err.Error()})
-		return
-	}
-	yt.mu.Lock()
-	defer yt.mu.Unlock()
-	if yt.RejectCommentLinks {
-		writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "cannot update attachments"})
-		return
-	}
-	issueID := c["issue"].(map[string]any)["idReadable"].(string)
-	linked := []any{}
-	for _, ref := range body.Attachments {
-		i := slices.IndexFunc(yt.Attachments[issueID], func(a map[string]any) bool { return a["id"] == ref.ID })
-		if i < 0 {
-			writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "no attachment " + ref.ID})
-			return
+var attachmentRef = regexp.MustCompile(`(!?)\[([^\]]*)\]\(([^)\s]+)\)`)
+
+// textPreview renders the references in a comment's text the way YouTrack
+// does: ![](name) and [label](name) resolve against the issue's attachments,
+// those of its comments included, by name (the newest one wins). A resolved
+// image carries data-attachment-id; a resolved link only the file URL; an
+// unresolved image keeps the bare name. The caller holds yt.mu.
+func (yt *FakeYouTrack) textPreview(issueID, text string) string {
+	body := attachmentRef.ReplaceAllStringFunc(text, func(ref string) string {
+		m := attachmentRef.FindStringSubmatch(ref)
+		image, label, name := m[1] == "!", html.EscapeString(m[2]), m[3]
+		var found map[string]any
+		for _, a := range yt.Attachments[issueID] {
+			if a["name"] == name {
+				found = a
+			}
 		}
-		a := yt.Attachments[issueID][i]
-		if slices.Contains(yt.DropCommentAttachments, fmt.Sprint(a["name"])) {
-			continue
+		switch {
+		case found == nil && image:
+			return `<img src="` + html.EscapeString(name) + `" alt="` + label + `">`
+		case found == nil:
+			return `<a href="` + html.EscapeString(name) + `">` + label + `</a>`
 		}
-		a["comment"] = map[string]any{"id": c["id"], "$type": "IssueComment"}
-		linked = append(linked, a)
-	}
-	c["attachments"] = linked
-	writeProjected(w, r, 200, c)
+		src := yt.Prefix + "/api/files/" + fmt.Sprint(found["id"]) + "?sign=" + fileSign(found) + "&amp;updated=1791374400000"
+		if image {
+			return `<img src="` + src + `" alt="` + label + `" data-attachment-id="` + fmt.Sprint(found["id"]) + `">`
+		}
+		return `<a href="` + src + `" target="_blank" rel="noopener noreferrer">` + label + `</a>`
+	})
+	return `<div class="wiki text common-markdown"><p>` + body + "</p>\n</div>"
 }
 
 type filePart struct {

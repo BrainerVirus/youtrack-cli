@@ -29,6 +29,12 @@ func writeFiles(t *testing.T, files map[string]string) string {
 	return dir
 }
 
+// commentJSON is issue comment's --json output.
+type commentJSON struct {
+	ID, URL     string
+	Attachments []struct{ Name, ID, State string }
+}
+
 type sentComment struct {
 	Text        string `json:"text"`
 	Attachments []any  `json:"attachments"`
@@ -49,7 +55,7 @@ func TestCommentAttach(t *testing.T) {
 		return requests(yt, "POST", "/api/issues/NSR-40/comments")
 	}
 
-	t.Run("given a body with ![](shot.png) and two --attach files, it posts the comment, uploads both to the issue and links them to it", func(t *testing.T) {
+	t.Run("given a body with ![](shot.png) and two --attach files, it posts the comment and uploads both to the comment in one request", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
 		dir := writeFiles(t, map[string]string{"shot.png": "\x89PNG-bytes", "notes.html": "<p>notes</p>"})
 		mustRun(t, env, "issue", "comment", "NSR-40", "--body", "Before: ![](shot.png)",
@@ -65,13 +71,12 @@ func TestCommentAttach(t *testing.T) {
 		if got.Text != "Before: ![](shot.png)" || got.Attachments != nil {
 			t.Fatalf("sent %+v", got)
 		}
-		uploads := requests(yt, "POST", "/api/issues/NSR-40/attachments")
+		uploads := requests(yt, "POST", "/api/issues/NSR-40/comments/4-103/attachments")
 		if len(uploads) != 1 || !strings.HasPrefix(uploads[0].Header.Get("Content-Type"), "multipart/form-data") {
-			t.Fatalf("%d uploads to the issue", len(uploads))
+			t.Fatalf("%d multipart uploads to the comment", len(uploads))
 		}
-		links := requests(yt, "POST", "/api/issues/NSR-40/comments/4-103")
-		if len(links) != 1 || links[0].Body != `{"attachments":[{"id":"8-300"},{"id":"8-301"}]}` {
-			t.Fatalf("links to the comment: %+v", links)
+		if n := len(requests(yt, "POST", "/api/issues/NSR-40/attachments")) + len(requests(yt, "POST", "/api/issues/NSR-40/comments/4-103")); n != 0 {
+			t.Errorf("%d uploads to the issue or link requests", n)
 		}
 		c := yt.Comments["NSR-40"]
 		stored := c[len(c)-1]["attachments"].([]any)
@@ -90,11 +95,79 @@ func TestCommentAttach(t *testing.T) {
 		if want := yt.URL() + "/issue/NSR-40#focus=Comments-4-103.0-0\n"; env.Stdout.String() != want {
 			t.Errorf("stdout = %q, want %q", env.Stdout, want)
 		}
+		if env.Stderr.String() != "" {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
 	})
 
-	t.Run("given the server keeps fewer files than were passed, it names the missing ones and exits 1", func(t *testing.T) {
+	t.Run("given --json, it reports each file on the comment", func(t *testing.T) {
+		env, _ := loggedIn(t, "")
+		dir := writeFiles(t, map[string]string{"a.png": "a", "b.png": "b"})
+		mustRun(t, env, "issue", "comment", "NSR-40", "--body", "![](a.png) ![](b.png)",
+			"--attach", filepath.Join(dir, "a.png"), "--attach", filepath.Join(dir, "b.png"), "--json", "id,attachments")
+		got := decodeJSON[commentJSON](t, env.Stdout.Bytes())
+		if got.ID != "4-103" || fmt.Sprint(got.Attachments) != "[{a.png 8-300 comment} {b.png 8-301 comment}]" {
+			t.Errorf("got %+v", got)
+		}
+	})
+
+	t.Run("given a server that keeps comment uploads on the issue and a comment that shows each file, it warns that they are on the issue and exits 0", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
-		yt.DropCommentAttachments = []string{"b.png"}
+		yt.CommentUploadsToIssue = true
+		dir := writeFiles(t, map[string]string{"a.png": "a", "b.png": "b"})
+		mustRun(t, env, "issue", "comment", "NSR-40", "--body", "![](a.png) and [b](b.png)",
+			"--attach", filepath.Join(dir, "a.png"), "--attach", filepath.Join(dir, "b.png"), "--json", "url,attachments")
+		got := decodeJSON[commentJSON](t, env.Stdout.Bytes())
+		if fmt.Sprint(got.Attachments) != "[{a.png 8-300 issue} {b.png 8-301 issue}]" {
+			t.Errorf("attachments %+v", got.Attachments)
+		}
+		stderr := env.Stderr.String()
+		for _, want := range []string{
+			"! a.png, b.png are on the issue NSR-40, not the comment; the comment shows them\n",
+			"do not run the command again",
+			"ytrack issue attachments NSR-40",
+		} {
+			if !strings.Contains(stderr, want) {
+				t.Errorf("stderr lacks %q:\n%s", want, stderr)
+			}
+		}
+		if n := len(yt.Attachments["NSR-40"]); n != 2 {
+			t.Errorf("%d files on the issue, want 2 (no second upload)", n)
+		}
+	})
+
+	t.Run("given a server without the comment upload, it uploads the files to the issue, warns and exits 0", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.RejectCommentUploads = true
+		dir := writeFiles(t, map[string]string{"a.png": "a"})
+		mustRun(t, env, "issue", "comment", "NSR-40", "--body", "![](a.png)", "--attach", filepath.Join(dir, "a.png"))
+		if uploads := requests(yt, "POST", "/api/issues/NSR-40/attachments"); len(uploads) != 1 {
+			t.Fatalf("%d uploads to the issue", len(uploads))
+		}
+		if !strings.Contains(env.Stderr.String(), "! a.png is on the issue NSR-40, not the comment; the comment shows it") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+		if want := yt.URL() + "/issue/NSR-40#focus=Comments-4-103.0-0\n"; env.Stdout.String() != want {
+			t.Errorf("stdout = %q, want %q", env.Stdout, want)
+		}
+	})
+
+	t.Run("given a file the text does not name that lands on the issue, it says where to find it and exits 0", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.CommentUploadsToIssue = true
+		dir := writeFiles(t, map[string]string{"trace.log": "x"})
+		mustRun(t, env, "issue", "comment", "NSR-40", "--body", "see the log", "--attach", filepath.Join(dir, "trace.log"), "--json", "attachments")
+		if got := decodeJSON[commentJSON](t, env.Stdout.Bytes()); fmt.Sprint(got.Attachments) != "[{trace.log 8-300 issue}]" {
+			t.Errorf("attachments %+v", got.Attachments)
+		}
+		if !strings.Contains(env.Stderr.String(), "! trace.log is on the issue NSR-40, not the comment; see ytrack issue attachments NSR-40") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+	})
+
+	t.Run("given a named file that neither attaches nor shows, it exits 1 naming only it", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.DropUploads = []string{"b.png"}
 		dir := writeFiles(t, map[string]string{"a.png": "a", "b.png": "b"})
 		code := env.Run("issue", "comment", "NSR-40", "--body", "![](a.png) ![](b.png)",
 			"--attach", filepath.Join(dir, "a.png"), "--attach", filepath.Join(dir, "b.png"))
@@ -102,26 +175,57 @@ func TestCommentAttach(t *testing.T) {
 			t.Fatalf("exit %d, stderr %s", code, env.Stderr)
 		}
 		stderr := env.Stderr.String()
-		if !strings.Contains(stderr, "1 of 2 files did not attach to it: b.png") || strings.Contains(stderr, "a.png") {
+		if !strings.Contains(stderr, "1 of 2 files are neither on it nor shown by it: b.png;") || strings.Contains(stderr, "a.png") {
 			t.Errorf("stderr = %q", stderr)
 		}
-		if !strings.Contains(stderr, yt.URL()+"/issue/NSR-40#focus=Comments-4-103.0-0") || env.Stdout.String() != "" {
-			t.Errorf("stdout %q, stderr %q: want the posted comment's URL on stderr only", env.Stdout, stderr)
+		for _, want := range []string{yt.URL() + "/issue/NSR-40#focus=Comments-4-103.0-0", "do not run the command again", "ytrack issue attach NSR-40 <file>"} {
+			if !strings.Contains(stderr, want) {
+				t.Errorf("stderr lacks %q:\n%s", want, stderr)
+			}
+		}
+		if env.Stdout.String() != "" {
+			t.Errorf("stdout = %q, want the URL on stderr only", env.Stdout)
 		}
 	})
 
-	t.Run("given linking the uploaded files to the comment fails, it exits 1 saying they are on the issue only", func(t *testing.T) {
+	t.Run("given a named file that lands on the issue but the comment does not show, it exits 1 naming it", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
-		yt.RejectCommentLinks = true
+		yt.CommentUploadsToIssue = true
+		// Markdown ends a link target at a space, so ![](my shot.png) resolves to nothing.
+		dir := writeFiles(t, map[string]string{"my shot.png": "a"})
+		code := env.Run("issue", "comment", "NSR-40", "--body", "![](my shot.png)", "--attach", filepath.Join(dir, "my shot.png"), "--json", "attachments")
+		if code != 1 || !strings.Contains(env.Stderr.String(), "1 of 1 files are neither on it nor shown by it: my shot.png;") {
+			t.Fatalf("exit %d, stderr %s", code, env.Stderr)
+		}
+		if got := decodeJSON[commentJSON](t, env.Stdout.Bytes()); fmt.Sprint(got.Attachments) != "[{my shot.png 8-300 failed}]" {
+			t.Errorf("attachments %+v", got.Attachments)
+		}
+	})
+
+	t.Run("given --json and a file that neither attaches nor shows, it reports it failed and exits 1", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.DropUploads = []string{"b.png"}
+		dir := writeFiles(t, map[string]string{"a.png": "a", "b.png": "b"})
+		code := env.Run("issue", "comment", "NSR-40", "--body", "![](a.png) ![](b.png)",
+			"--attach", filepath.Join(dir, "a.png"), "--attach", filepath.Join(dir, "b.png"), "--json", "attachments")
+		if code != 1 {
+			t.Fatalf("exit %d, stderr %s", code, env.Stderr)
+		}
+		if got := decodeJSON[commentJSON](t, env.Stdout.Bytes()); fmt.Sprint(got.Attachments) != "[{a.png 8-300 comment} {b.png  failed}]" {
+			t.Errorf("attachments %+v", got.Attachments)
+		}
+	})
+
+	t.Run("given every upload fails, it exits 1 naming the files and the cause", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.RejectCommentUploads = true
+		yt.DropUploads = []string{"a.png"}
 		dir := writeFiles(t, map[string]string{"a.png": "a"})
 		if code := env.Run("issue", "comment", "NSR-40", "--body", "![](a.png)", "--attach", filepath.Join(dir, "a.png")); code != 1 {
 			t.Fatalf("exit %d, stderr %s", code, env.Stderr)
 		}
-		if !strings.Contains(env.Stderr.String(), "attached to the issue NSR-40 but not linked to the comment") {
+		if !strings.Contains(env.Stderr.String(), "1 of 1 files are neither on it nor shown by it: a.png (") || !strings.Contains(env.Stderr.String(), "No subresource for path attachments") {
 			t.Errorf("stderr = %q", env.Stderr)
-		}
-		if len(yt.Attachments["NSR-40"]) != 1 {
-			t.Errorf("issue attachments: %v", yt.Attachments["NSR-40"])
 		}
 	})
 
