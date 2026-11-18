@@ -244,6 +244,8 @@ func TestSuiteAgainstFakeServer(t *testing.T) {
 		"GET /api/issues",
 		"POST /api/issues/{id}",
 		"POST /api/issues/{id}/comments",
+		"POST /api/issues/{id}/comments/{comment}/attachments",
+		"GET /api/issues/{id}/comments/{comment}",
 		"POST /api/commands/assist",
 		"POST /api/commands",
 		"POST /api/issues/{id}/timeTracking/workItems",
@@ -334,6 +336,9 @@ func routeOf(path string) string {
 	parts := strings.Split(path, "/")
 	if len(parts) > 3 && parts[2] == "issues" {
 		parts[3] = "{id}"
+	}
+	if len(parts) > 5 && parts[4] == "comments" {
+		parts[5] = "{comment}"
 	}
 	if len(parts) > 6 && parts[5] == "workItems" {
 		parts[6] = "{item}"
