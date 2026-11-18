@@ -92,6 +92,8 @@ ytrack issue attach APP-123 dump.sql repro.sh       # attach to the issue: name<
 - `--field 'Name=Value'` sets a custom field by its project field name;
   `ytrack issue view APP-123 --json customFields` lists the names and values.
   Period fields (Estimation, Spent time) take a duration like `1w 2d 4h`.
+  `issue edit` reads the issue back and exits 1 naming a field YouTrack did
+  not change; then use `ytrack issue command APP-123 '<Name> <Value>'`.
 - `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tags.
 - `--body-file -` (comment) and `--description-file -` (create, edit) read
   standard input, e.g. text you pipe in.

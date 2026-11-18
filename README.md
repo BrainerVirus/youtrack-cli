@@ -189,7 +189,8 @@ last argument is the command and every argument before it is an issue; all of
 them change in one request. `--dry-run` asks YouTrack how it parses the
 command and changes nothing (exit 1 when a part is not understood);
 `--comment` adds a comment with the change and `--silent` skips
-notifications. `--json` reports `issue`, `url`, `issues` (every issue with its
+notifications (it needs the *Apply Commands Silently* permission; on a 403,
+retry without it). `--json` reports `issue`, `url`, `issues` (every issue with its
 URL), `command`, `dryRun` and `commands` (the parsed parts).
 
 ## Time tracking
