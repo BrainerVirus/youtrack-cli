@@ -23,7 +23,7 @@ import (
 func NewCmdSkill(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "skill <command>",
-		Short: "Install and keep up to date the ytrack agent skill",
+		Short: "Print or install the ytrack agent skill",
 		Long: `Print, install and keep up to date the agent skill that teaches coding
 agents (Claude Code, Codex, Cursor, OpenCode, Pi and others) how to use
 ytrack. The skill is built into this binary and stamped with its version, so
