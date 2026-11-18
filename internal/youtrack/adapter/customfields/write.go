@@ -434,9 +434,9 @@ func Find(defs []Definition, name, project string) (Definition, error) {
 // Applied reports whether f, the field read back after w was written,
 // holds the value w wrote. A value it cannot compare (a command write, or a
 // field it cannot decode) counts as applied. An empty string or text reads
-// back as cleared, and a date matches when the stored instant falls on the
-// written day in UTC or within 14 hours of it (a server normalizing dates to
-// its own zone).
+// back as cleared, and a date matches when the stored instant is within 14
+// hours of the midday-UTC instant written (a server normalizing dates to
+// midnight in its own zone).
 func (w Write) Applied(f Field) bool {
 	if w.Field == nil || f.Kind == KindUnknown {
 		return true
@@ -459,11 +459,13 @@ func (w Write) Applied(f Field) bool {
 			values = []Value{f.Value}
 		}
 	}
+	if ms, ok := w.Field["value"].(int64); ok && f.Kind == KindDate && len(values) == 1 {
+		if d, ok := values[0].(Date); ok {
+			return d.Time.Sub(time.UnixMilli(ms)).Abs() <= dateTolerance
+		}
+	}
 	var got []string
 	for _, v := range values {
-		if d, ok := v.(Date); ok && len(want) == 1 && sameDay(want[0], d) {
-			return len(values) == 1
-		}
 		if k := valueKey(v); k != "" {
 			got = append(got, k)
 		}
@@ -473,16 +475,9 @@ func (w Write) Applied(f Field) bool {
 	return slices.Equal(want, got)
 }
 
-// sameDay reports whether the stored date d falls on day (YYYY-MM-DD) in
-// UTC or at an offset of up to 14 hours either way.
-func sameDay(day string, d Date) bool {
-	for _, h := range []time.Duration{0, -14, 14} {
-		if d.Time.Add(h*time.Hour).UTC().Format(time.DateOnly) == day {
-			return true
-		}
-	}
-	return false
-}
+// dateTolerance is the widest UTC offset (UTC+14) a server can move a
+// date's stored instant by when it normalizes it to its own midnight.
+const dateTolerance = 14 * time.Hour
 
 // writtenKey is the comparable form of one value Encode wrote.
 func writtenKey(v any, kind Kind) string {
