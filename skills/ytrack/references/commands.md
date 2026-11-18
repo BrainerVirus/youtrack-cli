@@ -10,7 +10,8 @@ argument before it is an issue, and all of them change in one request.
    how YouTrack parsed each part and exits 1 when a part is not understood.
 2. Apply the same command without `--dry-run`. Add `--comment '<text>'` to
    explain the change (everyone who can see the issue sees the comment) and
-   `--silent` to skip notifications when the user asks for it.
+   `--silent` to skip notifications when the user asks for it. `--silent`
+   needs the Apply Commands Silently permission; on a 403, drop it.
 3. Check the result: `ytrack issue view APP-123 --json state,assignee,customFields`.
 
 `--dry-run` cannot be combined with `--comment` or `--silent`.

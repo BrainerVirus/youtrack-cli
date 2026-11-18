@@ -132,6 +132,10 @@ func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
 		fs, ok := yt.ProjectFields[r.PathValue("id")]
 		fs = slices.Clone(fs)
 		yt.mu.Unlock()
+		if yt.HideFieldSettings {
+			writeProjected(w, r, 200, []any{})
+			return
+		}
 		if !ok {
 			notFound(w, r.PathValue("id"))
 			return
@@ -141,7 +145,12 @@ func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/admin/projects/{id}/customFields/{field}", func(w http.ResponseWriter, r *http.Request) {
 		yt.mu.Lock()
 		fs := slices.Clone(yt.ProjectFields[r.PathValue("id")])
+		hidden := yt.HideFieldSettings
 		yt.mu.Unlock()
+		if hidden {
+			forbidden(w)
+			return
+		}
 		for _, f := range fs {
 			if f["id"] == r.PathValue("field") {
 				writeProjected(w, r, 200, f)
@@ -344,7 +353,9 @@ func (yt *FakeYouTrack) applyIssue(is, body map[string]any) string {
 		}
 	}
 	for name, cf := range updated {
-		setField(is, name, cf.(map[string]any))
+		if !slices.Contains(yt.IgnoreFieldWrites, name) {
+			setField(is, name, cf.(map[string]any))
+		}
 	}
 	is["updated"] = float64(todayMillis + 1000)
 	return ""
@@ -444,6 +455,10 @@ func (yt *FakeYouTrack) command(w http.ResponseWriter, r *http.Request, preview 
 	refs, _ := body["issues"].([]any)
 	yt.mu.Lock()
 	defer yt.mu.Unlock()
+	if silent, _ := body["silent"].(bool); silent && !preview && yt.ForbidSilentCommands {
+		forbidden(w)
+		return
+	}
 	var issues []map[string]any
 	for _, ref := range refs {
 		m, _ := ref.(map[string]any)
@@ -613,4 +628,58 @@ func periodMinutes(v string) int {
 		n = 0
 	}
 	return total
+}
+
+func forbidden(w http.ResponseWriter) {
+	writeJSON(w, 403, map[string]any{"error": "Forbidden", "error_description": "You have no permission to perform this operation"})
+}
+
+var projectQuery = regexp.MustCompile(`^project: \{(.+)\}$`)
+
+// queryIssues filters Issues by a "project: {X}" query, which matches a
+// project's short name or, as in YouTrack, its full name; any other query
+// keeps them all.
+func (yt *FakeYouTrack) queryIssues(query string) []map[string]any {
+	m := projectQuery.FindStringSubmatch(query)
+	if m == nil {
+		return yt.Issues
+	}
+	var out []map[string]any
+	for _, is := range yt.Issues {
+		if p, _ := is["project"].(map[string]any); p != nil && (p["shortName"] == m[1] || p["name"] == m[1]) {
+			out = append(out, is)
+		}
+	}
+	return out
+}
+
+// withFieldSettings lists every custom field of the issue's project, each
+// with its projectCustomField, when fields= asks for the definitions
+// (projectCustomField(id,...)), as YouTrack lists a project's fields on
+// each of its issues.
+func (yt *FakeYouTrack) withFieldSettings(r *http.Request, is map[string]any) map[string]any {
+	if !strings.Contains(r.URL.Query().Get("fields"), "projectCustomField(id,") {
+		return is
+	}
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	defs := yt.fieldDefs(is)
+	if len(defs) == 0 {
+		return is
+	}
+	stored, _ := is["customFields"].([]any)
+	cfs := make([]any, 0, len(defs))
+	for _, d := range defs {
+		name := d["field"].(map[string]any)["name"]
+		cf := map[string]any{"$type": d["issueType"], "name": name, "value": nil, "projectCustomField": d}
+		for _, s := range stored {
+			if m, _ := s.(map[string]any); m["name"] == name {
+				cf["value"] = m["value"]
+			}
+		}
+		cfs = append(cfs, cf)
+	}
+	out := maps.Clone(is)
+	out["customFields"] = cfs
+	return out
 }

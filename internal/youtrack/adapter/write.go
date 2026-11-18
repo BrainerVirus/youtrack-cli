@@ -74,6 +74,57 @@ func ProjectFields(ctx context.Context, c *transport.Client, projectID string) (
 	})
 }
 
+// issueDefinitionsFields is the fields= projection that reads a project's
+// custom field definitions through an issue's own custom fields.
+const issueDefinitionsFields = "customFields(projectCustomField(" + customfields.DefinitionProjection + "))"
+
+type wireIssueDefinitions struct {
+	Project *struct {
+		ShortName string `json:"shortName"`
+	} `json:"project"`
+	CustomFields []struct {
+		ProjectCustomField *customfields.Definition `json:"projectCustomField"`
+	} `json:"customFields"`
+}
+
+func (w wireIssueDefinitions) defs() []customfields.Definition {
+	out := []customfields.Definition{}
+	for _, cf := range w.CustomFields {
+		if cf.ProjectCustomField != nil && cf.ProjectCustomField.Name != "" {
+			out = append(out, *cf.ProjectCustomField)
+		}
+	}
+	return out
+}
+
+// IssueFieldDefinitions returns the custom field definitions of an issue's
+// project as the issue's own custom fields reference them. Unlike
+// ProjectFields, which reads the project's settings, it needs only read
+// access to the issue.
+func IssueFieldDefinitions(ctx context.Context, c *transport.Client, issueID string) ([]customfields.Definition, error) {
+	var w wireIssueDefinitions
+	if err := c.GetJSON(ctx, "/api/issues/"+url.PathEscape(issueID)+"?fields="+issueDefinitionsFields, &w); err != nil {
+		return nil, err
+	}
+	return w.defs(), nil
+}
+
+// ProjectIssueFieldDefinitions returns the custom field definitions of a
+// project as one of its issues references them, or none when the user can
+// see no issue in it. YouTrack's "project:" also matches a project's full
+// name, so an issue of another project counts as none.
+func ProjectIssueFieldDefinitions(ctx context.Context, c *transport.Client, shortName string) ([]customfields.Definition, error) {
+	var page []wireIssueDefinitions
+	q := url.QueryEscape("project: {" + shortName + "}")
+	if err := c.GetJSON(ctx, "/api/issues?query="+q+"&fields=project(shortName),"+issueDefinitionsFields+"&$top=1", &page); err != nil {
+		return nil, err
+	}
+	if len(page) == 0 || page[0].Project == nil || !strings.EqualFold(page[0].Project.ShortName, shortName) {
+		return []customfields.Definition{}, nil
+	}
+	return page[0].defs(), nil
+}
+
 // ProjectFieldUsers returns the users a project's user field accepts.
 func ProjectFieldUsers(ctx context.Context, c *transport.Client, projectID, fieldID string) ([]customfields.User, error) {
 	var raw json.RawMessage

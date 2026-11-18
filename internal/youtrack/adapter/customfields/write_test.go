@@ -147,3 +147,65 @@ func TestFind(t *testing.T) {
 		t.Errorf("err = %v", err)
 	}
 }
+
+func TestWriteApplied(t *testing.T) {
+	noon := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC).UnixMilli()
+	write := func(typ string, value any) Write {
+		return Write{Name: "F", Field: map[string]any{"name": "F", "$type": typ, "value": value}}
+	}
+	read := func(typ, value string) Field {
+		return Decode([]byte(`{"name":"F","$type":"` + typ + `","value":` + value + `}`))
+	}
+	dateTime := func(value string) Field {
+		return Decode([]byte(`{"name":"F","$type":"SimpleIssueCustomField","projectCustomField":{"field":{"fieldType":{"id":"date and time"}}},"value":` + value + `}`))
+	}
+	tests := []struct {
+		name string
+		w    Write
+		f    Field
+		want bool
+	}{
+		{"given an enum read back with the written name, it is applied", write("SingleEnumIssueCustomField", map[string]any{"name": "Task"}), read("SingleEnumIssueCustomField", `{"name":"Task"}`), true},
+		{"given an enum read back with the old name, it is not applied", write("SingleEnumIssueCustomField", map[string]any{"name": "Task"}), read("SingleEnumIssueCustomField", `{"name":"Bug"}`), false},
+		{"given a multi-enum read back in another order, it is applied", write("MultiEnumIssueCustomField", []any{map[string]any{"name": "A"}, map[string]any{"name": "B"}}), read("MultiEnumIssueCustomField", `[{"name":"B"},{"name":"A"}]`), true},
+		{"given a multi-enum read back missing a value, it is not applied", write("MultiEnumIssueCustomField", []any{map[string]any{"name": "A"}, map[string]any{"name": "B"}}), read("MultiEnumIssueCustomField", `[{"name":"A"}]`), false},
+		{"given a user read back with another login case, it is applied", write("SingleUserIssueCustomField", map[string]any{"login": "JDoe"}), read("SingleUserIssueCustomField", `{"login":"jdoe","fullName":"John"}`), true},
+		{"given a user read back as someone else, it is not applied", write("SingleUserIssueCustomField", map[string]any{"login": "jdoe"}), read("SingleUserIssueCustomField", `{"login":"jroe"}`), false},
+		{"given an integer read back equal, it is applied", write("SimpleIssueCustomField", int64(5)), read("SimpleIssueCustomField", `5`), true},
+		{"given an integer read back different, it is not applied", write("SimpleIssueCustomField", int64(5)), read("SimpleIssueCustomField", `3`), false},
+		{"given a float read back with another spelling, it is applied", write("SimpleIssueCustomField", 1.5), read("SimpleIssueCustomField", `1.50`), true},
+		{"given a text read back equal, it is applied", write("TextIssueCustomField", map[string]any{"text": "Null config"}), read("TextIssueCustomField", `{"text":"Null config"}`), true},
+		{"given a text read back different, it is not applied", write("TextIssueCustomField", map[string]any{"text": "Null config"}), read("TextIssueCustomField", `{"text":"old"}`), false},
+		{"given a string read back equal, it is applied", write("SimpleIssueCustomField", "abc"), read("SimpleIssueCustomField", `"abc"`), true},
+		{"given a date read back at UTC noon, it is applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(noon)), true},
+		{"given a date stored a day later, it is not applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(noon+24*3600*1000)), false},
+		{"given a date stored a day earlier, it is not applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(noon-24*3600*1000)), false},
+		{"given a date stored 13h59m later, it is applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(noon+(13*60+59)*60*1000)), true},
+		{"given a date stored 13h59m earlier, it is applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(noon-(13*60+59)*60*1000)), true},
+		{"given a date stored at a UTC+14 server's local midnight, it is applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(time.Date(2026, 10, 21, 0, 0, 0, 0, time.FixedZone("UTC+14", 14*3600)).UnixMilli())), true},
+		{"given a date stored at a UTC-12 server's local midnight, it is applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(time.Date(2026, 10, 20, 0, 0, 0, 0, time.FixedZone("UTC-12", -12*3600)).UnixMilli())), true},
+		{"given a date read back two days off, it is not applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(noon+2*24*3600*1000)), false},
+		{"given a date-time read back equal, it is applied", write("SimpleIssueCustomField", int64(1791367200000)), dateTime(`1791367200000`), true},
+		{"given a date-time read back different, it is not applied", write("SimpleIssueCustomField", int64(1791367200000)), dateTime(`1791367260000`), false},
+		{"given a period set by command, it counts as applied", Write{Name: "F", Command: "F 1w"}, read("PeriodIssueCustomField", `null`), true},
+		{"given an enum cleared and read back null, it is applied", write("SingleEnumIssueCustomField", nil), read("SingleEnumIssueCustomField", `null`), true},
+		{"given an enum cleared but still set, it is not applied", write("SingleEnumIssueCustomField", nil), read("SingleEnumIssueCustomField", `{"name":"Bug"}`), false},
+		{"given a multi-enum cleared and read back empty, it is applied", write("MultiEnumIssueCustomField", []any{}), read("MultiEnumIssueCustomField", `[]`), true},
+		{"given a user cleared and read back null, it is applied", write("SingleUserIssueCustomField", nil), read("SingleUserIssueCustomField", `null`), true},
+		{"given a text cleared and read back as empty text, it is applied", write("TextIssueCustomField", nil), read("TextIssueCustomField", `{"text":""}`), true},
+		{"given a text cleared and read back with null text, it is applied", write("TextIssueCustomField", nil), read("TextIssueCustomField", `{"text":null}`), true},
+		{"given a text cleared and read back null, it is applied", write("TextIssueCustomField", nil), read("TextIssueCustomField", `null`), true},
+		{"given a string cleared and read back as \"\", it is applied", write("SimpleIssueCustomField", nil), read("SimpleIssueCustomField", `""`), true},
+		{"given a string cleared and read back null, it is applied", write("SimpleIssueCustomField", nil), read("SimpleIssueCustomField", `null`), true},
+		{"given a number cleared but still set, it is not applied", write("SimpleIssueCustomField", nil), read("SimpleIssueCustomField", `5`), false},
+		{"given a date cleared and read back null, it is applied", write("DateIssueCustomField", nil), read("DateIssueCustomField", `null`), true},
+		{"given a date cleared but still set, it is not applied", write("DateIssueCustomField", nil), read("DateIssueCustomField", fmt.Sprint(noon)), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.w.Applied(tt.f); got != tt.want {
+				t.Errorf("Applied = %v, want %v (field %+v)", got, tt.want, tt.f)
+			}
+		})
+	}
+}

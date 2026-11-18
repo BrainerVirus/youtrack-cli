@@ -117,7 +117,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if err != nil {
 			return err
 		}
-		w := &shared.FieldWriter{Client: client, Project: adapter.ProjectInfo{ID: p.ProjectID, ShortName: p.ShortName}, Zone: zone}
+		w := &shared.FieldWriter{Client: client, Project: adapter.ProjectInfo{ID: p.ProjectID, ShortName: p.ShortName}, Zone: zone, IssueID: id}
 		if ch.CustomFields, commands, err = w.Encode(ctx, opts.assigns); err != nil {
 			return err
 		}
@@ -185,6 +185,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			return fmt.Errorf("`%s` failed on %s: %w", c, id, err)
 		}
 		fresh = false
+	}
+	if err := shared.CheckFieldsApplied(ctx, client, id, ch.CustomFields); err != nil {
+		return err
 	}
 	if !fresh {
 		if issue, err = adapter.GetIssue(ctx, client, id, attrs); err != nil {
