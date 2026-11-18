@@ -86,6 +86,9 @@ ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 ytrack issue comment APP-123 --body-file reply.md   # long or multi-line text
 ytrack issue comment APP-123 --body 'Repro: ![](shot.png)' --attach shot.png --attach trace.html
 ytrack issue attach APP-123 dump.sql repro.sh       # attach to the issue: name<TAB>id per file
+ytrack issue attachments APP-123                    # files on the issue and its comments
+ytrack issue download APP-123 -o out/               # save them all: name<TAB>bytes per file
+ytrack issue download APP-123 trace.log 8-123 --comment 4-17 --clobber
 ```
 
 - An issue has a `--summary` and a `--description`; a comment has a `--body`.
@@ -103,6 +106,11 @@ ytrack issue attach APP-123 dump.sql repro.sh       # attach to the issue: name<
   file; `name` is the file's base name. A missing file fails before
   anything is posted; a file that does not attach to a posted comment exits 1
   naming it.
+- Files come down with `ytrack issue download`, never by fetching the signed
+  `url` with `ytrack api` or curl with a token. It uses the issue's host,
+  like `issue view`; an unexpected 404 means the wrong host, so check
+  `ytrack auth status` in the current folder. It never overwrites a file
+  without `--clobber` and exits 1 naming each file that failed.
 - Without a terminal, `issue create` needs `--project` and `--summary`. Never
   pass `--editor` (it waits for a human).
 
