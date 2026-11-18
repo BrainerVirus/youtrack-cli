@@ -659,3 +659,108 @@ func TestIssueWriteHosts(t *testing.T) {
 		}
 	})
 }
+
+// TestFieldsWithoutProjectSettings covers a user who can read and write a
+// project's issues but not its settings: YouTrack answers the settings'
+// field list with an empty list, and only the issues' own custom fields
+// show the definitions.
+func TestFieldsWithoutProjectSettings(t *testing.T) {
+	hidden := func(t *testing.T) (*cmdtest.Env, *cmdtest.FakeYouTrack) {
+		t.Helper()
+		env, yt := writable(t)
+		yt.HideFieldSettings = true
+		return env, yt
+	}
+
+	t.Run("given create --field Type=Task, it reads the fields from a project issue and creates the issue with Type=Task", func(t *testing.T) {
+		env, yt := hidden(t)
+		mustRun(t, env, "issue", "create", "-p", "NSR", "-s", "x", "--field", "Type=Task", "--field", "Priority=critical")
+		if v := storedField(t, yt, "NSR-102", "Type"); !reflect.DeepEqual(v, map[string]any{"name": "Task"}) {
+			t.Errorf("stored Type = %v", v)
+		}
+		if v := storedField(t, yt, "NSR-102", "Priority"); !reflect.DeepEqual(v, map[string]any{"name": "Critical"}) {
+			t.Errorf("stored Priority = %v", v)
+		}
+	})
+
+	t.Run("given edit --field Type=Task, it reads the fields from the issue and applies the value", func(t *testing.T) {
+		env, yt := hidden(t)
+		mustRun(t, env, "issue", "edit", "NSR-40", "--field", "Type=Task", "--assignee", "jroe")
+		if v := storedField(t, yt, "NSR-40", "Type"); !reflect.DeepEqual(v, map[string]any{"name": "Task"}) {
+			t.Errorf("stored Type = %v", v)
+		}
+		if v := storedField(t, yt, "NSR-40", "Assignee"); !reflect.DeepEqual(v, map[string]any{"login": "jroe"}) {
+			t.Errorf("stored Assignee = %v", v)
+		}
+	})
+
+	t.Run("given an unknown field, it lists the project's real field names", func(t *testing.T) {
+		env, _ := hidden(t)
+		if code := env.Run("issue", "edit", "NSR-40", "--field", "Severity=High"); code != 1 {
+			t.Fatalf("exit %d", code)
+		}
+		errText := env.Stderr.String()
+		for _, want := range []string{`project NSR has no custom field "Severity"`, "\n  Type\n", "\n  Priority\n", "\n  State\n"} {
+			if !strings.Contains(errText, want) {
+				t.Errorf("stderr lacks %q: %q", want, errText)
+			}
+		}
+	})
+
+	t.Run("given no source shows the fields, it says so and suggests issue command, never an empty list", func(t *testing.T) {
+		env, yt := hidden(t)
+		yt.Issues = nil
+		if code := env.Run("issue", "create", "-p", "NSR", "-s", "x", "--field", "Type=Task"); code != 1 {
+			t.Fatalf("exit %d", code)
+		}
+		errText := env.Stderr.String()
+		if !strings.Contains(errText, "cannot read the custom fields of project NSR") || !strings.Contains(errText, "`ytrack issue command <ID> '<Name> <Value>'`") {
+			t.Errorf("stderr = %q", errText)
+		}
+		if strings.Contains(errText, "its fields:") {
+			t.Errorf("it printed an empty field list: %q", errText)
+		}
+		if len(requests(yt, "POST", "/api/issues")) != 0 {
+			t.Error("it created an issue")
+		}
+	})
+}
+
+func TestIssueEditChecksFieldsApplied(t *testing.T) {
+	t.Run("given YouTrack accepts a field write but leaves the value, it exits 1 naming the field", func(t *testing.T) {
+		env, yt := writable(t)
+		yt.IgnoreFieldWrites = []string{"Type"}
+		if code := env.Run("issue", "edit", "NSR-40", "--field", "Type=Task", "--field", "Priority=Minor"); code != 1 {
+			t.Fatalf("exit %d, stderr = %q", code, env.Stderr)
+		}
+		errText := env.Stderr.String()
+		if !strings.Contains(errText, "Type on NSR-40 did not take the new value") || strings.Contains(errText, "Priority") {
+			t.Errorf("stderr = %q", errText)
+		}
+		if env.Stdout.String() != "" {
+			t.Errorf("stdout = %q, want nothing", env.Stdout)
+		}
+	})
+
+	t.Run("given the value is applied, it exits 0", func(t *testing.T) {
+		env, yt := writable(t)
+		mustRun(t, env, "issue", "edit", "NSR-40", "--field", "Type=Task", "--field", "Story points=3", "--field", "Due Date=2026-10-20", "--field", "Subsystem=api,web")
+		if v := storedField(t, yt, "NSR-40", "Type"); !reflect.DeepEqual(v, map[string]any{"name": "Task"}) {
+			t.Errorf("stored Type = %v", v)
+		}
+	})
+}
+
+func TestIssueCommandSilentForbidden(t *testing.T) {
+	t.Run("given --silent answered 403, it names the permission and suggests retrying without --silent", func(t *testing.T) {
+		env, yt := writable(t)
+		yt.ForbidSilentCommands = true
+		if code := env.Run("issue", "command", "NSR-40", "Type Task", "--silent"); code != 1 {
+			t.Fatalf("exit %d", code)
+		}
+		errText := env.Stderr.String()
+		if !strings.Contains(errText, "HTTP 403") || !strings.Contains(errText, "Apply Commands Silently") || !strings.Contains(errText, "retry without --silent") {
+			t.Errorf("stderr = %q", errText)
+		}
+	})
+}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -72,7 +74,8 @@ https://www.jetbrains.com/help/youtrack/cloud/commands.html.
 each part without changing anything; it exits 1 when a part is not
 understood. --comment adds a comment along with the change; the comment is
 visible to everyone who can see the issue. --silent applies the change
-without sending notifications.
+without sending notifications; it needs the Apply Commands Silently
+permission in the project.
 
 An issue URL must be on a logged-in host, or named with --host; issue URLs
 in one call must share a host.
@@ -160,6 +163,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			return shared.NotFound(err, idList, host)
 		}
 	} else if res.Commands, err = adapter.ApplyCommand(ctx, client, c); err != nil {
+		if apiErr, ok := errors.AsType[*transport.APIError](err); ok && opts.silent && apiErr.StatusCode == http.StatusForbidden {
+			return fmt.Errorf("%w\n`--silent` needs the Apply Commands Silently permission in the project; retry without --silent (the change then notifies watchers)", err)
+		}
 		return shared.NotFound(err, idList, host)
 	}
 

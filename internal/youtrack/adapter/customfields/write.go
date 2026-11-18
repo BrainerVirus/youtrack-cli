@@ -430,3 +430,79 @@ func Find(defs []Definition, name, project string) (Definition, error) {
 	}
 	return Definition{}, &UnknownFieldError{Name: name, Project: project, Valid: names}
 }
+
+// Applied reports whether f, the field read back after w was written,
+// holds the value w wrote. A value it cannot compare (a command write, or a
+// field it cannot decode) counts as applied.
+func (w Write) Applied(f Field) bool {
+	if w.Field == nil || f.Kind == KindUnknown {
+		return true
+	}
+	var want []string
+	switch v := w.Field["value"].(type) {
+	case nil:
+	case []any:
+		for _, item := range v {
+			want = append(want, writtenKey(item, f.Kind))
+		}
+	default:
+		want = []string{writtenKey(v, f.Kind)}
+	}
+	var got []string
+	if f.Multi {
+		for _, v := range f.Values {
+			got = append(got, valueKey(v))
+		}
+	} else if f.Value != nil {
+		got = []string{valueKey(f.Value)}
+	}
+	slices.Sort(want)
+	slices.Sort(got)
+	return slices.Equal(want, got)
+}
+
+// writtenKey is the comparable form of one value Encode wrote.
+func writtenKey(v any, kind Kind) string {
+	switch v := v.(type) {
+	case map[string]any:
+		for _, k := range []string{"name", "login"} {
+			if s, ok := v[k].(string); ok {
+				return strings.ToLower(s)
+			}
+		}
+		s, _ := v["text"].(string)
+		return s
+	case int64:
+		switch kind {
+		case KindDate:
+			return Date{Time: time.UnixMilli(v)}.String()
+		case KindDateTime:
+			return strconv.FormatInt(v, 10)
+		}
+		return numberKey(float64(v))
+	case float64:
+		return numberKey(v)
+	}
+	return fmt.Sprint(v)
+}
+
+// valueKey is the comparable form of a value read back.
+func valueKey(v Value) string {
+	switch v := v.(type) {
+	case Named:
+		return strings.ToLower(v.Name)
+	case User:
+		return strings.ToLower(v.Login)
+	case DateTime:
+		return strconv.FormatInt(v.Time.UnixMilli(), 10)
+	case Scalar:
+		if n, ok := v.V.(json.Number); ok {
+			if f, err := n.Float64(); err == nil {
+				return numberKey(f)
+			}
+		}
+	}
+	return v.String()
+}
+
+func numberKey(f float64) string { return strconv.FormatFloat(f, 'f', -1, 64) }

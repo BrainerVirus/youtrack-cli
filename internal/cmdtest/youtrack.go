@@ -36,6 +36,7 @@ type Request struct {
 //	POST|DELETE /api/issues/{id}/tags[/{tag}]  tags and untags an issue
 //	GET  /api/admin/projects        Projects, paged
 //	GET  /api/admin/projects/{id}/customFields  ProjectFields[project id], paged
+//	                                (empty when HideFieldSettings)
 //	GET  /api/admin/projects/{id}/customFields/{field}  one of them
 //	GET  /api/tags                  Tags, paged
 //	POST /api/commands[/assist]     applies or previews a small subset of the
@@ -93,6 +94,18 @@ type FakeYouTrack struct {
 	Projects      []map[string]any
 	ProjectFields map[string][]map[string]any
 	Tags          []map[string]any
+	// HideFieldSettings answers the project settings' custom field list
+	// with an empty list and a single field with a 403, as YouTrack does
+	// for a user who may read the project's issues but not its settings.
+	// The definitions stay readable through an issue's
+	// customFields(projectCustomField(...)).
+	HideFieldSettings bool
+	// IgnoreFieldWrites names custom fields whose REST writes YouTrack
+	// accepts (200) but leaves unchanged, as a workflow can.
+	IgnoreFieldWrites []string
+	// ForbidSilentCommands answers a command with "silent": true with a
+	// 403, as for a user without Apply Commands Silently.
+	ForbidSilentCommands bool
 	// MaxTop caps $top like a server limit would (0 means no cap).
 	MaxTop int
 	// HubTokenPage makes the instance's token page 404, as on a Server
@@ -119,8 +132,8 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 	})
 	mux.HandleFunc("GET /api/issues", func(w http.ResponseWriter, r *http.Request) {
 		items := []map[string]any{}
-		for _, is := range page(r, yt.Issues) {
-			items = append(items, onlyCustomFields(is, r.URL.Query()["customFields"]))
+		for _, is := range page(r, yt.queryIssues(r.URL.Query().Get("query"))) {
+			items = append(items, yt.withFieldSettings(r, onlyCustomFields(is, r.URL.Query()["customFields"])))
 		}
 		writeProjected(w, r, 200, items)
 	})
@@ -130,7 +143,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			notFound(w, r.PathValue("id"))
 			return
 		}
-		writeProjected(w, r, 200, is)
+		writeProjected(w, r, 200, yt.withFieldSettings(r, is))
 	})
 	mux.HandleFunc("GET /api/issues/{id}/comments", func(w http.ResponseWriter, r *http.Request) {
 		is, ok := yt.issue(r.PathValue("id"))

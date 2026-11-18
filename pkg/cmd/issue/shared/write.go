@@ -2,8 +2,10 @@ package shared
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -54,7 +56,10 @@ fields a login or "me", date fields YYYY-MM-DD, date-time fields
 and string fields any text. Multi-value fields take a comma-separated list,
 which replaces their values; to add or remove one value, use
 ` + "`ytrack issue command <id> 'add <Field> <value>'` or `'remove <Field> <value>'`" + `.
-"Name=" clears a field unless the project requires a value. Period fields such as
+"Name=" clears a field unless the project requires a value. Without access
+to the project settings, the field definitions come from the issue (edit) or
+from an issue in the project (create). edit reads the issue back and fails
+when a field did not take the new value. Period fields such as
 Estimation take a duration like "1w 2d 4h" and are set with a YouTrack
 command, so the instance's work schedule applies; everything else is
 written through the REST API. For anything else, use ` + "`ytrack issue command`."
@@ -87,9 +92,63 @@ type FieldWriter struct {
 	Client  *transport.Client
 	Project adapter.ProjectInfo
 	Zone    *time.Location
+	// IssueID is the issue being edited; empty when creating one.
+	IssueID string
 
 	defs []customfields.Definition
-	me   string
+	// borrowed is set when defs came from an issue, not the project
+	// settings, which the user cannot read.
+	borrowed bool
+	me       string
+}
+
+// loadDefs reads the project's custom field definitions. The project
+// settings (/api/admin/projects/{id}/customFields) list them only to users
+// who may read the project's settings; YouTrack answers others with an
+// empty list or a 403. Then the definitions come from the custom fields of
+// the issue being edited, or of an issue in the project.
+func (w *FieldWriter) loadDefs(ctx context.Context) error {
+	defs, err := adapter.ProjectFields(ctx, w.Client, w.Project.ID)
+	if err != nil && !isForbidden(err) {
+		return fmt.Errorf("reading the custom fields of project %s: %w", w.Project.ShortName, err)
+	}
+	if len(defs) > 0 {
+		w.defs = defs
+		return nil
+	}
+	if w.IssueID != "" {
+		defs, err = adapter.IssueFieldDefinitions(ctx, w.Client, w.IssueID)
+	} else {
+		defs, err = adapter.ProjectIssueFieldDefinitions(ctx, w.Client, w.Project.ShortName)
+	}
+	if err != nil && !isForbidden(err) {
+		return fmt.Errorf("reading the custom fields of project %s: %w", w.Project.ShortName, err)
+	}
+	if len(defs) == 0 {
+		return &FieldsUnreadableError{Project: w.Project.ShortName, IssueID: w.IssueID}
+	}
+	w.defs, w.borrowed = defs, true
+	return nil
+}
+
+func isForbidden(err error) bool {
+	apiErr, ok := errors.AsType[*transport.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusForbidden
+}
+
+// FieldsUnreadableError says the project's custom fields could not be read
+// from any source, so --field cannot be checked or encoded.
+type FieldsUnreadableError struct{ Project, IssueID string }
+
+func (e *FieldsUnreadableError) Error() string {
+	id := e.IssueID
+	how := ""
+	if id == "" {
+		id, how = "<ID>", "; create the issue without --field, then run "
+	} else {
+		how = "; run "
+	}
+	return fmt.Sprintf("cannot read the custom fields of project %s (your account cannot read the project settings and no issue showed them)%s`ytrack issue command %s '<Name> <Value>'` instead", e.Project, how, id)
 }
 
 // Encode turns assignments into IssueCustomField values for the REST API and
@@ -99,8 +158,8 @@ func (w *FieldWriter) Encode(ctx context.Context, assigns []FieldAssign) (rest [
 		return nil, nil, nil
 	}
 	if w.defs == nil {
-		if w.defs, err = adapter.ProjectFields(ctx, w.Client, w.Project.ID); err != nil {
-			return nil, nil, fmt.Errorf("reading the custom fields of project %s: %w", w.Project.ShortName, err)
+		if err := w.loadDefs(ctx); err != nil {
+			return nil, nil, err
 		}
 	}
 	opts := customfields.EncodeOptions{Location: w.Zone, Me: func() (string, error) {
@@ -120,9 +179,11 @@ func (w *FieldWriter) Encode(ctx context.Context, assigns []FieldAssign) (rest [
 		}
 		if d.NeedsUsers() && strings.TrimSpace(a.Value) != "me" && strings.TrimSpace(a.Value) != "" {
 			users, err := adapter.ProjectFieldUsers(ctx, w.Client, w.Project.ID, d.ID)
-			if err != nil {
+			if err != nil && !w.borrowed {
 				return nil, nil, fmt.Errorf("reading the users of field %q: %w", d.Name, err)
 			}
+			// Without the project settings the users are not readable:
+			// YouTrack checks the login when the value is written.
 			d.SetUsers(users)
 			for i := range w.defs {
 				if w.defs[i].ID == d.ID {
@@ -290,4 +351,31 @@ func Zone(f *cmdutil.Factory) (*time.Location, error) {
 		return nil, err
 	}
 	return worktime.Location(cfg.Timezone(), f.Clock().Location())
+}
+
+// CheckFieldsApplied reads issue id back and fails, naming the fields, when
+// a custom field written through the REST API (rest, from Encode) does not
+// hold the value written: YouTrack can accept a write that a workflow or a
+// permission then leaves unapplied.
+func CheckFieldsApplied(ctx context.Context, c *transport.Client, id string, rest []map[string]any) error {
+	if len(rest) == 0 {
+		return nil
+	}
+	issue, err := adapter.GetIssue(ctx, c, id, []string{"customFields"})
+	if err != nil {
+		return fmt.Errorf("reading %s back to check its custom fields: %w", id, err)
+	}
+	var missed []string
+	for _, m := range rest {
+		w := customfields.Write{Name: fmt.Sprint(m["name"]), Field: m}
+		i := slices.IndexFunc(issue.CustomFields, func(f customfields.Field) bool { return f.Name == w.Name })
+		if i < 0 || !w.Applied(issue.CustomFields[i]) {
+			missed = append(missed, w.Name)
+		}
+	}
+	if len(missed) == 0 {
+		return nil
+	}
+	return fmt.Errorf("YouTrack accepted the change, but %s on %s did not take the new value (a workflow or a permission can block it); check with `ytrack issue view %s` or set it with `ytrack issue command %s '<Name> <Value>'`",
+		strings.Join(missed, ", "), id, id, id)
 }
