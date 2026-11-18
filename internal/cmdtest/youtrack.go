@@ -46,13 +46,15 @@ type Request struct {
 //	GET  /api/issues/{id}/comments  Comments[idReadable], paged with $skip/$top
 //	POST /api/issues/{id}/comments  appends {"text"} to Comments and returns it;
 //	                                like YouTrack, it ignores an "attachments" field
-//	GET  /api/issues/{id}/comments/{comment}  one of Comments
-//	POST /api/issues/{id}/comments/{comment}  sets the comment's attachments to
-//	                                the issue attachments named by {"attachments":
-//	                                [{"id"}]}, except those named in
-//	                                DropCommentAttachments; 400 if RejectCommentLinks
+//	GET  /api/issues/{id}/comments/{comment}  one of Comments, with a
+//	                                textPreview that resolves ![](name) and
+//	                                [label](name) against the issue's Attachments
+//	POST /api/issues/{id}/comments/{comment}/attachments  stores multipart files
+//	                                as the comment's attachments (also listed in
+//	                                Attachments) and returns them; see
+//	                                CommentUploadsToIssue, RejectCommentUploads
 //	POST /api/issues/{id}/attachments  stores multipart files in Attachments and
-//	                                returns them
+//	                                returns them (neither upload keeps DropUploads)
 //	GET  /api/issues/{id}/attachments  Attachments[idReadable], paged, each with a
 //	                                signed url ({Prefix}/api/files/{id}?sign=...)
 //	GET  /api/files/{id}            an attachment's content at its signed URL; 404
@@ -85,14 +87,18 @@ type FakeYouTrack struct {
 	Comments map[string][]map[string]any
 	// Attachments holds each issue's issue-level attachments by readable ID.
 	Attachments map[string][]map[string]any
-	// DropCommentAttachments names files that linking to a comment accepts
-	// but does not keep, as a server that loses them would.
-	DropCommentAttachments []string
+	// DropUploads names files that an upload, to the issue or a comment,
+	// accepts but does not keep, as a server that loses them would.
+	DropUploads []string
+	// CommentUploadsToIssue makes an upload to a comment keep its files on
+	// the issue only, as a server that ignores the comment would.
+	CommentUploadsToIssue bool
+	// RejectCommentUploads answers an upload to a comment with a 404, as a
+	// server without that endpoint would.
+	RejectCommentUploads bool
 	// MissingFiles names attachment IDs that are listed but whose file is
 	// gone: downloading one is a 404.
 	MissingFiles []string
-	// RejectCommentLinks makes linking attachments to a comment fail.
-	RejectCommentLinks bool
 	// WorkItems holds each issue's work items by readable ID.
 	WorkItems map[string][]map[string]any
 	// TimeTracking holds project time tracking settings by project ID.
@@ -196,7 +202,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 	mux.HandleFunc("GET /api/issues/{id}/attachments", yt.listAttachments)
 	mux.HandleFunc("GET /api/files/{file}", yt.downloadFile)
 	mux.HandleFunc("GET /api/issues/{id}/comments/{comment}", yt.getComment)
-	mux.HandleFunc("POST /api/issues/{id}/comments/{comment}", yt.linkToComment)
+	mux.HandleFunc("POST /api/issues/{id}/comments/{comment}/attachments", yt.attachToComment)
 	yt.workItemRoutes(mux)
 	yt.issueWriteRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {

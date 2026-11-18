@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `issue comment --attach` uploads each file straight to the comment, so YouTrack Cloud shows the files on the comment (linking issue attachments to a comment by id is silently ignored). When YouTrack keeps a file on the issue but the comment still shows it, the command exits 0 with a warning; it exits 1 only for a file that is neither attached nor shown, and says never to run the command again because the comment already exists. `--json` reports each file's state (comment, issue or failed).
 ## [0.6.0] - 2026-11-18
 
 ### Added

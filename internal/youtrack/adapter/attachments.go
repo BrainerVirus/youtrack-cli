@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
@@ -105,6 +105,23 @@ type LocalFile struct {
 // AttachToIssue uploads files to the issue in one request and returns the
 // attachments YouTrack created.
 func AttachToIssue(ctx context.Context, c *transport.Client, issueID string, files []LocalFile) ([]Attachment, error) {
+	var out []Attachment
+	err := c.SendMultipart(ctx, "/api/issues/"+url.PathEscape(issueID)+"/attachments?fields=id,name,size,mimeType", fileParts(files), &out)
+	return out, err
+}
+
+// AttachToComment uploads files to a comment in one request and returns the
+// attachments YouTrack created. The comment's attachments collection takes
+// the same multipart upload as the issue's; YouTrack ignores files sent
+// inside the JSON that creates a comment and attachment IDs sent in a
+// comment update.
+func AttachToComment(ctx context.Context, c *transport.Client, issueID, commentID string, files []LocalFile) ([]Attachment, error) {
+	var out []Attachment
+	err := c.SendMultipart(ctx, commentPath(issueID, commentID)+"/attachments?fields=id,name,size,mimeType", fileParts(files), &out)
+	return out, err
+}
+
+func fileParts(files []LocalFile) []transport.FilePart {
 	parts := make([]transport.FilePart, len(files))
 	for i, f := range files {
 		open := openFile(f.Path)
@@ -113,30 +130,39 @@ func AttachToIssue(ctx context.Context, c *transport.Client, issueID string, fil
 		}
 		parts[i] = transport.FilePart{Name: f.Name, ContentType: f.MimeType, Size: f.Size, Open: open}
 	}
-	var out []Attachment
-	err := c.SendMultipart(ctx, "/api/issues/"+url.PathEscape(issueID)+"/attachments?fields=id,name,size,mimeType", parts, &out)
-	return out, err
+	return parts
 }
 
-// LinkToComment makes attachments already uploaded to the issue the
-// comment's attachments. YouTrack has no upload endpoint for a comment and ignores files sent
-// inside the JSON that creates one, so a comment gets its files by
-// uploading them to the issue and linking them here.
-func LinkToComment(ctx context.Context, c *transport.Client, issueID, commentID string, attachments []Attachment) error {
-	ids := make([]map[string]string, len(attachments))
-	for i, a := range attachments {
-		ids[i] = map[string]string{"id": a.ID}
-	}
-	return c.SendJSON(ctx, http.MethodPost, commentPath(issueID, commentID)+"?fields=attachments(id,name)", map[string]any{"attachments": ids}, nil)
+// CommentFiles is what a posted comment shows of its files.
+type CommentFiles struct {
+	// Attachments are the files attached to the comment itself.
+	Attachments []Attachment
+	// TextPreview is the comment text as YouTrack renders it. A reference
+	// such as ![](name) that YouTrack resolved to an attachment, the issue's
+	// included, links /api/files/<attachment id>.
+	TextPreview string
 }
 
-// CommentAttachments reads the attachments a comment has.
-func CommentAttachments(ctx context.Context, c *transport.Client, issueID, commentID string) ([]Attachment, error) {
+// ReadCommentFiles reads a comment's attachments and rendered text.
+func ReadCommentFiles(ctx context.Context, c *transport.Client, issueID, commentID string) (CommentFiles, error) {
 	var w struct {
 		Attachments []Attachment `json:"attachments"`
+		TextPreview string       `json:"textPreview"`
 	}
-	err := c.GetJSON(ctx, commentPath(issueID, commentID)+"?fields=attachments(id,name)", &w)
-	return w.Attachments, err
+	err := c.GetJSON(ctx, commentPath(issueID, commentID)+"?fields=attachments(id,name),textPreview", &w)
+	return CommentFiles{Attachments: w.Attachments, TextPreview: w.TextPreview}, err
+}
+
+// Shows reports whether the rendered text resolves a reference to the
+// attachment with that ID: an image carries data-attachment-id, and both an
+// image and a link point at /api/files/<id>.
+func (cf CommentFiles) Shows(attachmentID string) bool {
+	if attachmentID == "" {
+		return false
+	}
+	return strings.Contains(cf.TextPreview, `data-attachment-id="`+attachmentID+`"`) ||
+		strings.Contains(cf.TextPreview, "/api/files/"+attachmentID+"?") ||
+		strings.Contains(cf.TextPreview, "/api/files/"+attachmentID+`"`)
 }
 
 func commentPath(issueID, commentID string) string {

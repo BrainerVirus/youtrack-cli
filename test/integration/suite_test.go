@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -151,6 +153,9 @@ func (s *suite) steps() error {
 	if !slices.ContainsFunc(withComments.Comments, func(c struct{ Text string }) bool { return c.Text == commentText }) {
 		return fmt.Errorf("issue comment: %q not among the comments of %s", commentText, id)
 	}
+	if err := s.commentAttachStep(id); err != nil {
+		return err
+	}
 
 	// issue command: preview, then apply. Command keywords such as "for"
 	// are localized with the instance's language; a field name is not.
@@ -169,6 +174,45 @@ func (s *suite) steps() error {
 	}
 
 	return s.workItemSteps(id)
+}
+
+// itImage is a 1x1 PNG the comment --attach step uploads.
+var itImage = []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89" +
+	"\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82")
+
+// commentAttachStep posts a comment with --attach and reads the comment's
+// attachments(id,name) back: the file must be on the comment itself, not
+// only on the issue.
+func (s *suite) commentAttachStep(id string) (err error) {
+	dir, err := os.MkdirTemp("", "ytrack-it-attach-")
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, os.RemoveAll(dir)) }()
+	const name = "ytrack-it.png"
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, itImage, 0o600); err != nil {
+		return err
+	}
+	var posted struct {
+		ID          string
+		Attachments []struct{ Name, ID, State string }
+	}
+	if err := s.ytrackJSON(&posted, "issue", "comment", id, "--body", s.prefix()+" attach ![]("+name+")",
+		"--attach", path, "--json", "id,attachments"); err != nil {
+		return fmt.Errorf("issue comment --attach: %w", err)
+	}
+	if len(posted.Attachments) != 1 || posted.Attachments[0].State != "comment" {
+		return fmt.Errorf("issue comment --attach: attachments %+v, want %s on the comment", posted.Attachments, name)
+	}
+	var comment struct{ Attachments []struct{ ID, Name string } }
+	if err := s.ytrackJSON(&comment, "api", "/issues/"+id+"/comments/"+posted.ID, "-X", "GET", "--fields", "attachments(id,name)"); err != nil {
+		return fmt.Errorf("reading the comment's attachments: %w", err)
+	}
+	if len(comment.Attachments) != 1 || comment.Attachments[0].Name != name {
+		return fmt.Errorf("issue comment --attach: comment %s has attachments %+v, want %s", posted.ID, comment.Attachments, name)
+	}
+	return nil
 }
 
 type workItem struct {

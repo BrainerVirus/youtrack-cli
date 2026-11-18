@@ -65,6 +65,9 @@ with `--host`, so other logged-in hosts are not contacted):
 3. `issue view` and `issue list` find it.
 4. `issue edit` changes summary and description; `issue view` confirms.
 5. `issue comment` adds a comment; `issue view --json comments` shows it.
+   `issue comment --attach` posts a comment with a PNG, and `ytrack api`
+   reads the comment's `attachments(id,name)`: the file must be on the
+   comment itself.
 6. `issue command <id> 'Assignee me' --dry-run`, then applied with
    `--silent`; the assignee becomes you. The command uses the field name, not
    a keyword such as `for`: YouTrack localizes command keywords with the
@@ -76,7 +79,8 @@ The run id is a UTC timestamp plus random hex, e.g. `20261104-153000-a1b2c3`.
 
 ## What it creates and cleans up
 
-One issue per run, with one comment and one work item on it. Cleanup runs
+One issue per run, with two comments (one with an attached file) and one
+work item on it. Cleanup runs
 whether the steps passed or failed:
 
 - it deletes each issue the run created (`ytrack api -X DELETE /issues/<id>`;

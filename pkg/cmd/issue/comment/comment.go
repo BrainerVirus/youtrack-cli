@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -20,7 +22,18 @@ import (
 )
 
 // Fields lists the --json fields of issue comment.
-var Fields = []string{"id", "url", "issue"}
+var Fields = []string{"id", "url", "issue", "attachments"}
+
+// Where an --attach file ended up.
+const (
+	// onComment: attached to the comment.
+	onComment = "comment"
+	// onIssue: attached to the issue only; the comment shows it when its
+	// text names it.
+	onIssue = "issue"
+	// failed: neither on the comment nor shown by it.
+	failed = "failed"
+)
 
 type options struct {
 	ref      shared.Ref
@@ -36,10 +49,27 @@ type options struct {
 	exporter *output.Exporter
 }
 
-type created struct{ ID, URL, Issue string }
+type created struct {
+	ID, URL, Issue string
+	Files          []fileResult
+}
+
+// fileResult is where one --attach file ended up.
+type fileResult struct {
+	Name string
+	// ID is the attachment's ID, "" for a file YouTrack did not keep.
+	ID    string
+	State string
+	// shown: the comment text resolves a reference to it.
+	shown bool
+}
 
 func (c created) ExportData(fields []string) map[string]any {
-	all := map[string]any{"id": c.ID, "url": c.URL, "issue": c.Issue}
+	files := make([]map[string]any, len(c.Files))
+	for i, f := range c.Files {
+		files[i] = map[string]any{"name": f.Name, "id": f.ID, "state": f.State}
+	}
+	all := map[string]any{"id": c.ID, "url": c.URL, "issue": c.Issue, "attachments": files}
 	out := make(map[string]any, len(fields))
 	for _, f := range fields {
 		out[f] = all[f]
@@ -61,19 +91,28 @@ opens when ytrack runs in a terminal. The editor is $YTRACK_EDITOR,
 $GIT_EDITOR, $VISUAL or $EDITOR.
 
 --attach adds a file to the comment (repeat it for more files): once the
-comment is posted, the files are uploaded to the issue and linked to the
-comment. The comment text shows an attached file inline when it refers to
-it by name: ![](shot.png) for an image, [notes](notes.html) for a link. A
-reference to the path you gave, such as ![](shots/shot.png), is rewritten
-to the name. Files the text does not mention appear as the comment's
-attachments. A missing or unreadable file stops the command before
-anything is posted. If the comment is posted but any file did not attach,
-the command names the missing files and exits 1.
+comment is posted, the files are uploaded to it. The comment text shows an
+attached file inline when it refers to it by name: ![](shot.png) for an
+image, [notes](notes.html) for a link. A reference to the path you gave,
+such as ![](shots/shot.png), is rewritten to the name. Files the text does
+not mention appear as the comment's attachments. A missing or unreadable
+file stops the command before anything is posted.
+
+If YouTrack keeps a file on the issue rather than on the comment, the
+command warns and exits 0: the comment still shows a file its text names.
+It exits 1 naming each file that is neither on the comment nor shown by it.
+After either, do not run the command again, since the comment and the
+uploaded files already exist: check them with ytrack issue attachments
+<id>, and add a missing file with ytrack issue attach <id> <file> (the
+comment then shows it if its text names it).
 
 JSON fields:
-  id     comment ID
-  url    comment web URL
-  issue  readable ID of the issue`,
+  id           comment ID
+  url          comment web URL
+  issue        readable ID of the issue
+  attachments  the --attach files: name, id and state, where state is
+               comment (on the comment), issue (on the issue only) or
+               failed (neither on the comment nor shown by it)`,
 		Example: `  $ ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
   $ git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
   $ ytrack issue comment APP-123 --editor
@@ -147,56 +186,143 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	if issueID == "" {
 		issueID = opts.ref.ID
 	}
-	res := created{ID: c.ID, URL: shared.CommentURL(host, issueID, c.ID), Issue: issueID}
-	if err := attach(cmd, client, issueID, c.ID, opts.files); err != nil {
-		return fmt.Errorf("the comment was posted (%s), but %w", res.URL, err)
+	res := created{ID: c.ID, URL: shared.CommentURL(host, issueID, c.ID), Issue: issueID, Files: []fileResult{}}
+	var cause error
+	res.Files, cause, err = attach(cmd, client, issueID, c.ID, body, opts.files)
+	if err != nil {
+		return fmt.Errorf("the comment was posted (%s), but %w; %s", res.URL, err, noRerun(issueID))
 	}
 	if opts.exporter != nil {
-		return opts.exporter.Write(ios, res)
+		if err := opts.exporter.Write(ios, res); err != nil {
+			return err
+		}
+	} else if !hasFailed(res.Files) {
+		fmt.Fprintln(ios.Out, res.URL)
 	}
-	fmt.Fprintln(ios.Out, res.URL)
-	return nil
+	return report(f, issueID, res, cause)
 }
 
-// attach uploads files to the issue, links them to the comment and reads
-// the comment's attachments back, so a file YouTrack drops fails the command
-// instead of passing silently. YouTrack ignores files sent with the comment
-// itself and has no upload endpoint for a comment.
-func attach(cmd *cobra.Command, client *transport.Client, issueID, commentID string, files []adapter.LocalFile) error {
-	if len(files) == 0 {
-		return nil
-	}
-	ctx := cmd.Context()
-	uploaded, err := adapter.AttachToIssue(ctx, client, issueID, files)
-	if err != nil {
-		return fmt.Errorf("uploading its files failed: %w", err)
-	}
-	if err := adapter.LinkToComment(ctx, client, issueID, commentID, uploaded); err != nil {
-		return fmt.Errorf("its files are attached to the issue %s but not linked to the comment: %w", issueID, err)
-	}
-	got, err := adapter.CommentAttachments(ctx, client, issueID, commentID)
-	if err != nil {
-		return fmt.Errorf("checking its attachments failed: %w", err)
-	}
-	if missing := missingNames(files, got); len(missing) > 0 {
-		return fmt.Errorf("%d of %d files did not attach to it: %s", len(missing), len(files), strings.Join(missing, ", "))
-	}
-	return nil
-}
-
-// missingNames lists the files with no attachment of their name.
-func missingNames(files []adapter.LocalFile, got []adapter.Attachment) []string {
-	have := make(map[string]bool, len(got))
-	for _, a := range got {
-		have[a.Name] = true
-	}
-	var missing []string
-	for _, f := range files {
-		if !have[f.Name] {
-			missing = append(missing, f.Name)
+// report warns about files that went to the issue rather than the comment
+// and fails naming those that are neither on the comment nor shown by it,
+// with cause, the upload error if any.
+func report(f *cmdutil.Factory, issueID string, res created, cause error) error {
+	var shown, listed, lost []string
+	for _, r := range res.Files {
+		switch {
+		case r.State == failed:
+			lost = append(lost, r.Name)
+		case r.State == onIssue && r.shown:
+			shown = append(shown, r.Name)
+		case r.State == onIssue:
+			listed = append(listed, r.Name)
 		}
 	}
-	return missing
+	if len(shown) > 0 {
+		f.Warnf("%s %s on the issue %s, not the comment; the comment shows %s", strings.Join(shown, ", "), isAre(shown), issueID, themIt(shown))
+	}
+	if len(listed) > 0 {
+		f.Warnf("%s %s on the issue %s, not the comment; see ytrack issue attachments %s", strings.Join(listed, ", "), isAre(listed), issueID, issueID)
+	}
+	if len(lost) > 0 {
+		why := ""
+		if cause != nil {
+			why = " (" + cause.Error() + ")"
+		}
+		return fmt.Errorf("the comment was posted (%s), but %d of %d files are neither on it nor shown by it: %s%s; %s; add them with ytrack issue attach %s <file>",
+			res.URL, len(lost), len(res.Files), strings.Join(lost, ", "), why, noRerun(issueID), issueID)
+	}
+	if len(shown)+len(listed) > 0 {
+		f.Warnf("%s", noRerun(issueID))
+	}
+	return nil
+}
+
+func noRerun(issueID string) string {
+	return "do not run the command again (the comment and its uploads exist); check with ytrack issue attachments " + issueID
+}
+
+func hasFailed(files []fileResult) bool {
+	return slices.ContainsFunc(files, func(r fileResult) bool { return r.State == failed })
+}
+
+func isAre(names []string) string {
+	if len(names) == 1 {
+		return "is"
+	}
+	return "are"
+}
+
+func themIt(names []string) string {
+	if len(names) == 1 {
+		return "it"
+	}
+	return "them"
+}
+
+// attach uploads files to the comment, then reads the comment back and
+// reports where each file ended up. A file the comment did not get and
+// YouTrack did not keep anywhere goes up to the issue, where YouTrack
+// resolves the comment's references to it. text is the comment text as
+// posted. cause is the upload error, if any; err is set only when it cannot
+// tell where the files are.
+func attach(cmd *cobra.Command, client *transport.Client, issueID, commentID, text string, files []adapter.LocalFile) (results []fileResult, cause, err error) {
+	if len(files) == 0 {
+		return []fileResult{}, nil, nil
+	}
+	ctx := cmd.Context()
+	// Where an upload error leaves the files is read back below.
+	uploaded, upErr := adapter.AttachToComment(ctx, client, issueID, commentID, files)
+	seen, err := adapter.ReadCommentFiles(ctx, client, issueID, commentID)
+	if err != nil {
+		return nil, upErr, fmt.Errorf("checking its attachments failed: %w", err)
+	}
+	kept, onCmt := byName(uploaded), byName(seen.Attachments)
+	var retry []adapter.LocalFile
+	for _, f := range files {
+		if onCmt[f.Name] == "" && kept[f.Name] == "" {
+			retry = append(retry, f)
+		}
+	}
+	var retryErr error
+	if len(retry) > 0 {
+		var more []adapter.Attachment
+		more, retryErr = adapter.AttachToIssue(ctx, client, issueID, retry)
+		maps.Copy(kept, byName(more))
+		// The text resolves a reference only once the file exists.
+		if seen, err = adapter.ReadCommentFiles(ctx, client, issueID, commentID); err != nil {
+			return nil, errors.Join(upErr, retryErr), fmt.Errorf("checking its attachments failed: %w", err)
+		}
+		onCmt = byName(seen.Attachments)
+	}
+	out := make([]fileResult, len(files))
+	for i, f := range files {
+		r := fileResult{Name: f.Name, State: failed}
+		switch {
+		case onCmt[f.Name] != "":
+			r.ID, r.State = onCmt[f.Name], onComment
+		case kept[f.Name] != "":
+			r.ID = kept[f.Name]
+			r.shown = seen.Shows(r.ID)
+			if r.shown || !refersTo(text, f.Name) {
+				r.State = onIssue
+			}
+		}
+		out[i] = r
+	}
+	return out, errors.Join(upErr, retryErr), nil
+}
+
+// refersTo reports whether the comment text links or embeds the file by
+// name, as ![](name) or [label](name).
+func refersTo(text, name string) bool { return strings.Contains(text, "]("+name+")") }
+
+// byName maps attachment names to their IDs.
+func byName(as []adapter.Attachment) map[string]string {
+	m := make(map[string]string, len(as))
+	for _, a := range as {
+		m[a.Name] = a.ID
+	}
+	return m
 }
 
 // saveDraft keeps text written in the editor when posting it failed, so the
