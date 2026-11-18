@@ -28,6 +28,9 @@ type endpoint struct {
 
 type contract struct {
 	Endpoints []endpoint `json:"endpoints"`
+	// Files are signed file URLs YouTrack returns, fetched as given; they
+	// are outside /api/openapi.json.
+	Files []endpoint `json:"files"`
 	// Types maps an entity to its attributes and the entities each may hold.
 	Types map[string]map[string][]string `json:"types"`
 	// Subtypes lists, by entity, the $type values ytrack writes for it.
@@ -53,7 +56,7 @@ func (c *contract) endpoint(method, apiPath string) (endpoint, bool) {
 	segs := strings.Split(strings.TrimPrefix(apiPath, "/api"), "/")
 	var best endpoint
 	bestVars := len(segs) + 1
-	for _, e := range c.Endpoints {
+	for _, e := range slices.Concat(c.Endpoints, c.Files) {
 		ts := strings.Split(e.Path, "/")
 		if e.Method != method || len(ts) != len(segs) {
 			continue
@@ -204,6 +207,7 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	yt.SeedSampleIssues()
 	yt.SeedSampleWorkItems()
 	yt.SeedSampleProjects()
+	yt.SeedSampleAttachments()
 	env.Login(yt)
 	shot := filepath.Join(t.TempDir(), "shot.png")
 	if err := os.WriteFile(shot, []byte("\x89PNG"), 0o600); err != nil {
@@ -220,6 +224,8 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"issue", "comment", "NSR-40", "--body", "contract"},
 		{"issue", "comment", "NSR-40", "--body", "![](shot.png)", "--attach", shot},
 		{"issue", "attach", "NSR-40", shot, "--json", "name,id,size,mimeType"},
+		{"issue", "attachments", "NSR-40", "--json", strings.Join(shared.AttachmentFields, ",")},
+		{"issue", "download", "NSR-40", "-o", filepath.Join(t.TempDir(), "out")},
 		{"work-item", "list", "NSR-40", "--author", "me", "--json", allWorkItem},
 		{"work-item", "add", "NSR-40", "--duration", "1h30m", "--type", "Testing", "--text", "contract", "--date", "2026-10-06"},
 		{"work-item", "edit", "NSR-40", "115-1", "--duration", "2h", "--type", "Documentation", "--text", "", "--date", "2026-10-05"},
@@ -280,7 +286,7 @@ func TestRequestsMatchTheContract(t *testing.T) {
 			}
 		}
 	}
-	for _, e := range c.Endpoints {
+	for _, e := range slices.Concat(c.Endpoints, c.Files) {
 		if !covered[e.Method+" "+e.Path] {
 			t.Errorf("no request exercised %s %s; drop it from the contract or test it", e.Method, e.Path)
 		}

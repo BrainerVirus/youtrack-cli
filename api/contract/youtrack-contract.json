@@ -9,6 +9,7 @@
     {"method": "GET", "path": "/issues/{id}/comments/{issueCommentId}", "query": ["fields"], "response": "IssueComment"},
     {"method": "POST", "path": "/issues/{id}/comments/{issueCommentId}", "query": ["fields"], "response": "IssueComment"},
     {"method": "POST", "path": "/issues/{id}/attachments", "query": ["fields"], "response": "IssueAttachment"},
+    {"method": "GET", "path": "/issues/{id}/attachments", "query": ["fields", "$skip", "$top"], "response": "IssueAttachment"},
     {"method": "GET", "path": "/issues/{id}/timeTracking/workItems", "query": ["fields", "$skip", "$top"], "response": "IssueWorkItem"},
     {"method": "POST", "path": "/issues/{id}/timeTracking/workItems", "query": ["fields"], "response": "IssueWorkItem"},
     {"method": "GET", "path": "/issues/{id}/timeTracking/workItems/{issueWorkItemId}", "query": ["fields"], "response": "IssueWorkItem"},
@@ -25,6 +26,9 @@
     {"method": "GET", "path": "/admin/projects/{id}/customFields/{projectCustomFieldId}", "query": ["fields"], "response": "ProjectCustomField"},
     {"method": "POST", "path": "/commands", "query": ["fields"], "response": "CommandList"},
     {"method": "POST", "path": "/commands/assist", "query": ["fields"], "response": "CommandList"}
+  ],
+  "files": [
+    {"$comment": "An attachment's signed url (IssueAttachment.url): a path from the server root, service path included, that ytrack fetches as is. It serves the file's bytes and is not part of /api/openapi.json, so the openapi-contract workflow does not check it.", "method": "GET", "path": "/files/{fileId}", "query": ["sign", "updated"], "response": ""}
   ],
   "subtypes": {
     "IssueCustomField": [
@@ -60,7 +64,16 @@
       "issue": ["Issue"],
       "attachments": ["IssueAttachment"]
     },
-    "IssueAttachment": {"id": [], "name": [], "size": [], "mimeType": []},
+    "IssueAttachment": {
+      "id": [],
+      "name": [],
+      "size": [],
+      "mimeType": [],
+      "url": [],
+      "created": [],
+      "author": ["User"],
+      "comment": ["IssueComment"]
+    },
     "IssueWorkItem": {
       "id": [],
       "date": [],
