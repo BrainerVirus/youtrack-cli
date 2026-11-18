@@ -36,12 +36,12 @@ func TestAutoDue(t *testing.T) {
 		state   func(s *update.State)
 		current string
 	}{
-		"no cached release":                         {state: func(s *update.State) { s.LatestVersion = "" }},
-		"the cached release is installed":           {current: "1.1.0"},
-		"a development build":                       {current: "dev"},
-		"a release published 23h ago":               {state: func(s *update.State) { s.LatestPublishedAt = now.Add(-23 * time.Hour) }},
-		"a release with no publication time":        {state: func(s *update.State) { s.LatestPublishedAt = time.Time{} }},
-		"an active backoff":                         {state: func(s *update.State) { s.Auto.RetryAt = now.Add(time.Minute) }},
+		"no cached release":                           {state: func(s *update.State) { s.LatestVersion = "" }},
+		"the cached release is installed":             {current: "1.1.0"},
+		"a development build":                         {current: "dev"},
+		"a release published 23h ago":                 {state: func(s *update.State) { s.LatestPublishedAt = now.Add(-23 * time.Hour) }},
+		"a release with no publication time":          {state: func(s *update.State) { s.LatestPublishedAt = time.Time{} }},
+		"an active backoff":                           {state: func(s *update.State) { s.Auto.RetryAt = now.Add(time.Minute) }},
 		"a background upgrade started 10 minutes ago": {state: func(s *update.State) { s.Auto.StartedAt = now.Add(-10 * time.Minute) }},
 	} {
 		t.Run("given "+name+", it is not due", func(t *testing.T) {

@@ -114,10 +114,19 @@ repository, so key rotations need no ytrack release; its metadata is cached
 in `ytrack/sigstore-tuf` under the user cache directory (`~/.cache` on Linux,
 `~/Library/Caches` on macOS, `%LOCALAPPDATA%` on Windows).
 Then it downloads the archive, checks its SHA-256 against the verified
-checksums, writes the new binary next to the running one and renames it over
-it. On Windows the running `ytrack.exe` is first renamed to `ytrack.exe.old`,
-which the next upgrade deletes. Any failed check refuses the upgrade and
-leaves the installed binary as it was.
+checksums, writes the new binary next to the running one, runs its
+`ytrack version` (it must exit 0 and name the release) and renames it over
+the running one. On Windows the running `ytrack.exe` is first renamed to
+`ytrack.exe.old`, which the next upgrade deletes. Any failed check refuses the
+upgrade and leaves the installed binary as it was. After an upgrade, the new
+binary runs `ytrack skill sync` to refresh the agent skill copies it
+installed; a release without that command skips it silently. One upgrade runs
+at a time: each holds `upgrade.lock` in the state directory (a lock older than
+30 minutes is taken to be left by a crash).
+
+If the Sigstore trusted root cannot be fetched (often a proxy blocking
+`tuf-repo-cdn.sigstore.dev`), the upgrade is refused with an error naming the
+TUF repository; set `HTTPS_PROXY` so ytrack can reach it.
 
 Each file is fetched from its release download URL. A network error, HTTP 5xx
 or HTTP 429 is retried twice, after 1 s and 2 s; other HTTP errors are not
@@ -138,28 +147,61 @@ that manager's command and changes nothing:
 | Scoop | `scoop\apps\`, `scoop\shims\` | `scoop update ytrack` |
 | WinGet | `Microsoft\WinGet\Packages\`, `Microsoft\WinGet\Links\` | `winget upgrade ytrack` |
 
+### Background upgrade
+
+ytrack upgrades itself: once a day it asks GitHub for the latest release (see
+below), and when that release is newer and was published at least 24 hours
+ago, a command starts `ytrack upgrade --auto` in the background and exits
+without waiting for it. The child runs in its own session (on Windows, its own
+process group without a console) with no standard input, so a program reading
+ytrack's output, such as an agent, never waits on it. It makes the same
+signature, checksum and `ytrack version` checks as `ytrack upgrade`, then runs
+the new binary's `ytrack skill sync`, and writes its output to
+`auto-upgrade.log` in the state directory.
+
+The 24-hour wait lets a broken release be pulled before it reaches you; a
+manual `ytrack upgrade` installs a new release at once. The background upgrade
+does not start:
+
+- when the release check does not run (see the list below);
+- with `auto_upgrade: false` in `config.yml`, or `YTRACK_NO_AUTO_UPGRADE=1`
+  (`check_update: false` turns it off too);
+- when Homebrew, Scoop or WinGet installed ytrack, or its directory is not
+  writable;
+- while another upgrade holds the lock, or within an hour of the last start;
+- after a failure, for 1 day, then 2, 4 and at most 8 days after each failure
+  in a row; a successful upgrade, manual or not, resets it.
+
+The result is recorded in `state.yml`. The next command run on a terminal
+prints `ytrack upgraded 0.4.0 → 0.5.0 in the background` once, or, after a
+failure, the new-release notice followed by the error and when it retries.
+
 ### New-release notice
 
-After a command, ytrack prints one line on stderr when a newer release (not a
-prerelease) exists, for example:
+After a command run on a terminal, ytrack prints one line on stderr when a
+newer release (not a prerelease) exists, for example:
 
 ```text
 A new release of ytrack is available: 0.2.0 → 0.3.0; run `ytrack upgrade` (https://github.com/BrainerVirus/youtrack-cli/releases/tag/v0.3.0)
 ```
 
+It keeps printing it, at most once every 24 hours per release, while the
+installed binary is behind, also when the background upgrade is on, and adds
+the last background upgrade failure if there is one. It prints nothing when
+stderr is not a terminal or under `--json`.
+
 The notice comes from the release cached in `state.yml` in the state
 directory (`$XDG_STATE_HOME/ytrack`, else `%LOCALAPPDATA%\ytrack` on Windows,
-else `~/.local/state/ytrack`), so printing it costs nothing, and each release
-is announced at most once every 24 hours. ytrack refreshes that cache from
-GitHub at most once every 24 hours, in the background while the command runs.
-A refresh still in flight 300 ms after the command finishes is abandoned
-(and retried next run), so a slow or unreachable server never delays the exit
-by more than that. A failed check also counts, so an offline machine asks once
-a day; it keeps the release cached before it. It makes no request and prints
-nothing:
+else `~/.local/state/ytrack`), so printing it costs nothing. ytrack refreshes
+that cache from GitHub at most once every 24 hours, in the background while
+the command runs, with or without a terminal or `--json`, so agents that run
+ytrack keep it current. A refresh still in flight 300 ms after the command
+finishes is abandoned (and retried next run), so a slow or unreachable server
+never delays the exit by more than that. A failed check also counts, so an
+offline machine asks once a day; it keeps the release cached before it. The
+check makes no request, and nothing is printed or upgraded:
 
 - in CI (`CI`, `BUILD_NUMBER` or `RUN_ID` set);
-- when stderr is not a terminal;
-- under `--json`, and for `ytrack upgrade` and `ytrack completion`;
+- for `ytrack skill`, `ytrack upgrade` and `ytrack completion`;
 - for development builds (a version that is not `X.Y.Z`);
 - with `YTRACK_NO_UPDATE_NOTIFIER=1`, or `check_update: false` in `config.yml`.

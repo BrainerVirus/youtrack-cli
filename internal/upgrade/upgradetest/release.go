@@ -283,8 +283,8 @@ func (s *Server) writeRelease(w http.ResponseWriter, rel *Release) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"tag_name":   rel.Tag(),
-		"html_url":   "https://github.com/BrainerVirus/youtrack-cli/releases/tag/" + rel.Tag(),
+		"tag_name":     rel.Tag(),
+		"html_url":     "https://github.com/BrainerVirus/youtrack-cli/releases/tag/" + rel.Tag(),
 		"prerelease":   rel.Prerelease,
 		"draft":        false,
 		"published_at": rel.Published().UTC().Format(time.RFC3339),

@@ -51,7 +51,7 @@ func TestSmokeTest(t *testing.T) {
 		t.Errorf("given a binary that names its version, err = %v", err)
 	}
 	for name, run := range map[string]upgrade.Runner{
-		"a binary that exits non-zero":      versionRunner("", errors.New("exit status 2")),
+		"a binary that exits non-zero":        versionRunner("", errors.New("exit status 2")),
 		"a binary that names another version": versionRunner("ytrack version 1.0.0\n", nil),
 	} {
 		err := upgrade.SmokeTest(ctx, run, "c", "1.1.0")

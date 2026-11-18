@@ -29,10 +29,10 @@ var ErrReleaseNotFound = errors.New("release not found")
 
 // Release is a published GitHub release.
 type Release struct {
-	Tag        string  `json:"tag_name"`
-	URL        string  `json:"html_url"`
-	Prerelease bool    `json:"prerelease"`
-	Draft      bool    `json:"draft"`
+	Tag        string `json:"tag_name"`
+	URL        string `json:"html_url"`
+	Prerelease bool   `json:"prerelease"`
+	Draft      bool   `json:"draft"`
 	// PublishedAt is when the release was published; the background upgrade
 	// waits SoakPeriod after it.
 	PublishedAt time.Time `json:"published_at"`
