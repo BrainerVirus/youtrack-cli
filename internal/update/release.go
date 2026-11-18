@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const (
@@ -32,7 +33,10 @@ type Release struct {
 	URL        string  `json:"html_url"`
 	Prerelease bool    `json:"prerelease"`
 	Draft      bool    `json:"draft"`
-	Assets     []Asset `json:"assets"`
+	// PublishedAt is when the release was published; the background upgrade
+	// waits SoakPeriod after it.
+	PublishedAt time.Time `json:"published_at"`
+	Assets      []Asset   `json:"assets"`
 }
 
 // Asset is a file attached to a release.

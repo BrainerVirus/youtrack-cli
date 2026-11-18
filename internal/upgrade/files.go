@@ -124,16 +124,20 @@ const OldSuffix = ".old"
 
 // ReplaceExecutable atomically replaces the file at exe with data, keeping
 // its permissions. The new file is written next to exe and renamed over it,
-// so exe is either the old or the new binary, never a partial one. Windows
-// cannot overwrite a running executable but can rename it, so there the old
-// binary is first moved to exe+OldSuffix (removed by the next upgrade).
-func ReplaceExecutable(exe string, data []byte) error {
+// so exe is either the old or the new binary, never a partial one. check,
+// when not nil, runs on the written candidate before the rename; an error
+// from it leaves exe untouched. Windows cannot overwrite a running executable
+// but can rename it, so there the old binary is first moved to exe+OldSuffix
+// (removed by the next upgrade).
+func ReplaceExecutable(exe string, data []byte, check func(candidate string) error) error {
 	info, err := os.Stat(exe)
 	if err != nil {
 		return err
 	}
 	dir := filepath.Dir(exe)
-	tmp, err := os.CreateTemp(dir, "."+filepath.Base(exe)+".new-*")
+	// Keep exe's extension last, so Windows runs the candidate for check.
+	base := filepath.Base(exe)
+	tmp, err := os.CreateTemp(dir, "."+base+".new-*"+filepath.Ext(base))
 	if err != nil {
 		return fmt.Errorf("cannot write to %s: %w", dir, err)
 	}
@@ -153,6 +157,11 @@ func ReplaceExecutable(exe string, data []byte) error {
 	if err := os.Chmod(tmpName, info.Mode().Perm()|0o100); err != nil && runtime.GOOS != "windows" {
 		return err
 	}
+	if check != nil {
+		if err := check(tmpName); err != nil {
+			return err
+		}
+	}
 	if runtime.GOOS != "windows" {
 		return os.Rename(tmpName, exe)
 	}
@@ -168,6 +177,19 @@ func ReplaceExecutable(exe string, data []byte) error {
 		return fmt.Errorf("installing the new binary: %w", err)
 	}
 	return nil
+}
+
+// DirWritable reports whether a file can be created in dir, as
+// ReplaceExecutable needs.
+func DirWritable(dir string) bool {
+	f, err := os.CreateTemp(dir, ".ytrack-write-test-*")
+	if err != nil {
+		return false
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	return true
 }
 
 // RemoveOld deletes the binary a previous Windows upgrade moved aside.

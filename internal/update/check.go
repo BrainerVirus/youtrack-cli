@@ -24,10 +24,14 @@ type State struct {
 	CheckedAt     time.Time `yaml:"checked_at"`
 	LatestVersion string    `yaml:"latest_version,omitempty"`
 	LatestURL     string    `yaml:"latest_url,omitempty"`
+	// LatestPublishedAt is when LatestVersion was published.
+	LatestPublishedAt time.Time `yaml:"latest_published_at,omitempty"`
 	// NotifiedAt and NotifiedVersion record the last notice printed, so a
 	// cached newer release is announced once per CheckInterval.
 	NotifiedAt      time.Time `yaml:"notified_at,omitempty"`
 	NotifiedVersion string    `yaml:"notified_version,omitempty"`
+
+	Auto AutoState `yaml:"auto_upgrade,omitempty"`
 }
 
 // stateMu serialises read-modify-write updates of the state file within the
@@ -100,7 +104,7 @@ func CheckDaily(ctx context.Context, c *Client, statePath, current string, now t
 	updateState(statePath, func(s *State) {
 		s.CheckedAt = now
 		if stable {
-			s.LatestVersion, s.LatestURL = rel.Version(), rel.URL
+			s.SetLatest(rel)
 		}
 	})
 	if err != nil {
@@ -110,6 +114,11 @@ func CheckDaily(ctx context.Context, c *Client, statePath, current string, now t
 		return nil, nil
 	}
 	return &Notice{Current: current, Latest: rel.Version(), URL: rel.URL}, nil
+}
+
+// SetLatest caches rel as the latest release.
+func (s *State) SetLatest(rel *Release) {
+	s.LatestVersion, s.LatestURL, s.LatestPublishedAt = rel.Version(), rel.URL, rel.PublishedAt
 }
 
 // Pending returns the cached release at statePath as a Notice when it is
@@ -126,6 +135,9 @@ func Pending(statePath, current string, now time.Time) *Notice {
 	}
 	return &Notice{Current: current, Latest: s.LatestVersion, URL: s.LatestURL}
 }
+
+// Update applies fn to the state at statePath and saves it (best effort).
+func Update(statePath string, fn func(*State)) { updateState(statePath, fn) }
 
 // MarkNotified records that the notice for version was printed at now.
 func MarkNotified(statePath, version string, now time.Time) {

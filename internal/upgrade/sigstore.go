@@ -52,7 +52,8 @@ func PublicGoodTrustedRoot() (root.TrustedMaterial, error) {
 	}
 	tr, err := root.FetchTrustedRootWithOptions(opts)
 	if err != nil {
-		return nil, fmt.Errorf("%w: cannot load the Sigstore trusted root: %w", errSignature, err)
+		return nil, fmt.Errorf("%w: cannot fetch the Sigstore trusted root from its TUF repository (%s); "+
+			"behind a proxy, set HTTPS_PROXY: %w", errSignature, opts.RepositoryBaseURL, err)
 	}
 	return tr, nil
 }

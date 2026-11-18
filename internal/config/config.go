@@ -50,6 +50,8 @@ type preferences struct {
 	Timezone string `yaml:"timezone,omitempty"`
 	// CheckUpdate false turns off the daily new-release notice; nil means on.
 	CheckUpdate *bool `yaml:"check_update,omitempty"`
+	// AutoUpgrade false turns off the background upgrade; nil means on.
+	AutoUpgrade *bool `yaml:"auto_upgrade,omitempty"`
 }
 
 type hostsDoc struct {
@@ -140,6 +142,13 @@ func (c *Config) Timezone() string { return c.prefs.Timezone }
 // in config.yml, default true).
 func (c *Config) CheckUpdate() bool {
 	return c.prefs.CheckUpdate == nil || *c.prefs.CheckUpdate
+}
+
+// AutoUpgrade reports whether ytrack may upgrade itself in the background
+// (`auto_upgrade` in config.yml, default true). `check_update: false` turns
+// it off too: without the release check there is nothing to upgrade to.
+func (c *Config) AutoUpgrade() bool {
+	return c.CheckUpdate() && (c.prefs.AutoUpgrade == nil || *c.prefs.AutoUpgrade)
 }
 
 // DefaultHost returns the key of the default host, or "".
