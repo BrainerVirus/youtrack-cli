@@ -45,6 +45,7 @@ type Client struct {
 	baseURL string
 	http    *http.Client
 	origin  *Origin
+	timeout time.Duration
 }
 
 // New returns a Client for opts.BaseURL.
@@ -71,6 +72,7 @@ func New(opts Options) *Client {
 	return &Client{
 		origin:  opts.Origin,
 		baseURL: baseURL,
+		timeout: timeout,
 		http: &http.Client{
 			Transport:     rt,
 			Timeout:       timeout,

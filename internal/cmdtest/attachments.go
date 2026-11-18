@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"slices"
 	"sync"
@@ -149,4 +150,90 @@ func readParts(w http.ResponseWriter, r *http.Request) ([]filePart, bool) {
 		data, _ := io.ReadAll(p)
 		out = append(out, filePart{name: p.FileName(), mimeType: p.Header.Get("Content-Type"), data: data})
 	}
+}
+
+// listAttachments answers an issue's attachments, paged, each with a signed
+// url as YouTrack gives it: a path from the server root, service path
+// included.
+func (yt *FakeYouTrack) listAttachments(w http.ResponseWriter, r *http.Request) {
+	is, ok := yt.issue(r.PathValue("id"))
+	if !ok {
+		notFound(w, r.PathValue("id"))
+		return
+	}
+	yt.mu.Lock()
+	items := []map[string]any{}
+	for _, a := range yt.Attachments[is["idReadable"].(string)] {
+		a = maps.Clone(a)
+		a["url"] = yt.Prefix + "/api/files/" + fmt.Sprint(a["id"]) + "?sign=" + fileSign(a) + "&updated=1791374400000"
+		items = append(items, a)
+	}
+	yt.mu.Unlock()
+	writeProjected(w, r, 200, page(r, items))
+}
+
+func fileSign(a map[string]any) string { return "sig-" + fmt.Sprint(a["id"]) }
+
+// downloadFile serves an attachment's content at its signed URL; an unknown
+// file or a wrong sign is YouTrack's 404.
+func (yt *FakeYouTrack) downloadFile(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("file")
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	for _, list := range yt.Attachments {
+		for _, a := range list {
+			if a["id"] != id || r.URL.Query().Get("sign") != fileSign(a) || slices.Contains(yt.MissingFiles, id) {
+				continue
+			}
+			if mt, _ := a["mimeType"].(string); mt != "" {
+				w.Header().Set("Content-Type", mt)
+			}
+			_, _ = io.WriteString(w, fmt.Sprint(a["content"]))
+			return
+		}
+	}
+	writeJSON(w, http.StatusNotFound, map[string]any{"error": "Not Found", "error_description": "File with id " + id + " not found"})
+}
+
+// sampleAttachments are NSR-40's attachments: one on the issue and one on
+// comment 4-2.
+const sampleAttachments = `[
+  {"$type": "IssueAttachment", "id": "8-1", "name": "trace.log", "size": 14, "mimeType": "text/plain", "content": "GET /login 302",
+   "created": 1791300000000, "author": {"$type": "User", "login": "jroe", "fullName": "Jane Roe"}, "comment": null},
+  {"$type": "IssueAttachment", "id": "8-2", "name": "shot.png", "size": 11, "mimeType": "image/png", "content": "\u0089PNG-bytes",
+   "created": 1791350000000, "author": {"$type": "User", "login": "jdoe", "fullName": "John Doe"}, "comment": {"$type": "IssueComment", "id": "4-2"}}
+]`
+
+// SeedSampleAttachments gives NSR-40 two attachments, trace.log on the issue
+// and shot.png on comment 4-2.
+func (yt *FakeYouTrack) SeedSampleAttachments() {
+	var list []map[string]any
+	if err := json.Unmarshal([]byte(sampleAttachments), &list); err != nil {
+		panic(err)
+	}
+	for _, a := range list {
+		a["size"] = len(fmt.Sprint(a["content"]))
+	}
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	if yt.Attachments == nil {
+		yt.Attachments = map[string][]map[string]any{}
+	}
+	yt.Attachments["NSR-40"] = list
+}
+
+// AddAttachment adds a file with that name and content to an issue's
+// attachments and returns its ID.
+func (yt *FakeYouTrack) AddAttachment(issue, name, content string) string {
+	yt.mu.Lock()
+	defer yt.mu.Unlock()
+	if yt.Attachments == nil {
+		yt.Attachments = map[string][]map[string]any{}
+	}
+	id := fmt.Sprintf("8-%d", 500+len(yt.Attachments[issue]))
+	yt.Attachments[issue] = append(yt.Attachments[issue], map[string]any{
+		"$type": "IssueAttachment", "id": id, "name": name, "size": len(content), "mimeType": "text/plain",
+		"content": content, "created": 1791374400000, "author": map[string]any{"$type": "User", "login": yt.Login, "fullName": yt.FullName},
+	})
+	return id
 }

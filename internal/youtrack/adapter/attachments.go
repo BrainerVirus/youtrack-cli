@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 )
@@ -18,6 +19,69 @@ type Attachment struct {
 	Name     string `json:"name"`
 	Size     int64  `json:"size"`
 	MimeType string `json:"mimeType"`
+}
+
+// IssueAttachment is a file on an issue as ListAttachments returns it:
+// the attachment, who added it and when, and where to download it.
+type IssueAttachment struct {
+	Attachment
+	Created time.Time
+	Author  *User
+	// CommentID is the comment the file is attached to, or "" for a file
+	// attached to the issue itself.
+	CommentID string
+	// URL is the signed file URL, a path from the server root that includes
+	// the service path; Download fetches it.
+	URL string
+}
+
+const issueAttachmentFields = "id,name,size,mimeType,url,created,author(login,fullName),comment(id)"
+
+type wireIssueAttachment struct {
+	ID       string    `json:"id"`
+	Name     string    `json:"name"`
+	Size     int64     `json:"size"`
+	MimeType string    `json:"mimeType"`
+	URL      string    `json:"url"`
+	Created  *int64    `json:"created"`
+	Author   *wireUser `json:"author"`
+	Comment  *struct {
+		ID string `json:"id"`
+	} `json:"comment"`
+}
+
+// ListAttachments returns every attachment of an issue, those on its
+// comments included.
+func ListAttachments(ctx context.Context, c *transport.Client, issueID string) ([]IssueAttachment, error) {
+	wire, err := transport.Paginate(0, PageSize, 0, func(skip, top int) ([]wireIssueAttachment, error) {
+		var page []wireIssueAttachment
+		err := c.GetJSON(ctx, fmt.Sprintf("/api/issues/%s/attachments?fields=%s&$skip=%d&$top=%d", url.PathEscape(issueID), issueAttachmentFields, skip, top), &page)
+		return page, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]IssueAttachment, len(wire))
+	for i, w := range wire {
+		a := IssueAttachment{
+			Attachment: Attachment{ID: w.ID, Name: w.Name, Size: w.Size, MimeType: w.MimeType},
+			Created:    millis(w.Created), Author: w.Author.domain(), URL: w.URL,
+		}
+		if w.Comment != nil {
+			a.CommentID = w.Comment.ID
+		}
+		out[i] = a
+	}
+	return out, nil
+}
+
+// DownloadAttachment streams the file of an attachment to w and returns the
+// number of bytes written.
+func DownloadAttachment(ctx context.Context, c *transport.Client, a IssueAttachment, w io.Writer) (int64, error) {
+	if a.URL == "" {
+		return 0, fmt.Errorf("YouTrack gave no download URL for %s", a.ID)
+	}
+	return c.Download(ctx, a.URL, w)
 }
 
 // LocalFile is a file on disk to upload as an issue or comment attachment.
