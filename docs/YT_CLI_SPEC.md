@@ -1174,18 +1174,32 @@ ytrack issue comment APP-123 --body 'Repro: ![](shot.png)' --attach shot.png --a
 ```
 
 `--attach` (repeatable) first posts the comment (`POST
-/issues/{id}/comments`, text only: YouTrack silently ignores
-`IssueComment.attachments` in that body, and has no upload endpoint for a
-comment). It then uploads the files in one multipart `POST
-/issues/{id}/attachments`, links them with `POST
-/issues/{id}/comments/{commentId}` and `{"attachments":[{"id":…}]}`, and
-reads `attachments(id,name)` back from the comment. A file missing from that
-list fails the command (exit 1) with the comment's URL and the missing
-names. If only the link fails, the files stay on the issue, where `![](name)`
-still resolves, and the command exits 1 saying so. The comment itself stays
-posted. `![](name)` or `[text](name)` in the text shows an attached file
-inline; a reference to the path given to `--attach` is rewritten to the
-file's base name, which must be unique.
+/issues/{id}/comments`, text only). It then uploads the files in one
+multipart `POST /issues/{id}/comments/{commentId}/attachments`, the comment's
+attachments collection, which `/api/openapi.json` does not list but YouTrack
+Cloud serves (checked live, #44). YouTrack Cloud answers 200 to, and
+ignores, every other way tried: `IssueComment.attachments` with
+`base64Content` in the create or update body (#31), and attachment IDs
+uploaded to the issue and sent in a comment update. The command then reads
+`attachments(id,name),textPreview` back from the comment and gives each file
+a state:
+
+- `comment`: on the comment.
+- `issue`: YouTrack kept it on the issue only, and the comment's
+  `textPreview` resolves the text's reference to it (`/api/files/<id>` in an
+  `<img>` or `<a>`, `data-attachment-id` on an image), or the text does not
+  name it. The command warns on stderr and exits 0.
+- `failed`: neither on the comment nor shown by it. The command exits 1 with
+  the comment's URL and those names.
+
+A file YouTrack kept nowhere (the comment upload failed or dropped it) is
+uploaded to the issue (`POST /issues/{id}/attachments`), where YouTrack
+resolves the comment's `![](name)`, before the states are decided. Every
+message after the post says not to rerun the command, since the comment and
+the uploads exist. `--json attachments` lists `name`, `id` and `state` per
+file, also on exit 1. `![](name)` or `[text](name)` in the text shows an
+attached file inline; a reference to the path given to `--attach` is
+rewritten to the file's base name, which must be unique.
 
 ## 14.7 Attachments
 

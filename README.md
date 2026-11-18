@@ -166,10 +166,15 @@ ytrack issue download APP-123 -o out/                        # prints name<TAB>b
 
 An issue URL may be `/issue/APP-123`, with or without the title slug, or
 `/projects/APP/issues/APP-123`; it selects its host. `issue comment --attach`
-(repeatable) posts the comment, then uploads the files to the issue and
-links them to the comment: the text shows a file inline when it names it, as
-`![](after.png)` or `[report](report.html)`, and the others are listed under
-the comment. If any file does not attach, the command names it and exits 1.
+(repeatable) posts the comment, then uploads the files to it: the text shows
+a file inline when it names it, as `![](after.png)` or
+`[report](report.html)`, and the others are listed under the comment. If a
+file ends up on the issue instead, the command warns and exits 0 (the
+comment still shows a file it names); it exits 1 naming each file that is
+neither on the comment nor shown by it. After either, do not run it again,
+since the comment and the uploads exist: check with `issue attachments`.
+`--json attachments` reports each file's state: `comment`, `issue` or
+`failed`.
 `issue attach` attaches files to the issue itself, streaming each regular
 file from disk, so a large file is not held in memory; a file that changes
 size during the upload fails it. A pipe such as `<(cmd)` is read into
