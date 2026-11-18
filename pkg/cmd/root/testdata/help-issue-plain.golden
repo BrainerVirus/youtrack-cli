@@ -6,9 +6,11 @@ Usage:
 
 Available Commands:
   attach      Attach files to an issue
+  attachments List the attachments of an issue
   command     Apply a YouTrack command to one or more issues
   comment     Add a comment to an issue
   create      Create an issue
+  download    Download the attachments of an issue
   edit        Edit an issue
   list        List issues
   view        Show an issue

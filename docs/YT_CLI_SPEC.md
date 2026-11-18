@@ -1028,6 +1028,8 @@ yt
 │   ├── delete
 │   ├── comment
 │   ├── attach
+│   ├── attachments
+│   ├── download
 │   ├── link
 │   ├── unlink
 │   ├── command
@@ -1196,6 +1198,24 @@ ytrack issue attach APP-123 screenshot.png log.txt
 every file before the first request, so a missing file sends nothing. Files
 are read into memory (a comment's base64 JSON body needs that anyway);
 streaming large issue uploads is a later improvement.
+
+```bash
+ytrack issue attachments APP-123 [--json name,id,size,mimeType,created,author,commentId]
+ytrack issue download APP-123 [<name|id>...] [-o <dir>] [--comment <id>] [--clobber]
+```
+
+Both read `GET /issues/{id}/attachments?fields=id,name,size,mimeType,url,
+created,author(login,fullName),comment(id)`, paged, which lists comment
+files too (`comment` is null for a file on the issue). `download` sends
+`GET` to each attachment's signed `url` (`[service path]/api/files/{id}?
+sign=…&updated=…`, a path from the server root) through the authenticated
+client and streams the body to `<dir>/<name>`: created exclusively unless
+`--clobber`, which writes a temporary file and renames it over. Path
+separators, `:` and control characters in a name become `_`; a repeated
+name gets `-<id>` before its extension. It prints `name<TAB>bytes` per file
+and exits 1 naming the failures. The host is resolved like `issue view`
+(issue URL, then the key's owning host). The signed file path is listed
+under `files` in the API contract, outside the OpenAPI check.
 
 ---
 

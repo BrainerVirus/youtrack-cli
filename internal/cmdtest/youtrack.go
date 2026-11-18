@@ -53,6 +53,10 @@ type Request struct {
 //	                                DropCommentAttachments; 400 if RejectCommentLinks
 //	POST /api/issues/{id}/attachments  stores multipart files in Attachments and
 //	                                returns them
+//	GET  /api/issues/{id}/attachments  Attachments[idReadable], paged, each with a
+//	                                signed url ({Prefix}/api/files/{id}?sign=...)
+//	GET  /api/files/{id}            an attachment's content at its signed URL; 404
+//	                                for an unknown file or a wrong sign
 //	GET  /api/issues/{id}/timeTracking/workItems         WorkItems[idReadable], paged
 //	POST /api/issues/{id}/timeTracking/workItems         creates a work item from
 //	                                {duration{minutes}, date, text, type{id}}; 400 for
@@ -84,6 +88,9 @@ type FakeYouTrack struct {
 	// DropCommentAttachments names files that linking to a comment accepts
 	// but does not keep, as a server that loses them would.
 	DropCommentAttachments []string
+	// MissingFiles names attachment IDs that are listed but whose file is
+	// gone: downloading one is a 404.
+	MissingFiles []string
 	// RejectCommentLinks makes linking attachments to a comment fail.
 	RejectCommentLinks bool
 	// WorkItems holds each issue's work items by readable ID.
@@ -186,6 +193,8 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		writeProjected(w, r, 200, c)
 	})
 	mux.HandleFunc("POST /api/issues/{id}/attachments", yt.attachToIssue)
+	mux.HandleFunc("GET /api/issues/{id}/attachments", yt.listAttachments)
+	mux.HandleFunc("GET /api/files/{file}", yt.downloadFile)
 	mux.HandleFunc("GET /api/issues/{id}/comments/{comment}", yt.getComment)
 	mux.HandleFunc("POST /api/issues/{id}/comments/{comment}", yt.linkToComment)
 	yt.workItemRoutes(mux)

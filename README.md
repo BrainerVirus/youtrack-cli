@@ -152,6 +152,8 @@ ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
 ytrack issue comment APP-123 --body 'Fixed: ![](after.png)' --attach after.png --attach report.html
 ytrack issue attach APP-123 dump.sql repro.sh               # prints name<TAB>id per file
+ytrack issue attachments APP-123                             # name, id, size, type, created, author, comment
+ytrack issue download APP-123 -o out/                        # prints name<TAB>bytes per file
 ```
 
 An issue URL may be `/issue/APP-123`, with or without the title slug, or
@@ -164,6 +166,14 @@ the comment. If any file does not attach, the command names it and exits 1.
 file from disk, so a large file is not held in memory; a file that changes
 size during the upload fails it. A pipe such as `<(cmd)` is read into
 memory first. A missing file stops either command before anything is sent.
+
+`issue attachments` lists the files on an issue and on its comments
+(`--json` gives the same fields). `issue download` saves them, or only those
+named by name or attachment ID, or with `--comment <id>` the files of one
+comment, into `-o/--dir` (the current folder by default), using the same
+host as `issue view`. It streams each file to disk, never overwrites an
+existing file unless `--clobber` is given, saves a name holding a path such
+as `../x` as `.._x` (and says so), and exits 1 naming any file that failed.
 
 Without `--query` or `--state`, `issue list` shows only unresolved issues
 (it adds `#Unresolved`); `--all` includes resolved ones. `--json` with no

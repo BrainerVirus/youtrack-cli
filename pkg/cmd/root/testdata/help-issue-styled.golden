@@ -6,9 +6,11 @@ Work with YouTrack issues
 
 <bold>Available Commands:</>
   <accent>attach     </> Attach files to an issue
+  <accent>attachments</> List the attachments of an issue
   <accent>command    </> Apply a YouTrack command to one or more issues
   <accent>comment    </> Add a comment to an issue
   <accent>create     </> Create an issue
+  <accent>download   </> Download the attachments of an issue
   <accent>edit       </> Edit an issue
   <accent>list       </> List issues
   <accent>view       </> Show an issue
