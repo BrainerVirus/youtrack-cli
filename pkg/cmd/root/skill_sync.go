@@ -22,9 +22,9 @@ var skillSyncOff = testing.Testing()
 //
 // While the registry file does not exist yet, it adopts the copies already
 // installed in the home-level skills directories. When this binary is a
-// release newer than the version the copies were last synced to, it takes
-// the registry lock without waiting (skipping when another ytrack holds it)
-// and rewrites every managed copy (skill.Registry.Sync): a copy the user
+// release newer than the version the copies were last synced to, and no
+// managed copy is newer than it, it takes the registry lock without waiting
+// (skipping when another ytrack holds it) and rewrites every managed copy (skill.Registry.Sync): a copy the user
 // deleted is forgotten, never re-created, and a copy in a repository is left
 // for `ytrack skill install --dir`. The synced version advances only when
 // every copy was rewritten. Development builds, and a release equal to or
@@ -67,12 +67,27 @@ func refreshSkills(cmd *cobra.Command) {
 }
 
 // syncDue reports whether this binary should rewrite the recorded copies: it
-// is a release, and newer than the version they were last synced to.
+// is a release, newer than the version they were last synced to (with no
+// stamp, newer than some copy), and no managed copy is newer than it.
 func syncDue(reg *skill.Registry) bool {
-	if len(reg.Dirs) == 0 || !isReleaseBuild(build.Version) {
+	v := build.Version
+	if len(reg.Dirs) == 0 || !isReleaseBuild(v) {
 		return false
 	}
-	return !update.IsRelease(reg.Synced) || update.Newer(build.Version, reg.Synced)
+	if update.IsRelease(reg.Synced) && !update.Newer(v, reg.Synced) {
+		return false
+	}
+	older := 0
+	for _, c := range reg.Copies(v) {
+		switch {
+		case !c.Managed || c.State == skill.StateMissing:
+		case update.Newer(c.Version, v):
+			return false // never rewrite a newer copy
+		case c.Version != v:
+			older++
+		}
+	}
+	return older > 0 || update.IsRelease(reg.Synced)
 }
 
 // gitDescribe matches the suffix `git describe --tags --dirty` adds to a

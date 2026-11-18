@@ -139,7 +139,7 @@ per line, one line per directory:
 					fmt.Fprintln(f.IOStreams.Out, path)
 				}
 			}
-			record(installed)
+			record(installed, build.Version)
 			if failed != nil {
 				return failed
 			}
@@ -158,10 +158,11 @@ per line, one line per directory:
 // syncing the copies; it then goes on without the lock.
 const lockWait = 3 * time.Second
 
-// record adds dirs to the registry. Best-effort: the skill is installed
-// either way, and a registry that cannot be written (a read-only state
-// directory) only means the copies are not kept up to date.
-func record(dirs []string) {
+// record adds dirs to the registry and stamps it with the version just
+// written, so an older ytrack never rewrites these copies. Best-effort: the
+// skill is installed either way, and a registry that cannot be written (a
+// read-only state directory) only means the copies are not kept up to date.
+func record(dirs []string, version string) {
 	if len(dirs) == 0 {
 		return
 	}
@@ -172,7 +173,8 @@ func record(dirs []string) {
 	if err != nil {
 		return
 	}
-	changed := reg.Dirty()
+	changed := reg.Dirty() || reg.Synced != version
+	reg.Synced = version
 	for _, d := range dirs {
 		changed = reg.Record(d) || changed
 	}

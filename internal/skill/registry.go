@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/config"
+	"github.com/BrainerVirus/youtrack-cli/internal/update"
 )
 
 // registryFile, in config.StateDir, lists the skills directories ytrack
@@ -75,8 +76,8 @@ func RegistryPath() (string, error) {
 
 // OpenRegistry reads the registry. While the file does not exist yet, the
 // registry adopts every home-level directory (HomeDirs) that holds the
-// ytrack skill already, never one holding anything else; Save then creates
-// the file.
+// ytrack skill already, never one holding anything else, stamped Synced
+// with the newest version among them; Save then creates the file.
 func OpenRegistry() (*Registry, error) {
 	path, err := RegistryPath()
 	if err != nil {
@@ -101,6 +102,13 @@ func OpenRegistry() (*Registry, error) {
 	for _, d := range dirs {
 		if _, installed, err := resolveTarget(filepath.Join(d, Name)); err == nil && installed {
 			r.Record(d)
+		}
+	}
+	// Copies written before ytrack kept a stamp count as synced to the
+	// newest of them, so an older ytrack never rewrites them.
+	for _, c := range r.Copies("") {
+		if update.IsRelease(c.Version) && (r.Synced == "" || update.Newer(c.Version, r.Synced)) {
+			r.Synced = c.Version
 		}
 	}
 	return r, nil

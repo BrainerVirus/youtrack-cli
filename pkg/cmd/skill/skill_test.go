@@ -158,6 +158,9 @@ func TestSkillInstall(t *testing.T) {
 		if got := recorded(t); !slices.Equal(got, []string{agents, claude}) {
 			t.Errorf("recorded %q", got)
 		}
+		if reg, _ := skill.OpenRegistry(); reg.Synced != "1.2.3" {
+			t.Errorf("synced = %q, want the installed version 1.2.3", reg.Synced)
+		}
 	})
 
 	t.Run("given a relative --dir, it records the absolute directory", func(t *testing.T) {

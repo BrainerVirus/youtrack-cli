@@ -170,6 +170,79 @@ func TestSkillRefresh(t *testing.T) {
 		})
 	}
 
+	t.Run("given skill install by a newer release, an older release rewrites nothing", func(t *testing.T) {
+		e, home := syncEnv(t, "0.5.0")
+		if code := e.Run("skill", "install"); code != 0 {
+			t.Fatalf("install: exit %d: %s", code, e.Stderr)
+		}
+		before := registryBytes(t)
+		build.Version = "0.4.0"
+		if code := e.Run("version"); code != 0 {
+			t.Fatalf("exit %d: %s", code, e.Stderr)
+		}
+		for _, d := range []string{".agents/skills", ".claude/skills"} {
+			if v := copyVersion(t, filepath.Join(home, filepath.FromSlash(d), "ytrack")); v != "0.5.0" {
+				t.Errorf("%s rewritten to %s", d, v)
+			}
+		}
+		if after := registryBytes(t); string(after) != string(before) {
+			t.Errorf("registry changed:\n%s\n->\n%s", before, after)
+		}
+	})
+
+	t.Run("given no registry and adopted copies of a newer release, an older release rewrites nothing", func(t *testing.T) {
+		e, home := syncEnv(t, "0.4.0")
+		claude := filepath.Join(home, ".claude", "skills")
+		installAt(t, claude, "0.5.0")
+		installAt(t, filepath.Join(home, ".codex", "skills"), "0.3.2")
+		if code := e.Run("version"); code != 0 {
+			t.Fatalf("exit %d: %s", code, e.Stderr)
+		}
+		if v := copyVersion(t, filepath.Join(claude, "ytrack")); v != "0.5.0" {
+			t.Errorf("claude copy rewritten to %s", v)
+		}
+		if v := copyVersion(t, filepath.Join(home, ".codex", "skills", "ytrack")); v != "0.3.2" {
+			t.Errorf("codex copy rewritten to %s", v)
+		}
+		if reg := openRegistry(t); reg.Synced != "0.5.0" {
+			t.Errorf("synced = %q, want the newest adopted version 0.5.0", reg.Synced)
+		}
+	})
+
+	t.Run("given no registry and adopted copies of older releases, a newer release rewrites them", func(t *testing.T) {
+		e, home := syncEnv(t, "0.5.4")
+		claude := filepath.Join(home, ".claude", "skills")
+		codex := filepath.Join(home, ".codex", "skills")
+		installAt(t, claude, "0.4.0")
+		installAt(t, codex, "0.3.2")
+		if code := e.Run("version"); code != 0 {
+			t.Fatalf("exit %d: %s", code, e.Stderr)
+		}
+		for _, d := range []string{claude, codex} {
+			if v := copyVersion(t, filepath.Join(d, "ytrack")); v != "0.5.4" {
+				t.Errorf("%s at %s, want 0.5.4", d, v)
+			}
+		}
+		if reg := openRegistry(t); reg.Synced != "0.5.4" {
+			t.Errorf("synced = %q", reg.Synced)
+		}
+	})
+
+	t.Run("given a stamp older than this release but a copy newer than it, it rewrites nothing", func(t *testing.T) {
+		e, home := syncEnv(t, "0.5.4")
+		agents := filepath.Join(home, ".agents", "skills")
+		claude := filepath.Join(home, ".claude", "skills")
+		installAt(t, agents, "0.6.0")
+		installAt(t, claude, "0.4.0")
+		saveRegistry(t, "0.4.0", agents, claude)
+		if code := e.Run("version"); code != 0 {
+			t.Fatalf("exit %d: %s", code, e.Stderr)
+		}
+		if v := copyVersion(t, filepath.Join(agents, "ytrack")); v != "0.6.0" {
+			t.Errorf("the newer copy was rewritten to %s", v)
+		}
+	})
+
 	t.Run("given a read-only recorded dir, the command's exit code and output are unchanged and the stamp stays", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			t.Skip("directory permissions differ on Windows")

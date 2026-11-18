@@ -334,7 +334,8 @@ ytrack remembers every directory it installed the skill into (in
 `~/.local/state/ytrack/skills.yml`), and on its first run also records
 copies already in the agents' home skills directories. The first command a
 newer ytrack release runs rewrites the copies in your home directory, so
-after `ytrack upgrade` no agent reads an older skill. A copy you deleted is
+after `ytrack upgrade` no agent reads an older skill; an older ytrack on
+your PATH never rewrites a newer copy. A copy you deleted is
 forgotten, not put back. A copy in a repository (a `--dir` inside a git work
 tree) changes only when you install it there again: `ytrack skill list`
 marks it `manual` and prints the command when it is stale. The refresh is
