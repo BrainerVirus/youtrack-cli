@@ -764,3 +764,20 @@ func TestIssueCommandSilentForbidden(t *testing.T) {
 		}
 	})
 }
+
+func TestCreateFallbackIgnoresAnotherProjectsIssue(t *testing.T) {
+	t.Run("given project: {X} matches another project's name, it treats the fields as unreadable", func(t *testing.T) {
+		env, yt := writable(t)
+		yt.HideFieldSettings = true
+		yt.AddProject("Nightshift") // NSR's full name is Nightshift
+		if code := env.Run("issue", "create", "-p", "Nightshift", "-s", "x", "--field", "Type=Task"); code != 1 {
+			t.Fatalf("exit %d, stderr = %q", code, env.Stderr)
+		}
+		if errText := env.Stderr.String(); !strings.Contains(errText, "cannot read the custom fields of project Nightshift") {
+			t.Errorf("stderr = %q", errText)
+		}
+		if len(requests(yt, "POST", "/api/issues")) != 0 {
+			t.Error("it created an issue")
+		}
+	})
+}

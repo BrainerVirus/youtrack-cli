@@ -79,6 +79,9 @@ func ProjectFields(ctx context.Context, c *transport.Client, projectID string) (
 const issueDefinitionsFields = "customFields(projectCustomField(" + customfields.DefinitionProjection + "))"
 
 type wireIssueDefinitions struct {
+	Project *struct {
+		ShortName string `json:"shortName"`
+	} `json:"project"`
 	CustomFields []struct {
 		ProjectCustomField *customfields.Definition `json:"projectCustomField"`
 	} `json:"customFields"`
@@ -108,14 +111,15 @@ func IssueFieldDefinitions(ctx context.Context, c *transport.Client, issueID str
 
 // ProjectIssueFieldDefinitions returns the custom field definitions of a
 // project as one of its issues references them, or none when the user can
-// see no issue in it.
+// see no issue in it. YouTrack's "project:" also matches a project's full
+// name, so an issue of another project counts as none.
 func ProjectIssueFieldDefinitions(ctx context.Context, c *transport.Client, shortName string) ([]customfields.Definition, error) {
 	var page []wireIssueDefinitions
 	q := url.QueryEscape("project: {" + shortName + "}")
-	if err := c.GetJSON(ctx, "/api/issues?query="+q+"&fields="+issueDefinitionsFields+"&$top=1", &page); err != nil {
+	if err := c.GetJSON(ctx, "/api/issues?query="+q+"&fields=project(shortName),"+issueDefinitionsFields+"&$top=1", &page); err != nil {
 		return nil, err
 	}
-	if len(page) == 0 {
+	if len(page) == 0 || page[0].Project == nil || !strings.EqualFold(page[0].Project.ShortName, shortName) {
 		return []customfields.Definition{}, nil
 	}
 	return page[0].defs(), nil

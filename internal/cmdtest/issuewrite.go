@@ -132,12 +132,13 @@ func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
 		fs, ok := yt.ProjectFields[r.PathValue("id")]
 		fs = slices.Clone(fs)
 		yt.mu.Unlock()
+		if yt.HideFieldSettings {
+			writeProjected(w, r, 200, []any{})
+			return
+		}
 		if !ok {
 			notFound(w, r.PathValue("id"))
 			return
-		}
-		if yt.HideFieldSettings {
-			fs = nil
 		}
 		writeProjected(w, r, 200, page(r, fs))
 	})
@@ -635,7 +636,8 @@ func forbidden(w http.ResponseWriter) {
 
 var projectQuery = regexp.MustCompile(`^project: \{(.+)\}$`)
 
-// queryIssues filters Issues by a "project: {X}" query; any other query
+// queryIssues filters Issues by a "project: {X}" query, which matches a
+// project's short name or, as in YouTrack, its full name; any other query
 // keeps them all.
 func (yt *FakeYouTrack) queryIssues(query string) []map[string]any {
 	m := projectQuery.FindStringSubmatch(query)
@@ -644,7 +646,7 @@ func (yt *FakeYouTrack) queryIssues(query string) []map[string]any {
 	}
 	var out []map[string]any
 	for _, is := range yt.Issues {
-		if p, _ := is["project"].(map[string]any); p != nil && p["shortName"] == m[1] {
+		if p, _ := is["project"].(map[string]any); p != nil && (p["shortName"] == m[1] || p["name"] == m[1]) {
 			out = append(out, is)
 		}
 	}
