@@ -242,7 +242,7 @@ func TestReplaceExecutable(t *testing.T) {
 		if err := os.WriteFile(exe, []byte("old"), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := upgrade.ReplaceExecutable(exe, []byte("new")); err != nil {
+		if err := upgrade.ReplaceExecutable(exe, []byte("new"), nil); err != nil {
 			t.Fatal(err)
 		}
 		if b, _ := os.ReadFile(exe); string(b) != "new" {
@@ -261,7 +261,7 @@ func TestReplaceExecutable(t *testing.T) {
 		}
 	})
 	t.Run("given a missing binary, it fails", func(t *testing.T) {
-		if err := upgrade.ReplaceExecutable(filepath.Join(t.TempDir(), "nope"), []byte("new")); err == nil {
+		if err := upgrade.ReplaceExecutable(filepath.Join(t.TempDir(), "nope"), []byte("new"), nil); err == nil {
 			t.Fatal("want an error")
 		}
 	})

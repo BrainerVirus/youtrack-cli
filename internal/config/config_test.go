@@ -142,3 +142,32 @@ func TestCheckUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestAutoUpgrade(t *testing.T) {
+	for name, tc := range map[string]struct {
+		yml  string
+		want bool
+	}{
+		"given no config.yml, the background upgrade is on":                    {"", true},
+		"given auto_upgrade: false, the background upgrade is off":             {"auto_upgrade: false\n", false},
+		"given auto_upgrade: true, the background upgrade is on":               {"auto_upgrade: true\n", true},
+		"given check_update: false, the background upgrade is off":             {"check_update: false\n", false},
+		"given check_update: false and auto_upgrade: true, the upgrade is off": {"check_update: false\nauto_upgrade: true\n", false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.yml != "" {
+				if err := os.WriteFile(filepath.Join(dir, "config.yml"), []byte(tc.yml), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c, err := LoadFrom(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := c.AutoUpgrade(); got != tc.want {
+				t.Errorf("AutoUpgrade() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

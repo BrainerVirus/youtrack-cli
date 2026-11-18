@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const (
@@ -28,11 +29,14 @@ var ErrReleaseNotFound = errors.New("release not found")
 
 // Release is a published GitHub release.
 type Release struct {
-	Tag        string  `json:"tag_name"`
-	URL        string  `json:"html_url"`
-	Prerelease bool    `json:"prerelease"`
-	Draft      bool    `json:"draft"`
-	Assets     []Asset `json:"assets"`
+	Tag        string `json:"tag_name"`
+	URL        string `json:"html_url"`
+	Prerelease bool   `json:"prerelease"`
+	Draft      bool   `json:"draft"`
+	// PublishedAt is when the release was published; the background upgrade
+	// waits SoakPeriod after it.
+	PublishedAt time.Time `json:"published_at"`
+	Assets      []Asset   `json:"assets"`
 }
 
 // Asset is a file attached to a release.

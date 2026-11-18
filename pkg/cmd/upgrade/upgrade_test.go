@@ -3,6 +3,7 @@ package upgrade_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/root"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
+	"github.com/BrainerVirus/youtrack-cli/internal/update"
 	"github.com/BrainerVirus/youtrack-cli/internal/upgrade"
 	"github.com/BrainerVirus/youtrack-cli/internal/upgrade/upgradetest"
 	cmdupgrade "github.com/BrainerVirus/youtrack-cli/pkg/cmd/upgrade"
@@ -25,6 +27,10 @@ type fixture struct {
 	srv *upgradetest.Server
 	exe string
 	sig *upgradetest.Sigstore
+	// runs lists the binaries run ("<content>: <args>"); version makes a
+	// binary's `version` fail when it returns an error.
+	runs    []string
+	version func(content string) error
 }
 
 const oldBinary = "old ytrack 1.0.0"
@@ -35,6 +41,7 @@ func newFixture(t *testing.T, exeRel string, releases ...*upgradetest.Release) *
 	t.Helper()
 	s := upgradetest.NewSigstore(t)
 	fx := &fixture{env: cmdtest.New(t), sig: s, srv: upgradetest.NewServer(t, s, releases...)}
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	fx.env.Factory.AppVersion = "1.0.0"
 	fx.exe = filepath.Join(t.TempDir(), filepath.FromSlash(exeRel))
 	if err := os.MkdirAll(filepath.Dir(fx.exe), 0o755); err != nil {
@@ -57,12 +64,32 @@ func (fx *fixture) run(t *testing.T, args ...string) error {
 		GOOS:        "linux",
 		GOARCH:      "amd64",
 		Sleep:       func(context.Context, time.Duration) error { return nil },
+		Run:         fx.runBinary,
 	}
 	cmd := cmdupgrade.NewCmdUpgrade(fx.env.Factory, opts)
 	cmd.SetArgs(args)
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
 	return cmd.Execute()
+}
+
+// runBinary runs a fake binary: its `version` prints the file's content
+// (which names the release), and `skill sync` reports success.
+func (fx *fixture) runBinary(_ context.Context, exe string, args ...string) ([]byte, error) {
+	b, err := os.ReadFile(exe)
+	if err != nil {
+		return nil, err
+	}
+	fx.runs = append(fx.runs, strings.TrimSpace(string(b))+": "+strings.Join(args, " "))
+	if len(args) == 1 && args[0] == "version" && fx.version != nil {
+		if err := fx.version(string(b)); err != nil {
+			return []byte("segmentation fault\n"), err
+		}
+	}
+	if len(args) == 2 && args[0] == "skill" && args[1] == "sync" {
+		return []byte("refreshed 1 skill copy\n"), nil
+	}
+	return b, nil
 }
 
 func (fx *fixture) binary(t *testing.T) string {
@@ -253,4 +280,180 @@ func TestUpgradeHelpNeedsNoNetwork(t *testing.T) {
 	if !strings.Contains(env.Stdout.String(), "--check") {
 		t.Errorf("help = %q", env.Stdout)
 	}
+}
+
+func statePath() string { return filepath.Join(os.Getenv("XDG_STATE_HOME"), "ytrack", "state.yml") }
+
+func TestUpgradeSmokeTestsAndSyncsSkills(t *testing.T) {
+	t.Run("given a manual upgrade, it runs the new binary's version before the swap and its skill sync after", func(t *testing.T) {
+		rel := &upgradetest.Release{Version: "1.1.0"}
+		fx := newFixture(t, "bin/ytrack", rel)
+		if err := fx.run(t); err != nil {
+			t.Fatalf("%v; stderr: %s", err, fx.env.Stderr)
+		}
+		newBin := strings.TrimSpace(string(rel.BinaryFor("linux/amd64")))
+		want := []string{newBin + ": version", newBin + ": skill sync"}
+		if strings.Join(fx.runs, "\n") != strings.Join(want, "\n") {
+			t.Errorf("runs = %q, want %q", fx.runs, want)
+		}
+		if !strings.Contains(fx.env.Stderr.String(), "refreshed 1 skill copy") {
+			t.Errorf("stderr = %q", fx.env.Stderr)
+		}
+	})
+
+	t.Run("given a new binary whose version fails, it refuses and leaves the binary untouched", func(t *testing.T) {
+		fx := newFixture(t, "bin/ytrack", &upgradetest.Release{Version: "1.1.0"})
+		fx.version = func(string) error { return errors.New("exit status 139") }
+		err := fx.run(t)
+		if err == nil || !strings.Contains(err.Error(), "refusing to upgrade") || !strings.Contains(err.Error(), "was not changed") {
+			t.Fatalf("err = %v", err)
+		}
+		if got := fx.binary(t); got != oldBinary {
+			t.Errorf("binary = %q, want it unchanged", got)
+		}
+		for _, r := range fx.runs {
+			if strings.HasSuffix(r, "skill sync") {
+				t.Errorf("ran %q after a refused upgrade", r)
+			}
+		}
+		if entries, _ := os.ReadDir(filepath.Dir(fx.exe)); len(entries) != 1 {
+			t.Errorf("left files next to the binary: %v", entries)
+		}
+	})
+
+	t.Run("given another upgrade holds the lock, a manual upgrade refuses", func(t *testing.T) {
+		fx := newFixture(t, "bin/ytrack", &upgradetest.Release{Version: "1.1.0"})
+		release, err := upgrade.AcquireLock(filepath.Join(filepath.Dir(statePath()), upgrade.LockFile))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer release()
+		if err := fx.run(t); err == nil || !strings.Contains(err.Error(), "another ytrack upgrade is running") {
+			t.Fatalf("err = %v", err)
+		}
+		if fx.binary(t) != oldBinary {
+			t.Error("binary changed")
+		}
+	})
+}
+
+// fixedNow pins the fixture's clock.
+func (fx *fixture) fixedNow(now time.Time) { fx.env.Factory.Now = func() time.Time { return now } }
+
+func TestUpgradeAuto(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.UTC)
+
+	t.Run("given a release published 2 days ago, it upgrades, records it and syncs the skills", func(t *testing.T) {
+		rel := &upgradetest.Release{Version: "1.1.0", PublishedAt: now.Add(-48 * time.Hour)}
+		fx := newFixture(t, "bin/ytrack", rel)
+		fx.fixedNow(now)
+		if err := fx.run(t, "--auto"); err != nil {
+			t.Fatalf("%v; stderr: %s", err, fx.env.Stderr)
+		}
+		if got, want := fx.binary(t), string(rel.BinaryFor("linux/amd64")); got != want {
+			t.Errorf("binary = %q, want %q", got, want)
+		}
+		a := update.ReadState(statePath()).Auto
+		if a.From != "1.0.0" || a.To != "1.1.0" || !a.UpgradedAt.Equal(now) || a.Announced || a.Failures != 0 {
+			t.Errorf("auto state = %+v", a)
+		}
+		if len(fx.runs) != 2 || !strings.HasSuffix(fx.runs[1], ": skill sync") {
+			t.Errorf("runs = %q, want version then skill sync", fx.runs)
+		}
+		if upgrade.LockHeld(filepath.Join(filepath.Dir(statePath()), upgrade.LockFile)) {
+			t.Error("the lock is still held")
+		}
+	})
+
+	t.Run("given a candidate whose version fails, the binary is untouched and the failure and backoff are recorded", func(t *testing.T) {
+		fx := newFixture(t, "bin/ytrack", &upgradetest.Release{Version: "1.1.0", PublishedAt: now.Add(-48 * time.Hour)})
+		fx.fixedNow(now)
+		fx.version = func(string) error { return errors.New("exit status 139") }
+		if err := fx.run(t, "--auto"); err == nil {
+			t.Fatal("want an error")
+		}
+		if got := fx.binary(t); got != oldBinary {
+			t.Errorf("binary = %q, want it untouched", got)
+		}
+		a := update.ReadState(statePath()).Auto
+		if a.Failures != 1 || a.FailedVersion != "1.1.0" || !a.FailedAt.Equal(now) ||
+			!strings.Contains(a.Error, "ytrack version") || !a.RetryAt.Equal(now.Add(24*time.Hour)) {
+			t.Errorf("auto state = %+v", a)
+		}
+
+		// Within the backoff the next start does nothing, not even a request.
+		fx.version = nil
+		before := len(fx.srv.Requests())
+		fx.fixedNow(now.Add(time.Hour))
+		if err := fx.run(t, "--auto"); err != nil {
+			t.Fatal(err)
+		}
+		if got := len(fx.srv.Requests()); got != before {
+			t.Errorf("made %d requests during the backoff", got-before)
+		}
+		if fx.binary(t) != oldBinary {
+			t.Error("binary changed during the backoff")
+		}
+		// A second failure after the backoff doubles it.
+		fx.version = func(string) error { return errors.New("exit status 139") }
+		later := now.Add(25 * time.Hour)
+		fx.fixedNow(later)
+		_ = fx.run(t, "--auto")
+		if a := update.ReadState(statePath()).Auto; a.Failures != 2 || !a.RetryAt.Equal(later.Add(48*time.Hour)) {
+			t.Errorf("after a second failure: %+v", a)
+		}
+	})
+
+	t.Run("given a release published 2 hours ago, it waits and changes nothing", func(t *testing.T) {
+		fx := newFixture(t, "bin/ytrack", &upgradetest.Release{Version: "1.1.0", PublishedAt: now.Add(-2 * time.Hour)})
+		fx.fixedNow(now)
+		if err := fx.run(t, "--auto"); err != nil {
+			t.Fatal(err)
+		}
+		if fx.binary(t) != oldBinary {
+			t.Error("binary changed")
+		}
+		s := update.ReadState(statePath())
+		if s.Auto.Failures != 0 || s.LatestVersion != "1.1.0" || !s.LatestPublishedAt.Equal(now.Add(-2*time.Hour)) {
+			t.Errorf("state = %+v, want the fresh release cached and no failure", s)
+		}
+	})
+
+	t.Run("given a package manager owns the binary, it changes nothing and makes no request", func(t *testing.T) {
+		fx := newFixture(t, "opt/homebrew/Caskroom/ytrack/1.0.0/ytrack", &upgradetest.Release{Version: "1.1.0"})
+		if err := fx.run(t, "--auto"); err != nil {
+			t.Fatal(err)
+		}
+		if fx.binary(t) != oldBinary || len(fx.srv.Requests()) != 0 {
+			t.Errorf("binary = %q, requests = %v", fx.binary(t), fx.srv.Requests())
+		}
+	})
+
+	t.Run("given another upgrade holds the lock, it changes nothing and makes no request", func(t *testing.T) {
+		fx := newFixture(t, "bin/ytrack", &upgradetest.Release{Version: "1.1.0"})
+		release, err := upgrade.AcquireLock(filepath.Join(filepath.Dir(statePath()), upgrade.LockFile))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer release()
+		if err := fx.run(t, "--auto"); err != nil {
+			t.Fatal(err)
+		}
+		if fx.binary(t) != oldBinary || len(fx.srv.Requests()) != 0 {
+			t.Errorf("binary = %q, requests = %v", fx.binary(t), fx.srv.Requests())
+		}
+	})
+
+	t.Run("given a manual upgrade after a background failure, the backoff is cleared", func(t *testing.T) {
+		fx := newFixture(t, "bin/ytrack", &upgradetest.Release{Version: "1.1.0"})
+		update.Update(statePath(), func(s *update.State) {
+			s.Auto.RecordAutoFailure("1.1.0", errors.New("boom"), time.Now())
+		})
+		if err := fx.run(t); err != nil {
+			t.Fatal(err)
+		}
+		if a := update.ReadState(statePath()).Auto; a.Failures != 0 || a.Error != "" || a.To != "" {
+			t.Errorf("auto state = %+v", a)
+		}
+	})
 }

@@ -75,12 +75,20 @@ checksums file passes a cosign keyless signature check pinned to this
 repository's release workflow and the archive matches its SHA-256; any
 mismatch refuses and changes nothing. Failed downloads are retried, then
 fetched through the GitHub API, under the same checks. If Homebrew, Scoop or WinGet installed
-ytrack, it prints that package manager's upgrade command instead.
+ytrack, it prints that package manager's upgrade command instead. The new
+binary must pass `ytrack version` before it is swapped in.
 
-Once a day, after a command, ytrack tells you on stderr when a newer release
-exists. It stays quiet in CI, when stderr is not a terminal and under `--json`;
-turn it off with `YTRACK_NO_UPDATE_NOTIFIER=1` or `check_update: false` in
-`config.yml`. Details: [docs/install.md](docs/install.md#upgrades).
+ytrack keeps itself current: once a day it checks GitHub for a newer release
+(also when agents run it without a terminal or with `--json`), and once that
+release is a day old it upgrades itself in the background, with the same
+signature and checksum checks, then refreshes its agent skills
+(`ytrack skill sync`). On a terminal it tells you on stderr when a newer
+release exists, when a background upgrade failed, and once after one
+succeeded. Turn the background upgrade off with `auto_upgrade: false` in
+`config.yml` or `YTRACK_NO_AUTO_UPGRADE=1`, and both the check and the upgrade
+with `check_update: false` or `YTRACK_NO_UPDATE_NOTIFIER=1`. It never runs in
+CI or for Homebrew, Scoop or WinGet installs. Details:
+[docs/install.md](docs/install.md#upgrades).
 
 ## Log in
 
@@ -256,7 +264,8 @@ refused. Plain-http hosts other than localhost trigger a warning. See
 - Environment: `YTRACK_HOST`, `YTRACK_TOKEN` (runtime override, never saved),
   `YTRACK_DEBUG=1` (request log with credentials redacted, same as `--debug`),
   `YTRACK_CONFIG_DIR`, `YTRACK_CACHE_DIR`, `YTRACK_BROWSER`, `YTRACK_EDITOR`,
-  `YTRACK_NO_UPDATE_NOTIFIER=1` (no new-release notice).
+  `YTRACK_NO_UPDATE_NOTIFIER=1` (no release check, notice or background
+  upgrade), `YTRACK_NO_AUTO_UPGRADE=1` (no background upgrade).
 - Host precedence: `--host`, the host of an issue URL argument,
   `YTRACK_HOST`, the host whose `auth paths` match the current folder (in any
   case on macOS and Windows, case-sensitively elsewhere), the default host.
@@ -281,7 +290,7 @@ refused. Plain-http hosts other than localhost trigger a warning. See
 
 Configuration lives in `~/.config/ytrack/` (`$XDG_CONFIG_HOME/ytrack`,
 `%AppData%\ytrack` on Windows): `config.yml` (`browser`, `timezone`,
-`check_update`) and `hosts.yml` (hosts, their `paths` and the default host),
+`check_update`, `auto_upgrade`) and `hosts.yml` (hosts, their `paths` and the default host),
 which never holds tokens. The daily update
 check keeps its state in `~/.local/state/ytrack/state.yml`
 (`$XDG_STATE_HOME/ytrack`, `%LOCALAPPDATA%\ytrack` on Windows).

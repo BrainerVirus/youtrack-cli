@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/upgrade"
 )
@@ -29,6 +30,8 @@ var Platforms = []string{"linux/amd64", "linux/arm64", "darwin/amd64", "darwin/a
 type Release struct {
 	Version    string // without "v"
 	Prerelease bool
+	// PublishedAt is the release's publication time; zero means OldRelease.
+	PublishedAt time.Time
 	// Binary returns the ytrack executable for a platform ("linux/amd64");
 	// nil means a marker text naming the version and platform.
 	Binary func(platform string) []byte
@@ -48,6 +51,18 @@ func (r *Release) BinaryFor(platform string) []byte {
 		return r.Binary(platform)
 	}
 	return []byte(fmt.Sprintf("ytrack %s %s\n", r.Version, platform))
+}
+
+// OldRelease is the publication time of a Release without PublishedAt: long
+// past any soak period.
+var OldRelease = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// Published returns r.PublishedAt, or OldRelease when it is zero.
+func (r *Release) Published() time.Time {
+	if r.PublishedAt.IsZero() {
+		return OldRelease
+	}
+	return r.PublishedAt
 }
 
 // Tag returns "v" + Version.
@@ -268,11 +283,12 @@ func (s *Server) writeRelease(w http.ResponseWriter, rel *Release) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"tag_name":   rel.Tag(),
-		"html_url":   "https://github.com/BrainerVirus/youtrack-cli/releases/tag/" + rel.Tag(),
-		"prerelease": rel.Prerelease,
-		"draft":      false,
-		"assets":     assets,
+		"tag_name":     rel.Tag(),
+		"html_url":     "https://github.com/BrainerVirus/youtrack-cli/releases/tag/" + rel.Tag(),
+		"prerelease":   rel.Prerelease,
+		"draft":        false,
+		"published_at": rel.Published().UTC().Format(time.RFC3339),
+		"assets":       assets,
 	})
 }
 
