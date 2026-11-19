@@ -119,6 +119,10 @@ type FakeYouTrack struct {
 	// ForbidSilentCommands answers a command with "silent": true with a
 	// 403, as for a user without Apply Commands Silently.
 	ForbidSilentCommands bool
+	// Localized makes the search keyword "for:" match nothing, as on a
+	// non-English instance, where keywords are translated but field names
+	// such as Assignee are not.
+	Localized bool
 	// MaxTop caps $top like a server limit would (0 means no cap).
 	MaxTop int
 	// HubTokenPage makes the instance's token page 404, as on a Server

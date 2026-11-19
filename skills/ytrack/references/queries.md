@@ -10,7 +10,7 @@ it contains spaces, `#` and braces.
 | --- | --- |
 | `project: APP` | issues in project APP (short name or name) |
 | `#Unresolved` / `#Resolved` | not resolved / resolved |
-| `for: me` | assigned to you (`Assignee: me` is the field-name form) |
+| `Assignee: me` | assigned to you |
 | `Assignee: jdoe` | assigned to login jdoe |
 | `Assignee: Unassigned` | nobody assigned |
 | `reporter: me` | reported by you |
@@ -34,7 +34,7 @@ alternatives: `project: APP (State: Open or State: {In Progress})`.
 ## Examples
 
 ```sh
-ytrack issue list -q 'project: APP for: me #Unresolved sort by: updated desc'
+ytrack issue list -q 'project: APP Assignee: me #Unresolved sort by: updated desc'
 ytrack issue list -q 'project: APP State: {In Progress} updated: {This week}'
 ytrack issue list -q 'project: APP tag: regression created: 2026-10-01 .. 2026-10-31' --all
 ytrack issue list -q 'project: APP #Unresolved' --limit 0 --json idReadable,summary,assignee
@@ -42,7 +42,12 @@ ytrack issue list -q 'project: APP #Unresolved' --limit 0 --json idReadable,summ
 
 `--project`, `--assignee`, `--state` and `--sort` on `ytrack issue list` add
 these terms for you: `--project APP --assignee me --state 'In Progress'`
-becomes `project: APP for: me State: {In Progress}`.
+becomes `project: APP Assignee: <your login> State: {In Progress}`.
+
+Keywords such as `for:`, `by:`, `tag:` and `has:` are translated into the
+instance's language (a Spanish instance does not know `for:` and matches
+nothing). Field names (`Assignee:`, `State:`), `project:`, `#Unresolved` and
+`sort by:` work on every locale; prefer them.
 
 When a query returns nothing or fails, check the field and value names on a
 real issue (`ytrack issue view APP-123 --json customFields`): on a
