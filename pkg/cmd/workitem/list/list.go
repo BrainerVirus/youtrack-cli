@@ -3,6 +3,7 @@ package list
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -86,12 +87,10 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	ctx := cmd.Context()
 	author := opts.author
-	if author == "me" {
-		me, err := adapter.CurrentUser(ctx, client)
-		if err != nil {
+	if strings.EqualFold(strings.TrimSpace(author), "me") {
+		if author, err = f.CurrentLogin(ctx, client, host); err != nil {
 			return err
 		}
-		author = me.Login
 	}
 	items, err := adapter.ListWorkItems(ctx, client, opts.ref.ID)
 	if err != nil {

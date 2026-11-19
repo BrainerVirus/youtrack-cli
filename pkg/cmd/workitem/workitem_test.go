@@ -123,14 +123,15 @@ func TestWorkItemList(t *testing.T) {
 		}
 	})
 
-	t.Run("given --author me, it keeps the token user's items", func(t *testing.T) {
+	t.Run("given --author me, it keeps the items of the login auth login saved", func(t *testing.T) {
 		env, yt := loggedIn(t)
-		mustRun(t, env, "work-item", "list", "NSR-40", "--author", "me", "--json", "id")
+		before := len(requests(yt, "GET", "/api/users/me"))
+		mustRun(t, env, "work-item", "list", "NSR-40", "--author", "Me", "--json", "id")
 		if got := ids(decodeJSON[[]map[string]any](t, env.Stdout.Bytes())); !reflect.DeepEqual(got, []string{"115-1", "115-3"}) {
 			t.Errorf("ids = %v", got)
 		}
-		if len(requests(yt, "GET", "/api/users/me")) < 2 { // login, then --author me
-			t.Error("--author me did not look up the current user")
+		if n := len(requests(yt, "GET", "/api/users/me")) - before; n != 0 {
+			t.Errorf("asked /api/users/me %d times; hosts.yml has the login", n)
 		}
 		env.Reset()
 		mustRun(t, env, "work-item", "list", "NSR-40", "--author", "jroe", "--json", "id")
