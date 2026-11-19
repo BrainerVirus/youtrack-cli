@@ -85,7 +85,10 @@ disagrees, these win.
      before the first request, so they never reach a host that does not own
      the key, and recheck the picked host live before acting on a cached
      "the picked host lacks the project". With more than one logged-in host, an HTTP error names the host
-     that answered, why it was chosen and the others (`try --host <h>`).
+     that answered and why it was chosen. Only a 404 on an issue key, with
+     the host not named by `--host`, an issue URL, `YTRACK_HOST` or
+     `YTRACK_TOKEN`, suggests another host (`try --host <h>`), and only one
+     that owns the key's project and that the folder's `auth paths` allow.
    - Token precedence: `YTRACK_TOKEN` (a runtime override for CI that is never
      saved by `auth login`), then the keyring entry for the host.
    - Config is YAML in the user config dir (`ytrack/config.yml` plus
@@ -1104,13 +1107,13 @@ APP-233   Open         Normal     —            Improve dashboard
 YouTrack already provides an expressive query language. Preserve it directly.
 
 ```bash
-yt issue list --query 'project: APP for: me #Unresolved'
+yt issue list --query 'project: APP Assignee: me #Unresolved'
 ```
 
 Short form:
 
 ```bash
-yt issue list -q 'project: APP for: me #Unresolved'
+yt issue list -q 'project: APP Assignee: me #Unresolved'
 ```
 
 Convenience flags may compile to YouTrack query syntax:
@@ -1466,7 +1469,7 @@ Non-interactive users can provide files/flags instead.
 Potential commands:
 
 ```bash
-yt alias set mine 'issue list --query "for: me #Unresolved"'
+yt alias set mine 'issue list --query "Assignee: me #Unresolved"'
 ```
 
 Then:

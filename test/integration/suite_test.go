@@ -172,8 +172,44 @@ func (s *suite) steps() error {
 	if assigned.Assignee == nil || assigned.Assignee.Login != login {
 		return fmt.Errorf("issue command %q: assignee %+v, want %s", assignToMe, assigned.Assignee, login)
 	}
+	if err := s.listMineStep(id); err != nil {
+		return err
+	}
+	if err := s.notFoundStep(); err != nil {
+		return err
+	}
 
 	return s.workItemSteps(id)
+}
+
+// listMineStep lists the project's issues assigned to you: --assignee me
+// must find id on every locale, so ytrack cannot send the "for" keyword,
+// which a non-English instance does not know.
+func (s *suite) listMineStep(id string) error {
+	var mine []struct{ IDReadable string }
+	if err := s.ytrackJSON(&mine, "issue", "list", "--project", s.cfg.Project, "--assignee", "me",
+		"--limit", "0", "--json", "idReadable"); err != nil {
+		return fmt.Errorf("issue list --assignee me: %w", err)
+	}
+	if !slices.ContainsFunc(mine, func(i struct{ IDReadable string }) bool { return i.IDReadable == id }) {
+		return fmt.Errorf("issue list --assignee me: %s, assigned to you, missing from %+v", id, mine)
+	}
+	return nil
+}
+
+// notFoundStep views a key that does not exist in the project with --host:
+// the error names the target host and suggests no other one.
+func (s *suite) notFoundStep() error {
+	missing := s.cfg.Project + "-999999999"
+	out, err := s.ytrack("issue", "view", missing)
+	if err == nil {
+		return fmt.Errorf("issue view %s: exit 0, want not found\n%s", missing, out)
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "issue "+missing+" not found on "+s.cfg.Host.Key) || strings.Contains(msg, "try --host") {
+		return fmt.Errorf("issue view %s: want a not-found naming %s and no other host: %w", missing, s.cfg.Host.Key, err)
+	}
+	return nil
 }
 
 // itImage is a 1x1 PNG the comment --attach step uploads.

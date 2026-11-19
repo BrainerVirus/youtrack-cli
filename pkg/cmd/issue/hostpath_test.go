@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -167,7 +168,7 @@ func TestHostByIssueKey(t *testing.T) {
 			if code := env.Run(args...); code != 1 {
 				t.Fatalf("exit %d: %s", code, env.Stderr)
 			}
-			want := "ytrack: issue NSR-40 not found on " + personal.Key() + " (or you cannot see it); " + personal.Key() + " chosen " + explicit.why + "; try --host " + work.Key() + "\n"
+			want := "ytrack: issue NSR-40 not found on " + personal.Key() + " (or you cannot see it); " + personal.Key() + " chosen " + explicit.why + "\n"
 			if env.Stderr.String() != want {
 				t.Errorf("stderr = %q, want %q", env.Stderr, want)
 			}
@@ -177,12 +178,12 @@ func TestHostByIssueKey(t *testing.T) {
 		})
 	}
 
-	t.Run("given the key's project is on no host, the error names the host, why, and the others to try", func(t *testing.T) {
-		env, personal, work := wrongFolder(t)
+	t.Run("given the key's project is on no host, the error names the host and why, and suggests none", func(t *testing.T) {
+		env, personal, _ := wrongFolder(t)
 		if code := env.Run("issue", "view", "ZZZ-1"); code != 1 {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
 		}
-		want := "ytrack: issue ZZZ-1 not found on " + personal.Key() + " (or you cannot see it); " + personal.Key() + " chosen by the folder rule /p/**; try --host " + work.Key() + "\n"
+		want := "ytrack: issue ZZZ-1 not found on " + personal.Key() + " (or you cannot see it); " + personal.Key() + " chosen by the folder rule /p/**\n"
 		if env.Stderr.String() != want {
 			t.Errorf("stderr = %q, want %q", env.Stderr, want)
 		}
@@ -199,7 +200,7 @@ func TestHostByIssueKey(t *testing.T) {
 		}
 	})
 
-	t.Run("given two other hosts have the project, none is picked", func(t *testing.T) {
+	t.Run("given two other hosts have the project, none is picked and the error suggests both", func(t *testing.T) {
 		env, personal, work := wrongFolder(t)
 		third := cmdtest.NewFakeYouTrack(t, "")
 		third.Token = "perm-dGhpcmQ=.dGhpcmQ=.th1rdT0k3nValue"
@@ -208,8 +209,64 @@ func TestHostByIssueKey(t *testing.T) {
 		if code := env.Run("issue", "view", "NSR-40"); code != 1 {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
 		}
-		if issueGets(work) != 0 || !strings.Contains(env.Stderr.String(), "not found on "+personal.Key()) {
-			t.Errorf("stderr = %q, work got %d issue reads", env.Stderr, issueGets(work))
+		tries := []string{"--host " + work.Key(), "--host " + third.Key()}
+		slices.Sort(tries)
+		want := "ytrack: issue NSR-40 not found on " + personal.Key() + " (or you cannot see it); " + personal.Key() +
+			" chosen by the folder rule /p/**; try " + strings.Join(tries, " or ") + "\n"
+		if issueGets(work) != 0 || env.Stderr.String() != want {
+			t.Errorf("stderr = %q, want %q; work got %d issue reads", env.Stderr, want, issueGets(work))
+		}
+	})
+
+	t.Run("given the owner's auth paths fence it to other folders, it is never probed, used or named", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		mustRun(t, env, "auth", "paths", "--host", work.URL(), "--add", "/work/**")
+		env.Reset()
+		before := len(work.Requests())
+		if code := env.Run("issue", "view", "NSR-40"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		got := env.Stderr.String()
+		if strings.Contains(got, work.Key()) || strings.Contains(got, "using ") || !strings.Contains(got, "not found on "+personal.Key()) {
+			t.Errorf("stderr = %q, want a not-found on %s that never names %s", got, personal.Key(), work.Key())
+		}
+		if n := len(work.Requests()) - before; n != 0 {
+			t.Errorf("work got %d requests, want none", n)
+		}
+	})
+
+	t.Run("given two owners, one fenced to other folders, the error names only the other", func(t *testing.T) {
+		env, personal, work := wrongFolder(t)
+		third := cmdtest.NewFakeYouTrack(t, "")
+		third.Token = "perm-dGhpcmQ=.dGhpcmQ=.th1rdT0k3nValue"
+		third.AddProject("NSR")
+		env.Login(third)
+		fourth := cmdtest.NewFakeYouTrack(t, "")
+		fourth.Token = "perm-Zm91cnRo.Zm91cnRo.f0urthT0k3nValue"
+		fourth.AddProject("NSR")
+		env.Login(fourth)
+		mustRun(t, env, "auth", "paths", "--host", work.URL(), "--add", "/work/**")
+		env.Reset()
+		if code := env.Run("issue", "view", "NSR-40"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		tries := []string{"--host " + third.Key(), "--host " + fourth.Key()}
+		slices.Sort(tries)
+		got := env.Stderr.String()
+		if strings.Contains(got, work.Key()) || !strings.HasSuffix(got, "; try "+strings.Join(tries, " or ")+"\n") || !strings.Contains(got, "not found on "+personal.Key()) {
+			t.Errorf("stderr = %q, want only %v suggested", got, tries)
+		}
+	})
+
+	t.Run("given the picked host has the project, a missing work item suggests no host", func(t *testing.T) {
+		env, personal, _ := wrongFolder(t)
+		personal.AddProject("NSR")
+		personal.SeedSampleIssues()
+		if code := env.Run("work-item", "delete", "NSR-40", "999-999", "--yes"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if got := env.Stderr.String(); strings.Contains(got, "try --host") {
+			t.Errorf("stderr = %q, want no host suggestion", got)
 		}
 	})
 
@@ -239,7 +296,7 @@ func TestHostByIssueKey(t *testing.T) {
 			t.Fatalf("exit %d", code)
 		}
 		want := "HTTP 404 from " + personal.Key() + " (chosen by the folder rule /p/**): "
-		if !strings.Contains(env.Stderr.String(), want) || !strings.HasSuffix(env.Stderr.String(), "; try --host "+work.Key()+"\n") {
+		if !strings.Contains(env.Stderr.String(), want) || strings.Contains(env.Stderr.String(), "try --host") || strings.Contains(env.Stderr.String(), work.Key()) {
 			t.Errorf("stderr = %q, want it to contain %q", env.Stderr, want)
 		}
 	})

@@ -119,6 +119,14 @@ type FakeYouTrack struct {
 	// ForbidSilentCommands answers a command with "silent": true with a
 	// 403, as for a user without Apply Commands Silently.
 	ForbidSilentCommands bool
+	// Localized makes the search keyword "for:" match nothing, as on a
+	// non-English instance, where keywords are translated but field names
+	// such as Assignee are not.
+	Localized bool
+	// KnownUsers, when set, are the only logins an "Assignee:" search term
+	// may name besides Login; any other is a 400 invalid_query, as YouTrack
+	// answers a search for a user it does not have.
+	KnownUsers []string
 	// MaxTop caps $top like a server limit would (0 means no cap).
 	MaxTop int
 	// HubTokenPage makes the instance's token page 404, as on a Server
@@ -144,6 +152,10 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 		writeJSON(w, 200, map[string]any{"login": yt.Login, "fullName": yt.FullName, "$type": "Me"})
 	})
 	mux.HandleFunc("GET /api/issues", func(w http.ResponseWriter, r *http.Request) {
+		if login, ok := yt.unknownAssignee(r.URL.Query().Get("query")); ok {
+			writeJSON(w, 400, map[string]any{"error": "invalid_query", "error_description": "Can't parse search query: unknown user " + login})
+			return
+		}
 		items := []map[string]any{}
 		for _, is := range page(r, yt.queryIssues(r.URL.Query().Get("query"))) {
 			items = append(items, yt.withFieldSettings(r, onlyCustomFields(is, r.URL.Query()["customFields"])))

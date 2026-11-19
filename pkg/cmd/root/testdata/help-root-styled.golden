@@ -18,7 +18,7 @@ An unofficial command-line interface for JetBrains YouTrack.
 
 <bold>Examples:</>
   <dim>$</> <accent>ytrack auth login</>
-  <dim>$</> <accent>ytrack issue list -q 'project: APP for: me #Unresolved'</>
+  <dim>$</> <accent>ytrack issue list -q 'project: APP Assignee: me #Unresolved'</>
   <dim>$</> <accent>ytrack issue view APP-123 --comments</>
   <dim>$</> <accent>ytrack work-item add APP-123 --duration 1h30m --text 'Code review'</>
   <dim>$</> <accent>ytrack api /users/me --fields login,fullName</>

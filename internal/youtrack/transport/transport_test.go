@@ -93,21 +93,34 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorOrigin(t *testing.T) {
-	t.Run("given a client with an origin, its errors name the host, why it was chosen and the others", func(t *testing.T) {
+	t.Run("given a client with an origin, its errors name the host and why it was chosen, and suggest no other host", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error":"Not Found","error_description":"Entity not found"}`))
 		}))
 		defer srv.Close()
-		o := &Origin{Host: "p.example", Why: "by the folder rule ~/p/**", Others: []string{"w.example", "x.example"}}
+		o := &Origin{Host: "p.example", Why: "by the folder rule ~/p/**"}
 		err := New(Options{BaseURL: srv.URL, Origin: o}).GetJSON(context.Background(), "/api/issues/X-1", &map[string]any{})
-		want := "HTTP 404 from p.example (chosen by the folder rule ~/p/**): Entity not found (Not Found); try --host w.example or --host x.example"
+		want := "HTTP 404 from p.example (chosen by the folder rule ~/p/**): Entity not found (Not Found)"
 		if err == nil || err.Error() != want {
 			t.Errorf("err = %v, want %q", err, want)
 		}
 		apiErr, _ := errors.AsType[*APIError](err)
-		if got := apiErr.HostHint(); got != "; p.example chosen by the folder rule ~/p/**; try --host w.example or --host x.example" {
+		if got := apiErr.HostHint(); got != "; p.example chosen by the folder rule ~/p/**" {
 			t.Errorf("HostHint() = %q", got)
+		}
+	})
+
+	t.Run("given a 400, 401 or 5xx with an origin, the error names the host and suggests no other", func(t *testing.T) {
+		for _, code := range []int{400, 401, 403, 500, 503} {
+			e := ParseError(code, http.StatusText(code), strings.NewReader(`{"error":"x"}`))
+			e.Origin = &Origin{Host: "p.example", Why: "by --host"}
+			if got, want := e.Error(), fmt.Sprintf("HTTP %d from p.example (chosen by --host): x", code); got != want {
+				t.Errorf("%d: Error() = %q, want %q", code, got, want)
+			}
+			if strings.Contains(e.HostHint(), "try") {
+				t.Errorf("%d: HostHint() = %q", code, e.HostHint())
+			}
 		}
 	})
 

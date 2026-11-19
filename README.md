@@ -149,7 +149,7 @@ and picks neither. A narrower path that also matches still wins.
 ## Issues
 
 ```sh
-ytrack issue list -q 'project: APP for: me #Unresolved'      # native query syntax
+ytrack issue list -q 'project: APP Assignee: me #Unresolved' # native query syntax
 ytrack issue list --project APP --assignee me --state Open --sort 'updated desc'
 ytrack issue list --project APP --all                         # resolved too
 ytrack issue list -q '#Unresolved' --json idReadable,summary,state,url

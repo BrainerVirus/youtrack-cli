@@ -634,23 +634,71 @@ func forbidden(w http.ResponseWriter) {
 	writeJSON(w, 403, map[string]any{"error": "Forbidden", "error_description": "You have no permission to perform this operation"})
 }
 
-var projectQuery = regexp.MustCompile(`^project: \{(.+)\}$`)
+var (
+	projectQuery  = regexp.MustCompile(`^project: \{(.+)\}$`)
+	assigneeQuery = regexp.MustCompile(`(?:^|\s)(Assignee|for): (\{[^}]*\}|\S+)`)
+)
 
 // queryIssues filters Issues by a "project: {X}" query, which matches a
-// project's short name or, as in YouTrack, its full name; any other query
-// keeps them all.
+// project's short name or, as in YouTrack, its full name, and by an
+// "Assignee: <login>" or "for: <login>" term ("me" is the token's user;
+// with Localized, "for:" matches nothing). Any other query keeps them all.
 func (yt *FakeYouTrack) queryIssues(query string) []map[string]any {
-	m := projectQuery.FindStringSubmatch(query)
-	if m == nil {
-		return yt.Issues
+	out := yt.Issues
+	if m := projectQuery.FindStringSubmatch(query); m != nil {
+		out = filterIssues(out, func(is map[string]any) bool {
+			p, _ := is["project"].(map[string]any)
+			return p != nil && (p["shortName"] == m[1] || p["name"] == m[1])
+		})
 	}
+	if m := assigneeQuery.FindStringSubmatch(query); m != nil {
+		login := strings.Trim(m[2], "{}")
+		if strings.EqualFold(login, "me") {
+			login = yt.Login
+		}
+		out = filterIssues(out, func(is map[string]any) bool {
+			return (m[1] != "for" || !yt.Localized) && issueAssignee(is) == login
+		})
+	}
+	return out
+}
+
+// unknownAssignee returns the login of an "Assignee:" term that is neither
+// Login, "me" nor one of KnownUsers, when KnownUsers is set.
+func (yt *FakeYouTrack) unknownAssignee(query string) (string, bool) {
+	m := assigneeQuery.FindStringSubmatch(query)
+	if yt.KnownUsers == nil || m == nil || m[1] != "Assignee" {
+		return "", false
+	}
+	login := strings.Trim(m[2], "{}")
+	if strings.EqualFold(login, "me") || login == yt.Login || slices.Contains(yt.KnownUsers, login) {
+		return "", false
+	}
+	return login, true
+}
+
+func filterIssues(issues []map[string]any, keep func(map[string]any) bool) []map[string]any {
 	var out []map[string]any
-	for _, is := range yt.Issues {
-		if p, _ := is["project"].(map[string]any); p != nil && (p["shortName"] == m[1] || p["name"] == m[1]) {
+	for _, is := range issues {
+		if keep(is) {
 			out = append(out, is)
 		}
 	}
 	return out
+}
+
+// issueAssignee is the login in an issue's Assignee custom field, or "".
+func issueAssignee(is map[string]any) string {
+	cfs, _ := is["customFields"].([]any)
+	for _, c := range cfs {
+		if cf, _ := c.(map[string]any); cf["name"] == "Assignee" {
+			if v, _ := cf["value"].(map[string]any); v != nil {
+				login, _ := v["login"].(string)
+				return login
+			}
+		}
+	}
+	return ""
 }
 
 // withFieldSettings lists every custom field of the issue's project, each

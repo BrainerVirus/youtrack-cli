@@ -40,8 +40,9 @@ ytrack auth paths                                # folders tied to each host
   If that pick is stale (a project was just created or moved), delete the
   cache file `projects.json` in `~/.cache/ytrack/` (or `$YTRACK_CACHE_DIR`).
 - When a key is not found, run `ytrack auth status` in this folder first.
-  The error names the host that answered, why it was chosen and the other
-  hosts (`try --host <h>`); never read `hosts.yml` by hand.
+  The error names the host that answered and why it was chosen; it suggests
+  `try --host <h>` only when another logged-in host owns the key's project.
+  Never switch hosts on any other error, and never read `hosts.yml` by hand.
 - Tokens are the user's. Never ask for one, never put one in a command line
   or an environment variable, never run `ytrack auth token`. If no host is
   logged in, ask the user to run `ytrack auth login` themselves.
@@ -64,7 +65,7 @@ ytrack issue view APP-123
 ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments
 ytrack issue view https://acme.youtrack.cloud/projects/APP/issues/APP-123
 ytrack issue view APP-123 --json summary,state,assignee,customFields,comments
-ytrack issue list -q 'project: APP for: me #Unresolved'
+ytrack issue list -q 'project: APP Assignee: me #Unresolved'
 ytrack issue list --project APP --assignee me --state 'In Progress' --sort 'updated desc'
 ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state
 ```

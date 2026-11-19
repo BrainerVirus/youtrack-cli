@@ -2,7 +2,9 @@
 package list
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -44,9 +47,11 @@ func NewCmdList(f *cmdutil.Factory) *cobra.Command {
 
 --query takes YouTrack's own search syntax and is sent unchanged. --project,
 --assignee, --state and --sort add the matching query terms to it:
---project APP adds "project: APP", --assignee me adds "for: me", --state
-'In Progress' adds "State: {In Progress}" and --sort 'updated desc' adds
-"sort by: updated desc".
+--project APP adds "project: APP", --assignee jdoe adds "Assignee: jdoe"
+(--assignee me sends your own login), --state 'In Progress' adds
+"State: {In Progress}" and --sort 'updated desc' adds "sort by: updated desc".
+These terms use field names, not keywords such as "for", which YouTrack
+translates into the instance's language, so they work on every locale.
 
 Unless you pass --query or --state, only unresolved issues are listed
 ("#Unresolved" is added to the query); --all lists resolved ones too.
@@ -55,7 +60,7 @@ Unless you pass --query or --state, only unresolved issues are listed
 
 JSON fields:
 ` + shared.IssueFieldsHelp,
-		Example: `  $ ytrack issue list -q 'project: APP for: me #Unresolved'
+		Example: `  $ ytrack issue list -q 'project: APP Assignee: me #Unresolved'
   $ ytrack issue list --project APP --assignee me --state Open --sort 'updated desc'
   $ ytrack issue list --project APP --all
   $ ytrack issue list -q '#Unresolved' --json idReadable,summary,state --jq '.[].idReadable'`,
@@ -67,11 +72,10 @@ JSON fields:
 			if opts.limit < 0 {
 				return clierr.FlagErrorf("invalid --limit %d: use a positive number, or 0 for all", opts.limit)
 			}
-			query, err := buildQuery(opts)
-			if err != nil {
+			if _, err := buildQuery(opts); err != nil {
 				return err
 			}
-			return run(cmd, f, opts, query)
+			return run(cmd, f, opts)
 		},
 	}
 	fl := cmd.Flags()
@@ -87,8 +91,19 @@ JSON fields:
 	return cmd
 }
 
-func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, query string) error {
+func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	client, host, err := f.APIClient()
+	if err != nil {
+		return err
+	}
+	if strings.EqualFold(strings.TrimSpace(opts.assignee), "me") {
+		login, err := f.CurrentLogin(cmd.Context(), client, host)
+		if err != nil {
+			return err
+		}
+		opts.assignee = login
+	}
+	query, err := buildQuery(opts)
 	if err != nil {
 		return err
 	}
@@ -98,7 +113,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, query string) er
 	}
 	issues, err := adapter.ListIssues(cmd.Context(), client, adapter.IssueListOptions{Query: query, Attrs: attrs, Limit: opts.limit})
 	if err != nil {
-		return err
+		return assigneeHint(err, opts.assignee)
 	}
 
 	ios := f.IOStreams
@@ -143,6 +158,17 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options, query string) er
 	return tbl.Render()
 }
 
+// assigneeHint adds, to YouTrack's "cannot parse the query" answer, the
+// likely cause when --assignee is set: YouTrack rejects a search for a user
+// it does not know the same way as a malformed query.
+func assigneeHint(err error, assignee string) error {
+	apiErr, ok := errors.AsType[*transport.APIError](err)
+	if !ok || assignee == "" || apiErr.StatusCode != http.StatusBadRequest || apiErr.Code != "invalid_query" {
+		return err
+	}
+	return fmt.Errorf("%w; is %q a YouTrack login? (--assignee takes a login or me)", err, strings.TrimSpace(assignee))
+}
+
 // DefaultFilter is added to the query when neither --query, --state nor
 // --all is given.
 const DefaultFilter = "#Unresolved"
@@ -157,7 +183,7 @@ func buildQuery(o *options) (string, error) {
 	}
 	for _, t := range []struct{ flag, attr, value string }{
 		{"--project", "project", o.project},
-		{"--assignee", "for", o.assignee},
+		{"--assignee", adapter.AssigneeField, o.assignee},
 		{"--state", adapter.StateField, o.state},
 	} {
 		if t.value == "" {

@@ -3,6 +3,7 @@
 package cmdutil
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/hosts"
 	"github.com/BrainerVirus/youtrack-cli/internal/iostreams"
 	"github.com/BrainerVirus/youtrack-cli/internal/prompter"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 )
 
@@ -225,14 +227,14 @@ func (f *Factory) NewClient(host hosts.Host, token string) *transport.Client {
 	return f.newClient(host, token, nil)
 }
 
-// origin names host, why res picked it and the other logged-in hosts, for
-// API errors; nil when host is the only host in play.
+// origin names host and why res picked it, for API errors; nil when host is
+// the only host in play. It names no other host: only WithIssueHost, which
+// knows which hosts own an issue key's project, suggests one.
 func origin(cfg *config.Config, host hosts.Host, res Resolution) *transport.Origin {
-	others := otherHosts(cfg, host.Key)
-	if len(others) == 0 {
+	if len(otherHosts(cfg, host.Key)) == 0 {
 		return nil
 	}
-	return &transport.Origin{Host: host.Key, Why: res.Why(), Others: others}
+	return &transport.Origin{Host: host.Key, Why: res.Why()}
 }
 
 // otherHosts returns the logged-in host keys other than key.
@@ -261,6 +263,25 @@ func (f *Factory) newClient(host hosts.Host, token string, o *transport.Origin) 
 		opts.DebugLog = f.IOStreams.ErrOut
 	}
 	return transport.New(opts)
+}
+
+// CurrentLogin returns the login of the account client talks as on host. The
+// login `auth login` saved in hosts.yml is the per-host cache while the
+// stored token is in use; with $YTRACK_TOKEN, or without a saved login, it
+// asks GET /api/users/me.
+func (f *Factory) CurrentLogin(ctx context.Context, client *transport.Client, host hosts.Host) (string, error) {
+	if os.Getenv("YTRACK_TOKEN") == "" {
+		if cfg, err := f.Config(); err == nil {
+			if e := cfg.Host(host.Key); e != nil && e.User != "" {
+				return e.User, nil
+			}
+		}
+	}
+	u, err := adapter.CurrentUser(ctx, client)
+	if err != nil {
+		return "", err
+	}
+	return u.Login, nil
 }
 
 // APIClient resolves the host and token and returns a client for them. It

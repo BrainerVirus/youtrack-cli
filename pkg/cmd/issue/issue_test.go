@@ -106,8 +106,77 @@ func TestIssueList(t *testing.T) {
 		env, yt := loggedIn(t, "")
 		mustRun(t, env, "issue", "list", "-q", "#Unresolved", "--project", "NSR", "--assignee", "me", "--state", "In Progress", "--sort", "updated desc")
 		got := query(t, yt.LastRequest(t)).Get("query")
-		if want := "#Unresolved project: NSR for: me State: {In Progress} sort by: updated desc"; got != want {
+		if want := "#Unresolved project: NSR Assignee: jdoe State: {In Progress} sort by: updated desc"; got != want {
 			t.Errorf("query = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("given a non-English instance, --assignee me lists the issues assigned to you", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.Localized = true
+		before := len(requests(yt, "GET", "/api/users/me"))
+		mustRun(t, env, "issue", "list", "-p", "NSR", "-a", "me", "--json", "idReadable")
+		if got, want := env.Stdout.String(), `[{"idReadable":"NSR-40"}]`+"\n"; got != want {
+			t.Errorf("stdout = %q, want %q", got, want)
+		}
+		if n := len(requests(yt, "GET", "/api/users/me")) - before; n != 0 {
+			t.Errorf("asked /api/users/me %d times; the login saved by auth login is the cache", n)
+		}
+	})
+
+	t.Run("given YTRACK_TOKEN, --assignee me asks the server for your login", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.Localized = true
+		t.Setenv("YTRACK_TOKEN", yt.Token)
+		before := len(requests(yt, "GET", "/api/users/me"))
+		mustRun(t, env, "issue", "list", "-a", "me", "--json", "idReadable")
+		if n := len(requests(yt, "GET", "/api/users/me")) - before; n != 1 {
+			t.Errorf("asked /api/users/me %d times, want 1", n)
+		}
+		if got := query(t, yt.LastRequest(t)).Get("query"); got != "#Unresolved Assignee: jdoe" {
+			t.Errorf("query = %q", got)
+		}
+	})
+
+	t.Run("given --assignee ME in any case, it sends your login", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		mustRun(t, env, "issue", "list", "-a", "Me")
+		if got := query(t, yt.LastRequest(t)).Get("query"); got != "#Unresolved Assignee: jdoe" {
+			t.Errorf("query = %q", got)
+		}
+	})
+
+	t.Run("given --assignee names a login YouTrack does not know, the 400 asks whether it is a login", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.KnownUsers = []string{}
+		if code := env.Run("issue", "list", "-a", "nosuch"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if got := env.Stderr.String(); !strings.Contains(got, "HTTP 400") || !strings.Contains(got, `is "nosuch" a YouTrack login?`) {
+			t.Errorf("stderr = %q", got)
+		}
+	})
+
+	t.Run("given a 400 without --assignee, no login hint is added", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.KnownUsers = []string{}
+		if code := env.Run("issue", "list", "-q", "Assignee: nosuch"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if got := env.Stderr.String(); strings.Contains(got, "a YouTrack login?") {
+			t.Errorf("stderr = %q", got)
+		}
+	})
+
+	t.Run("given --assignee with another login, it sends the Assignee field, not the localized for keyword", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		before := len(requests(yt, "GET", "/api/users/me"))
+		mustRun(t, env, "issue", "list", "-a", "Jane Roe")
+		if got := query(t, yt.LastRequest(t)).Get("query"); got != "#Unresolved Assignee: {Jane Roe}" {
+			t.Errorf("query = %q", got)
+		}
+		if n := len(requests(yt, "GET", "/api/users/me")) - before; n != 0 {
+			t.Errorf("asked /api/users/me %d times", n)
 		}
 	})
 
@@ -126,7 +195,7 @@ func TestIssueList(t *testing.T) {
 			want string
 		}{
 			{nil, "#Unresolved"},
-			{[]string{"--project", "NSR", "--assignee", "me"}, "#Unresolved project: NSR for: me"},
+			{[]string{"--project", "NSR", "--assignee", "me"}, "#Unresolved project: NSR Assignee: jdoe"},
 			{[]string{"--all"}, ""},
 			{[]string{"--all", "--project", "NSR"}, "project: NSR"},
 			{[]string{"-q", "project: NSR #Resolved"}, "project: NSR #Resolved"},

@@ -138,7 +138,8 @@ func CommentURL(host hosts.Host, issueID, commentID string) string {
 }
 
 // NotFound turns a 404 for issue id into a clear message. When more than one
-// host is logged in, it also says why host was chosen and which hosts to try.
+// host is logged in, it also says why host was chosen; it never names another
+// host (only Factory.WithIssueHost adds "try --host", see there).
 func NotFound(err error, id string, host hosts.Host) error {
 	if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
 		return NotFoundf(apiErr, "issue %s not found on %s (or you cannot see it)", id, host.Key)
@@ -146,7 +147,7 @@ func NotFound(err error, id string, host hosts.Host) error {
 	return err
 }
 
-// NotFoundf formats a not-found message, followed by the 404's host hint,
+// NotFoundf formats a not-found message, followed by the host that answered and why,
 // and keeps the 404 underneath, so Factory.WithIssueHost still sees it.
 func NotFoundf(apiErr *transport.APIError, format string, args ...any) error {
 	return &notFoundError{msg: fmt.Sprintf(format, args...) + apiErr.HostHint(), err: apiErr}
