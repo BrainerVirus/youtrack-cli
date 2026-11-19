@@ -657,7 +657,7 @@ func (yt *FakeYouTrack) queryIssues(query string) []map[string]any {
 			login = yt.Login
 		}
 		out = filterIssues(out, func(is map[string]any) bool {
-			return !(m[1] == "for" && yt.Localized) && issueAssignee(is) == login
+			return (m[1] != "for" || !yt.Localized) && issueAssignee(is) == login
 		})
 	}
 	return out
