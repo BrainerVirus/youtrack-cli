@@ -138,6 +138,36 @@ func TestIssueList(t *testing.T) {
 		}
 	})
 
+	t.Run("given --assignee ME in any case, it sends your login", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		mustRun(t, env, "issue", "list", "-a", "Me")
+		if got := query(t, yt.LastRequest(t)).Get("query"); got != "#Unresolved Assignee: jdoe" {
+			t.Errorf("query = %q", got)
+		}
+	})
+
+	t.Run("given --assignee names a login YouTrack does not know, the 400 asks whether it is a login", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.KnownUsers = []string{}
+		if code := env.Run("issue", "list", "-a", "nosuch"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if got := env.Stderr.String(); !strings.Contains(got, "HTTP 400") || !strings.Contains(got, `is "nosuch" a YouTrack login?`) {
+			t.Errorf("stderr = %q", got)
+		}
+	})
+
+	t.Run("given a 400 without --assignee, no login hint is added", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.KnownUsers = []string{}
+		if code := env.Run("issue", "list", "-q", "Assignee: nosuch"); code != 1 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if got := env.Stderr.String(); strings.Contains(got, "a YouTrack login?") {
+			t.Errorf("stderr = %q", got)
+		}
+	})
+
 	t.Run("given --assignee with another login, it sends the Assignee field, not the localized for keyword", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
 		before := len(requests(yt, "GET", "/api/users/me"))

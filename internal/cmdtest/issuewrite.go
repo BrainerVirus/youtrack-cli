@@ -653,7 +653,7 @@ func (yt *FakeYouTrack) queryIssues(query string) []map[string]any {
 	}
 	if m := assigneeQuery.FindStringSubmatch(query); m != nil {
 		login := strings.Trim(m[2], "{}")
-		if login == "me" {
+		if strings.EqualFold(login, "me") {
 			login = yt.Login
 		}
 		out = filterIssues(out, func(is map[string]any) bool {
@@ -661,6 +661,20 @@ func (yt *FakeYouTrack) queryIssues(query string) []map[string]any {
 		})
 	}
 	return out
+}
+
+// unknownAssignee returns the login of an "Assignee:" term that is neither
+// Login, "me" nor one of KnownUsers, when KnownUsers is set.
+func (yt *FakeYouTrack) unknownAssignee(query string) (string, bool) {
+	m := assigneeQuery.FindStringSubmatch(query)
+	if yt.KnownUsers == nil || m == nil || m[1] != "Assignee" {
+		return "", false
+	}
+	login := strings.Trim(m[2], "{}")
+	if strings.EqualFold(login, "me") || login == yt.Login || slices.Contains(yt.KnownUsers, login) {
+		return "", false
+	}
+	return login, true
 }
 
 func filterIssues(issues []map[string]any, keep func(map[string]any) bool) []map[string]any {

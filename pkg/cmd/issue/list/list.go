@@ -2,7 +2,9 @@
 package list
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -93,7 +96,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(opts.assignee) == "me" {
+	if strings.EqualFold(strings.TrimSpace(opts.assignee), "me") {
 		login, err := f.CurrentLogin(cmd.Context(), client, host)
 		if err != nil {
 			return err
@@ -110,7 +113,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	issues, err := adapter.ListIssues(cmd.Context(), client, adapter.IssueListOptions{Query: query, Attrs: attrs, Limit: opts.limit})
 	if err != nil {
-		return err
+		return assigneeHint(err, opts.assignee)
 	}
 
 	ios := f.IOStreams
@@ -153,6 +156,17 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		)
 	}
 	return tbl.Render()
+}
+
+// assigneeHint adds, to YouTrack's "cannot parse the query" answer, the
+// likely cause when --assignee is set: YouTrack rejects a search for a user
+// it does not know the same way as a malformed query.
+func assigneeHint(err error, assignee string) error {
+	apiErr, ok := errors.AsType[*transport.APIError](err)
+	if !ok || assignee == "" || apiErr.StatusCode != http.StatusBadRequest || apiErr.Code != "invalid_query" {
+		return err
+	}
+	return fmt.Errorf("%w; is %q a YouTrack login? (--assignee takes a login or me)", err, strings.TrimSpace(assignee))
 }
 
 // DefaultFilter is added to the query when neither --query, --state nor
