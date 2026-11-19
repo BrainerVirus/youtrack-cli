@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `issue list --assignee me` lists your issues on a non-English instance: ytrack sends `Assignee: <your login>` (the login `auth login` saved, or `/api/users/me` with `YTRACK_TOKEN`) instead of the `for:` keyword, which YouTrack translates and which then matched nothing. Every `--assignee` value now uses the `Assignee` field.
-- Errors no longer end with `try --host <other host>` by default. Only a not-found issue key suggests another host, and only when no `--host`, issue URL, `YTRACK_HOST` or `YTRACK_TOKEN` chose the host, the picked host lacks the key's project and another logged-in host has it; a host whose `auth paths` do not cover the folder is never named. A 400, 401, 403 or 5xx never suggests a host.
+- `issue list --assignee me` lists your issues on a non-English instance: ytrack sends `Assignee: <your login>` (the login `auth login` saved, or `/api/users/me` with `YTRACK_TOKEN`) instead of the `for:` keyword, which YouTrack translates and which then matched nothing. Every `--assignee` value now uses the `Assignee` field. `me` matches in any case, and when YouTrack rejects the search (400) the error asks whether the `--assignee` value is a login.
+- Errors no longer end with `try --host <other host>`. A not-found issue key suggests other hosts only when the folder rule or the default host picked the host (no `--host`, issue URL, `YTRACK_HOST` or `YTRACK_TOKEN`), the picked host lacks the key's project and two or more other logged-in hosts have it; when exactly one has it, ytrack still switches to it and says so. A host whose `auth paths` fence it to other folders is never probed, switched to or named. A 400, 401, 403 or 5xx never suggests a host.
 
 ## [0.6.1] - 2026-11-18
 

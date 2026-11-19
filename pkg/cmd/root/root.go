@@ -45,7 +45,7 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		Example: `  $ ytrack auth login
-  $ ytrack issue list -q 'project: APP for: me #Unresolved'
+  $ ytrack issue list -q 'project: APP Assignee: me #Unresolved'
   $ ytrack issue view APP-123 --comments
   $ ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
   $ ytrack api /users/me --fields login,fullName

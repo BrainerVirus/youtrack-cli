@@ -1107,13 +1107,13 @@ APP-233   Open         Normal     —            Improve dashboard
 YouTrack already provides an expressive query language. Preserve it directly.
 
 ```bash
-yt issue list --query 'project: APP for: me #Unresolved'
+yt issue list --query 'project: APP Assignee: me #Unresolved'
 ```
 
 Short form:
 
 ```bash
-yt issue list -q 'project: APP for: me #Unresolved'
+yt issue list -q 'project: APP Assignee: me #Unresolved'
 ```
 
 Convenience flags may compile to YouTrack query syntax:
@@ -1469,7 +1469,7 @@ Non-interactive users can provide files/flags instead.
 Potential commands:
 
 ```bash
-yt alias set mine 'issue list --query "for: me #Unresolved"'
+yt alias set mine 'issue list --query "Assignee: me #Unresolved"'
 ```
 
 Then:
