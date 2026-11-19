@@ -36,9 +36,10 @@ func IssueProject(id string) string {
 // cache when it knows; otherwise run first goes to the picked host and only a
 // 404 triggers the project lookup (one paged read per host, cached for
 // config.ProjectCacheTTL) and a single rerun. When the picked host lacks the
-// project and other logged-in hosts have it but none was picked (two or
-// more own it), the 404 ends with "; try --host <owner>", naming only owners
-// the folder's `auth paths` allow. No other error ever suggests a host.
+// project and two or more other hosts have it, the 404 ends with
+// "; try --host <a> or --host <b>". Hosts whose `auth paths` fence them to
+// other folders take no part: they are never probed, switched to or named.
+// No other error ever suggests a host.
 func (f *Factory) WithIssueHost(ctx context.Context, id string, run func() error) error {
 	return f.withIssueHost(ctx, id, false, run)
 }
@@ -64,7 +65,9 @@ func (f *Factory) withIssueHost(ctx context.Context, id string, write bool, run 
 	if err != nil || (res.Source != HostFromPath && res.Source != HostFromDefault) {
 		return run()
 	}
-	others := otherHosts(cfg, host.Key)
+	// A host fenced to other folders by `auth paths` is never probed,
+	// switched to or named.
+	others := f.suggestable(cfg, otherHosts(cfg, host.Key))
 	if len(others) == 0 {
 		return run()
 	}
@@ -85,12 +88,13 @@ func (f *Factory) withIssueHost(ctx context.Context, id string, write bool, run 
 		f.useKeyHost(owners[0], project, host, res)
 		return run()
 	}
-	return withTryHosts(err, f.suggestable(cfg, owners))
+	return withTryHosts(err, owners)
 }
 
-// suggestable keeps the keys a hint may name in this folder. A host with
-// path globs (`auth paths`) is meant for those folders only, so it is named
-// only when the folder rule picks it for the working directory.
+// suggestable keeps the keys WithIssueHost may probe, switch to or name in
+// this folder. A host with path globs (`auth paths`) is meant for those
+// folders only, so it is kept only when the folder rule picks it for the
+// working directory.
 func (f *Factory) suggestable(cfg *config.Config, keys []string) []string {
 	m, matched, err := cfg.HostForPath(f.workDirs()...)
 	var out []string
