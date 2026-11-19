@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-19
+
 ### Fixed
 
 - `issue list --assignee me` lists your issues on a non-English instance: ytrack sends `Assignee: <your login>` (the login `auth login` saved, or `/api/users/me` with `YTRACK_TOKEN`) instead of the `for:` keyword, which YouTrack translates and which then matched nothing. Every `--assignee` value now uses the `Assignee` field. `me` matches in any case, and when YouTrack rejects the search (400) the error asks whether the `--assignee` value is a login.
