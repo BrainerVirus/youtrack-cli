@@ -85,7 +85,10 @@ disagrees, these win.
      before the first request, so they never reach a host that does not own
      the key, and recheck the picked host live before acting on a cached
      "the picked host lacks the project". With more than one logged-in host, an HTTP error names the host
-     that answered, why it was chosen and the others (`try --host <h>`).
+     that answered and why it was chosen. Only a 404 on an issue key, with
+     the host not named by `--host`, an issue URL, `YTRACK_HOST` or
+     `YTRACK_TOKEN`, suggests another host (`try --host <h>`), and only one
+     that owns the key's project and that the folder's `auth paths` allow.
    - Token precedence: `YTRACK_TOKEN` (a runtime override for CI that is never
      saved by `auth login`), then the keyring entry for the host.
    - Config is YAML in the user config dir (`ytrack/config.yml` plus

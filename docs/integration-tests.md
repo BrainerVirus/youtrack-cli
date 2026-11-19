@@ -73,7 +73,13 @@ with `--host`, so other logged-in hosts are not contacted):
    a keyword such as `for`: YouTrack localizes command keywords with the
    instance's language (a Spanish instance answers "Comando desconocido:
    for"), while field names work on every locale.
-7. `work-item add` (30m), `list`, `edit` (45m) and `delete`.
+7. `issue list --project <P> --assignee me` lists the issue. ytrack sends
+   `Assignee: <your login>`, never the `for: me` keyword, which a
+   non-English instance does not know (it matches nothing there).
+8. `issue view <P>-999999999` fails with a not-found that names the target
+   host and suggests no other host (`try --host` appears only for a key whose
+   project another logged-in host owns, and never with `--host`).
+9. `work-item add` (30m), `list`, `edit` (45m) and `delete`.
 
 The run id is a UTC timestamp plus random hex, e.g. `20261104-153000-a1b2c3`.
 

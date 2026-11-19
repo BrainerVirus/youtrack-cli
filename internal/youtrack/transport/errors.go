@@ -20,35 +20,21 @@ type APIError struct {
 	Origin *Origin
 }
 
-// Origin says which host answered a request, why ytrack picked it and which
-// other logged-in hosts the user could try instead.
+// Origin says which host answered a request and why ytrack picked it.
 type Origin struct {
 	// Host is the host key, e.g. acme.youtrack.cloud.
 	Host string
 	// Why completes "chosen ...", e.g. "by --host" or "as the default host".
 	Why string
-	// Others are the other logged-in host keys.
-	Others []string
 }
 
-// Hint is "; <host> chosen <why>; try --host <other>", or "" for a nil Origin.
+// Hint is "; <host> chosen <why>", or "" for a nil Origin. It never names
+// another host: an error is not a reason to try one.
 func (o *Origin) Hint() string {
 	if o == nil {
 		return ""
 	}
-	return fmt.Sprintf("; %s chosen %s", o.Host, o.Why) + o.try()
-}
-
-// try is "; try --host <a> or --host <b>", or "" with no other hosts.
-func (o *Origin) try() string {
-	if len(o.Others) == 0 {
-		return ""
-	}
-	tries := make([]string, len(o.Others))
-	for i, h := range o.Others {
-		tries[i] = "--host " + h
-	}
-	return "; try " + strings.Join(tries, " or ")
+	return fmt.Sprintf("; %s chosen %s", o.Host, o.Why)
 }
 
 // HostHint is the Origin's Hint, for messages that already name the host.
@@ -72,9 +58,6 @@ func (e *APIError) Error() string {
 	}
 	if msg != "" {
 		head += ": " + msg
-	}
-	if e.Origin != nil {
-		head += e.Origin.try()
 	}
 	return head
 }

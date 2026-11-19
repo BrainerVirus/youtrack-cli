@@ -35,7 +35,10 @@ func IssueProject(id string) string {
 // instead and one stderr line says so. The answer comes from the project
 // cache when it knows; otherwise run first goes to the picked host and only a
 // 404 triggers the project lookup (one paged read per host, cached for
-// config.ProjectCacheTTL) and a single rerun.
+// config.ProjectCacheTTL) and a single rerun. When the picked host lacks the
+// project and other logged-in hosts have it but none was picked (two or
+// more own it), the 404 ends with "; try --host <owner>", naming only owners
+// the folder's `auth paths` allow. No other error ever suggests a host.
 func (f *Factory) WithIssueHost(ctx context.Context, id string, run func() error) error {
 	return f.withIssueHost(ctx, id, false, run)
 }
@@ -71,16 +74,55 @@ func (f *Factory) withIssueHost(ctx context.Context, id string, write bool, run 
 		return run()
 	}
 	err = run()
-	if write || !isNotFound(err) {
+	if !isNotFound(err) {
 		return err
 	}
-	owner, ok := probe.owner(ctx, host, others, true, false)
-	if !ok {
+	owners, ok := probe.owners(ctx, host, others, true)
+	if !ok || len(owners) == 0 {
 		return err
 	}
-	f.useKeyHost(owner, project, host, res)
-	return run()
+	if len(owners) == 1 && !write {
+		f.useKeyHost(owners[0], project, host, res)
+		return run()
+	}
+	return withTryHosts(err, f.suggestable(cfg, owners))
 }
+
+// suggestable keeps the keys a hint may name in this folder. A host with
+// path globs (`auth paths`) is meant for those folders only, so it is named
+// only when the folder rule picks it for the working directory.
+func (f *Factory) suggestable(cfg *config.Config, keys []string) []string {
+	m, matched, err := cfg.HostForPath(f.workDirs()...)
+	var out []string
+	for _, k := range keys {
+		if len(cfg.HostPaths(k)) > 0 && (err != nil || !matched || m.Host != k) {
+			continue
+		}
+		out = append(out, k)
+	}
+	return out
+}
+
+// withTryHosts appends "; try --host <a> or --host <b>" to err's message,
+// keeping err underneath; err is unchanged when hosts is empty.
+func withTryHosts(err error, hosts []string) error {
+	if len(hosts) == 0 {
+		return err
+	}
+	tries := make([]string, len(hosts))
+	for i, h := range hosts {
+		tries[i] = "--host " + h
+	}
+	return &tryHostsError{err: err, suffix: "; try " + strings.Join(tries, " or ")}
+}
+
+type tryHostsError struct {
+	err    error
+	suffix string
+}
+
+func (e *tryHostsError) Error() string { return e.err.Error() + e.suffix }
+func (e *tryHostsError) Unwrap() error { return e.err }
 
 func (f *Factory) useKeyHost(owner, project string, picked hosts.Host, res Resolution) {
 	f.keyHost, f.keyProject = owner, project
@@ -118,20 +160,7 @@ type projectProbe struct {
 // write set, a cached "picked lacks the project" is checked again on picked
 // before a write is sent elsewhere: the project may have been created since.
 func (p projectProbe) owner(ctx context.Context, picked hosts.Host, others []string, lookup, write bool) (string, bool) {
-	has, known, cached := p.has(ctx, picked.Key, lookup, false)
-	if has || !known {
-		return "", false
-	}
-	var owners []string
-	for _, key := range others {
-		has, known, _ := p.has(ctx, key, lookup, false)
-		if !known {
-			return "", false
-		}
-		if has {
-			owners = append(owners, key)
-		}
-	}
+	owners, cached := p.ownersOf(ctx, picked, others, lookup)
 	if len(owners) != 1 {
 		return "", false
 	}
@@ -141,6 +170,34 @@ func (p projectProbe) owner(ctx context.Context, picked hosts.Host, others []str
 		}
 	}
 	return owners[0], true
+}
+
+// owners returns the hosts in others that have the project when picked
+// does not, and whether that is known for every host (see owner for lookup).
+func (p projectProbe) owners(ctx context.Context, picked hosts.Host, others []string, lookup bool) ([]string, bool) {
+	owners, _ := p.ownersOf(ctx, picked, others, lookup)
+	return owners, owners != nil
+}
+
+// ownersOf is owners, plus whether picked's answer came from the cache; it
+// returns nil owners when picked has the project or an answer is unknown,
+// and an empty non-nil slice when no other host has it.
+func (p projectProbe) ownersOf(ctx context.Context, picked hosts.Host, others []string, lookup bool) (owners []string, cached bool) {
+	has, known, cached := p.has(ctx, picked.Key, lookup, false)
+	if has || !known {
+		return nil, false
+	}
+	owners = []string{}
+	for _, key := range others {
+		has, known, _ := p.has(ctx, key, lookup, false)
+		if !known {
+			return nil, false
+		}
+		if has {
+			owners = append(owners, key)
+		}
+	}
+	return owners, cached
 }
 
 // has says whether host key has the project, whether that is known and

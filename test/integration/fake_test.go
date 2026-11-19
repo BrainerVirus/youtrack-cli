@@ -88,6 +88,7 @@ type fakeInstance struct {
 func newFakeInstance(t *testing.T, setup ...func(*fakeInstance)) *fakeInstance {
 	t.Helper()
 	yt := cmdtest.NewFakeYouTrack(t, "")
+	yt.Localized = true // like the Spanish sandbox: "for:" matches nothing
 	yt.SeedSampleProjects()
 	yt.SeedSampleWorkItems() // NSR time tracking settings
 	yt.Issues = nil
