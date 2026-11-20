@@ -44,6 +44,9 @@ type Definition struct {
 	// Users are the users a user field accepts, once SetUsers was called.
 	Users       []User
 	usersLoaded bool
+	// valuesRead is whether YouTrack sent the bundle's values, even none:
+	// an empty version bundle then refuses a value rather than passing it on.
+	valuesRead bool
 }
 
 // SetUsers records the users a user field accepts (see UsersProjection).
@@ -119,6 +122,7 @@ func (d *Definition) UnmarshalJSON(b []byte) error {
 	}
 	*d = Definition{ID: w.ID, Name: w.Field.Name, FieldType: ft, Kind: kind, Multi: multi, CanBeEmpty: w.CanBeEmpty}
 	if w.Bundle != nil {
+		d.valuesRead = w.Bundle.Values != nil
 		for _, v := range w.Bundle.Values {
 			if v.Archived {
 				d.Archived = append(d.Archived, v.Name)
@@ -348,7 +352,10 @@ func (d Definition) encodeOne(v string, opts EncodeOptions) (any, error) {
 // bundleValue finds v among the field's values: exactly, else ignoring case.
 func (d Definition) bundleValue(v string) (string, error) {
 	if len(d.Values) == 0 && len(d.Archived) == 0 {
-		return v, nil // the bundle was not readable: leave it to YouTrack
+		if !d.valuesRead {
+			return v, nil // the bundle was not readable: leave it to YouTrack
+		}
+		return "", &ValueError{Field: d.Name, Value: v, Hint: "the field has no values yet; add " + v + " to its bundle in the project settings first"}
 	}
 	if slices.Contains(d.Values, v) {
 		return v, nil

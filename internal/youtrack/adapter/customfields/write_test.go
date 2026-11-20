@@ -125,6 +125,24 @@ func TestEncode(t *testing.T) {
 		}
 	})
 
+	t.Run("given a version or build field whose bundle has no values yet, it refuses naming the field instead of sending the value", func(t *testing.T) {
+		for _, ft := range []string{"version[*]", "build[1]"} {
+			d := definition(t, `{"canBeEmpty":true,"field":{"name":"Fix versions","fieldType":{"id":"`+ft+`"}},"bundle":{"values":[]}}`)
+			_, err := d.Encode("1.0", opts)
+			var ve *ValueError
+			if !errors.As(err, &ve) || ve.Value != "1.0" || !strings.Contains(err.Error(), "has no values yet") {
+				t.Errorf("%s: err = %v", ft, err)
+			}
+		}
+	})
+
+	t.Run("given a bundle YouTrack did not send, it leaves the value to YouTrack", func(t *testing.T) {
+		d := definition(t, `{"canBeEmpty":true,"field":{"name":"Fix versions","fieldType":{"id":"version[1]"}}}`)
+		if _, err := d.Encode("1.0", opts); err != nil {
+			t.Errorf("err = %v", err)
+		}
+	})
+
 	t.Run("given a value outside the bundle, the error lists the valid values", func(t *testing.T) {
 		d := Definition{Name: "Priority", FieldType: "enum[1]", Kind: KindEnum, Values: []string{"Major", "Minor"}}
 		_, err := d.Encode("Huge", opts)
