@@ -34,6 +34,8 @@ not with a multipart request through `ytrack api`.
 - `--paginate` follows `$skip`/`$top` and prints one JSON array. It works with
   GET only: with `-f`/`-F`, pass `-X GET`.
 - `--jq '<expr>'` filters the response; it does not need `--json` here.
+  Without `--fields`, YouTrack sends only `$type` and `id`; ytrack says so on
+  stderr when that is all that came back.
 - `--include` prints the status line and headers before the body.
 
 ## Errors

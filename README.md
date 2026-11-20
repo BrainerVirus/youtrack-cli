@@ -265,7 +265,8 @@ refused. Plain-http hosts other than localhost trigger a warning. See
   command to run in bold. Color is off when the stream is not a terminal,
   under `NO_COLOR`, `TERM=dumb`, `--json` or the `--no-color` flag; no
   prompts when output is not a terminal.
-- `--json <fields>` (where offered), `--jq` and `--template` follow `gh`.
+- `--json <fields>` (where offered), `--jq` and `--template` follow `gh`;
+  `--jq` or `--template` without `--json` use every field.
 - Exit codes: 0 success, 1 failure (including usage errors), 2 cancelled,
   4 authentication required.
 - Environment: `YTRACK_HOST`, `YTRACK_TOKEN` (runtime override, never saved),

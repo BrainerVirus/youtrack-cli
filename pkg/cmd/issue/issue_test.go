@@ -358,6 +358,18 @@ func TestIssueList(t *testing.T) {
 		if env.Stdout.String() != "5\n" || query(t, yt.LastRequest(t)).Get("$top") != "5" {
 			t.Errorf("stdout = %q, query = %s", env.Stdout, yt.LastRequest(t).RawQuery)
 		}
+
+		// --jq alone implies --json with every field (#53), as `api --jq` does.
+		env.Reset()
+		mustRun(t, env, "issue", "list", "-L", "2", "--jq", ".[0] | has(\"idReadable\") and has(\"summary\")")
+		if env.Stdout.String() != "true\n" {
+			t.Errorf("--jq without --json: stdout = %q, stderr = %q", env.Stdout, env.Stderr)
+		}
+		env.Reset()
+		mustRun(t, env, "issue", "list", "-L", "1", "--template", "{{range .}}{{.idReadable}}{{end}}")
+		if strings.TrimSpace(env.Stdout.String()) == "" {
+			t.Errorf("--template without --json printed nothing; stderr = %q", env.Stderr)
+		}
 	})
 
 	t.Run("given --limit 0, it pages through every issue", func(t *testing.T) {

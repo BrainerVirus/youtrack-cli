@@ -225,7 +225,12 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			return err
 		}
 		if isJSON(resp) || format != (output.Format{}) {
-			return output.WriteJSON(ios, resp.Body, format)
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			hintFields(ios.ErrOut, rawQuery, b)
+			return output.WriteJSON(ios, bytes.NewReader(b), format)
 		}
 		return output.Copy(ios, resp.Body)
 	}
@@ -242,7 +247,54 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		return err
 	}
 	merged = append(merged, '\n')
+	hintFields(ios.ErrOut, rawQuery, merged)
 	return output.WriteJSON(ios, bytes.NewReader(merged), format)
+}
+
+// hintFields says on stderr how to get attributes when YouTrack sent only
+// $type and id because the request named no fields (#53): `api /users/me
+// --jq .login` otherwise prints an empty line and exits 0.
+func hintFields(w io.Writer, rawQuery string, body []byte) {
+	if q, err := url.ParseQuery(rawQuery); err == nil && q.Has("fields") {
+		return
+	}
+	if !onlyTypeAndID(body) {
+		return
+	}
+	_, _ = fmt.Fprintln(w, "ytrack: YouTrack returned only $type and id; name the attributes you need with --fields, e.g. --fields login,fullName")
+}
+
+// onlyTypeAndID reports whether body is an object, or a non-empty array of
+// objects, with no keys but $type and id.
+func onlyTypeAndID(body []byte) bool {
+	var v any
+	if json.Unmarshal(body, &v) != nil {
+		return false
+	}
+	bare := func(x any) bool {
+		m, ok := x.(map[string]any)
+		if !ok {
+			return false
+		}
+		for k := range m {
+			if k != "$type" && k != "id" {
+				return false
+			}
+		}
+		return true
+	}
+	if list, ok := v.([]any); ok {
+		if len(list) == 0 {
+			return false
+		}
+		for _, x := range list {
+			if !bare(x) {
+				return false
+			}
+		}
+		return true
+	}
+	return bare(v)
 }
 
 // paginate requests pages with $skip/$top and returns all items (see
