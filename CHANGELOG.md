@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `--field` on `issue create` and `issue edit` refuses a value for a version, build, enum or owned field whose bundle has no values yet, naming the field, instead of sending it and showing YouTrack's raw localized HTTP 400 (#50).
 - `ytrack api` refuses `-f`/`-F` without `-X` when every parameter only reads (`query`, `fields`, `customFields`, `$top`, `$skip`) instead of sending a POST, which on `/issues` creates an issue; add `-X GET` to read or `-X POST` to send the POST (#51).
 ## [0.6.2] - 2026-11-19
 
