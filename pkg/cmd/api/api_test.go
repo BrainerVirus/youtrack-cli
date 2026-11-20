@@ -137,6 +137,30 @@ func TestAPIRequests(t *testing.T) {
 		}
 	})
 
+	t.Run("given only read parameters (-f query, -F $top) without -X, it refuses the implicit POST and sends nothing", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		before := len(yt.Requests())
+		if code := env.Run("api", "/issues", "-f", "query=project: APP", "-F", "$top=5", "-f", "fields=idReadable"); !env.IsUsageError(code) {
+			t.Fatalf("exit %d, want a usage error; stderr: %s", code, env.Stderr)
+		}
+		if len(yt.Requests()) != before {
+			t.Error("sent a request")
+		}
+		if !strings.Contains(env.Stderr.String(), "-X GET") || !strings.Contains(env.Stderr.String(), "-X POST") {
+			t.Errorf("stderr does not name -X GET and -X POST: %s", env.Stderr)
+		}
+	})
+
+	t.Run("given only read parameters with -X POST, it sends the POST as asked", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		if code := env.Run("api", "/issues", "-X", "POST", "-f", "query=project: APP"); code != 0 {
+			t.Fatalf("exit %d: %s", code, env.Stderr)
+		}
+		if req := yt.LastRequest(t); req.Method != http.MethodPost {
+			t.Errorf("got %s", req.Method)
+		}
+	})
+
 	t.Run("given --input, it sends the file as a JSON body", func(t *testing.T) {
 		env, yt := loggedIn(t, "")
 		file := filepath.Join(t.TempDir(), "issue.json")

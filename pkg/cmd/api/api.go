@@ -62,7 +62,9 @@ true, false, null and integers become JSON values, and "@file" reads the value
 from a file ("@-" from stdin). Keys nest: -F 'project[id]=0-0'. Parameters go
 in the query string for GET and in a JSON body otherwise. Passing parameters
 switches the default method from GET to POST, so a read with parameters needs
--X GET: a POST to /issues creates an issue.
+-X GET: a POST to /issues creates an issue. Without -X, parameters that only
+read (query, fields, customFields, $top, $skip) are refused rather than sent
+as a POST: add -X GET to read or -X POST to send the POST.
 
 A request with a body (--input, or -f/-F on a method other than GET) is sent
 with "Content-Type: application/json" unless -H sets another Content-Type.
@@ -84,6 +86,10 @@ the request fails; the error itself still goes to stderr.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.path = args[0]
 			if !cmd.Flags().Changed("method") && (len(opts.rawFields) > 0 || len(opts.magicFields) > 0 || opts.input != "") {
+				if opts.input == "" && onlyReadParams(opts.rawFields, opts.magicFields) {
+					return clierr.FlagErrorf("-f/-F without -X sends a POST, which creates or changes data (a POST to /issues creates an issue); " +
+						"these parameters only read: add -X GET to read, or -X POST to send the POST")
+				}
 				opts.method = http.MethodPost
 			}
 			opts.method = strings.ToUpper(opts.method)
@@ -425,4 +431,21 @@ func printHeaders(w io.Writer, resp *http.Response) {
 		fmt.Fprintf(w, "%s: %s\n", name, strings.Join(resp.Header[name], ", "))
 	}
 	fmt.Fprintln(w)
+}
+
+// readParams are query parameters that only shape a read; a POST built from
+// them alone is almost always a read missing -X GET (#51).
+var readParams = map[string]bool{"query": true, "fields": true, "$top": true, "$skip": true, "customFields": true}
+
+// onlyReadParams reports whether every -f/-F key is a read parameter.
+func onlyReadParams(fieldSets ...[]string) bool {
+	for _, fields := range fieldSets {
+		for _, field := range fields {
+			key, _, _ := strings.Cut(field, "=")
+			if !readParams[key] {
+				return false
+			}
+		}
+	}
+	return true
 }
