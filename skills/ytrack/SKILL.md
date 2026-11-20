@@ -177,7 +177,7 @@ ytrack api /issues/APP-123/links --fields 'linkType(name),direction,issues(idRea
 attributes named in `--fields`. Any `-f`, `-F` or `--input` makes the
 request a POST with a JSON body unless you pass `-X GET`; a POST to `/issues`
 creates an issue. Every read with parameters needs `-X GET` (`--paginate`
-refuses POST). Details: [references/api.md](references/api.md).
+refuses POST; read-only parameters without `-X` are refused). Details: [references/api.md](references/api.md).
 
 ## gh habits that are wrong here
 

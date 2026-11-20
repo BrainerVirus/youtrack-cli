@@ -28,7 +28,9 @@ not with a multipart request through `ytrack api`.
 - Any `-f`, `-F` or `--input` makes the request a POST with a JSON body
   unless `-X` names a method; `Content-Type: application/json` is added for
   you. A POST to `/issues` creates an issue, so a read with parameters always
-  needs `-X GET`, which sends them in the query string.
+  needs `-X GET`, which sends them in the query string. Without `-X`, a
+  request whose only parameters read (`query`, `fields`, `customFields`,
+  `$top`, `$skip`) is refused rather than sent as a POST.
 - `--paginate` follows `$skip`/`$top` and prints one JSON array. It works with
   GET only: with `-f`/`-F`, pass `-X GET`.
 - `--jq '<expr>'` filters the response; it does not need `--json` here.

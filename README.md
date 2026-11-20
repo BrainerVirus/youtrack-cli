@@ -248,7 +248,9 @@ ytrack api /commands --input command.json
 
 `/issues` and `/api/issues` are the same path. `-f`, `-F` and `--input`
 make the request a POST unless you pass `-X GET`, and a POST to `/issues`
-creates an issue, so reads with parameters need `-X GET`. `--paginate` (GET
+creates an issue, so reads with parameters need `-X GET`. Without `-X`,
+parameters that only read (`query`, `fields`, `customFields`, `$top`,
+`$skip`) are refused instead of sent as a POST. `--paginate` (GET
 only) pages with `$skip`/`$top` and prints one JSON array. The token is sent only to the
 configured service URL: redirects to other hosts and from https to http are
 refused. Plain-http hosts other than localhost trigger a warning. See
