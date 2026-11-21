@@ -53,6 +53,8 @@ func TestUsageErrorsNameTheIntendedFlag(t *testing.T) {
 		"an unknown flag close to a real one":       {[]string{"issue", "view", "APP-1", "--comments", "--limit", "12"}, "did you mean --comments-limit?"},
 		"a typo":                                    {[]string{"issue", "list", "--limt", "5"}, "did you mean --limit?"},
 		"a number after a flag that takes no value": {[]string{"issue", "view", "APP-1", "--comments", "12"}, "--comments takes no value; for a number use --comments-limit 12"},
+		"a number given with =":                     {[]string{"issue", "view", "APP-1", "--comments=12"}, "--comments takes no value; for a number use --comments-limit 12"},
+		"a short prefix":                            {[]string{"issue", "list", "--li", "5"}, "did you mean --limit?"},
 	} {
 		t.Run("given "+name+", it names the flag", func(t *testing.T) {
 			env := cmdtest.New(t)
@@ -65,11 +67,28 @@ func TestUsageErrorsNameTheIntendedFlag(t *testing.T) {
 		})
 	}
 
-	t.Run("given an unknown flag with nothing close, it adds no guess", func(t *testing.T) {
-		env := cmdtest.New(t)
-		env.Run("issue", "view", "APP-1", "--zzzzqq")
-		if strings.Contains(env.Stderr.String(), "did you mean") {
-			t.Errorf("stderr %q guesses", env.Stderr)
-		}
-	})
+	for _, args := range [][]string{
+		{"issue", "view", "APP-1", "--zzzzqq"},
+		{"issue", "list", "--x", "5"},
+	} {
+		t.Run("given "+strings.Join(args, " ")+", it adds no guess", func(t *testing.T) {
+			env := cmdtest.New(t)
+			env.Run(args...)
+			if strings.Contains(env.Stderr.String(), "did you mean") {
+				t.Errorf("stderr %q guesses", env.Stderr)
+			}
+		})
+	}
+	for _, args := range [][]string{
+		{"issue", "view", "APP-1", "extra", "--", "--comments", "12"},
+		{"issue", "view", "APP-1", "extra", "--jq", "--comments", "12"},
+	} {
+		t.Run("given "+strings.Join(args, " ")+", it gives no number hint", func(t *testing.T) {
+			env := cmdtest.New(t)
+			env.Run(args...)
+			if strings.Contains(env.Stderr.String(), "takes no value") {
+				t.Errorf("stderr %q hints for an argument or a flag value", env.Stderr)
+			}
+		})
+	}
 }

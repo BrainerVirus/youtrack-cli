@@ -150,10 +150,26 @@ func flagHint(cmd *cobra.Command, err error, args []string) string {
 		}
 		return ""
 	}
-	// A number after a flag that takes no value became a stray argument.
-	for i := 0; i+1 < len(args); i++ {
+	// A number given to a flag that takes no value: `--comments 12` (12
+	// became a stray argument) or `--comments=12` (not a bool).
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--" {
+			break // the rest are arguments
+		}
+		if prev := cmd.Flags().Lookup(strings.TrimPrefix(args[max(i-1, 0)], "--")); i > 0 && prev != nil && prev.Value.Type() != "bool" && !strings.Contains(args[i-1], "=") {
+			continue // this word is the previous flag's value
+		}
 		name, ok := strings.CutPrefix(args[i], "--")
-		if !ok || !isNumber(args[i+1]) {
+		if !ok {
+			continue
+		}
+		var num string
+		if n, v, eq := strings.Cut(name, "="); eq {
+			name, num = n, v
+		} else if i+1 < len(args) {
+			num = args[i+1]
+		}
+		if !isNumber(num) {
 			continue
 		}
 		fl := cmd.Flags().Lookup(name)
@@ -163,7 +179,7 @@ func flagHint(cmd *cobra.Command, err error, args []string) string {
 		hint := "--" + name + " takes no value"
 		cmd.Flags().VisitAll(func(o *pflag.Flag) {
 			if strings.HasPrefix(o.Name, name+"-") && o.Value.Type() == "int" {
-				hint += "; for a number use --" + o.Name + " " + args[i+1]
+				hint += "; for a number use --" + o.Name + " " + num
 			}
 		})
 		return hint
@@ -171,8 +187,10 @@ func flagHint(cmd *cobra.Command, err error, args []string) string {
 	return ""
 }
 
-// nearFlags returns up to three of cmd's flags whose name contains name, is
-// contained in it, or is at most two edits from it.
+// nearFlags returns up to three of cmd's flags that start with name (two
+// letters or more), contain it or are contained in it (three or more), or
+// are a few edits from it (one edit per three letters, at most two), so a
+// one-letter guess matches nothing.
 func nearFlags(cmd *cobra.Command, name string) []string {
 	var near []string
 	cmd.Flags().VisitAll(func(fl *pflag.Flag) {
@@ -180,7 +198,11 @@ func nearFlags(cmd *cobra.Command, name string) []string {
 			return
 		}
 		n := fl.Name
-		if (len(name) >= 3 && strings.Contains(n, name)) || (len(n) >= 3 && strings.Contains(name, n)) || editDistance(n, name) <= 2 {
+		edits := min(len(name), len(n)) / 3
+		if (len(name) >= 2 && strings.HasPrefix(n, name)) ||
+			(len(name) >= 3 && strings.Contains(n, name)) ||
+			(len(n) >= 3 && strings.Contains(name, n)) ||
+			(edits > 0 && editDistance(n, name) <= min(edits, 2)) {
 			near = append(near, n)
 		}
 	})
