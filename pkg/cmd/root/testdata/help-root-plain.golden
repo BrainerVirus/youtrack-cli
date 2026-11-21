@@ -5,10 +5,14 @@ Environment:
   YTRACK_TOKEN        token to use instead of stored credentials (applies to the active host)
   YTRACK_DEBUG        set to 1 to log HTTP requests to stderr (credentials redacted)
   YTRACK_CONFIG_DIR   configuration directory (default ~/.config/ytrack)
-  YTRACK_BROWSER      command used to open URLs
+  YTRACK_CACHE_DIR    cache directory (default ~/.cache/ytrack)
+  YTRACK_BROWSER      command used to open URLs (then the browser config key, BROWSER)
   YTRACK_EDITOR       editor for writing text (then GIT_EDITOR, VISUAL, EDITOR)
-  YTRACK_NO_UPDATE_NOTIFIER  set to 1 to turn off the daily new-release notice
-  NO_COLOR            disable color output (as do --no-color and TERM=dumb)
+  YTRACK_NO_UPDATE_NOTIFIER  set to 1 to turn off the daily release check, its
+                      notice and the background upgrade
+  YTRACK_NO_AUTO_UPGRADE     set to 1 to turn off only the background upgrade
+  NO_COLOR            disable color output (as do --no-color, CLICOLOR=0 and TERM=dumb)
+  CLICOLOR_FORCE      set to 1 to color output that is not a terminal (not under NO_COLOR)
 
 Exit codes:
   0 success, 1 failure (including usage errors), 2 cancelled, 4 authentication required
