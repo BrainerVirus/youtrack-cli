@@ -13,6 +13,7 @@ tests, which grade canned calls and never start a model).
 go run ./bench --model claude-haiku-4-5 --repeat 3
 go run ./bench --model claude-haiku-5-5 --repeat 3 --case comment,link-es
 go run ./bench compare bench/results/baseline/claude-haiku-4-5 bench/results/claude-haiku-4-5
+go run ./bench --model claude-haiku-4-5 --no-skill      # control: the same worlds without the skill
 ```
 
 - `--model` takes any Claude Code model id or alias; results go to
@@ -28,6 +29,12 @@ go run ./bench compare bench/results/baseline/claude-haiku-4-5 bench/results/cla
   case; `--force` re-runs anyway.
 - Exit 1 when a case fails, a run hits a harness error or runs were left over
   the budget.
+- `--no-skill` runs the same worlds without `.claude/skills/ytrack/`, into
+  `bench/results/no-skill/<model>/`: the control that shows what the skill
+  adds (`compare` it against a with-skill dir).
+- With the skill, a run whose model never loaded it (no Skill call and no read
+  of `SKILL.md`) is an `error` counted under `notLoaded`, not graded: it says
+  nothing about the skill's text.
 - `regrade <dir>` grades the stored runs of a results dir again with the
   current cases, without a model (after fixing a rule).
 - `compare <before> <after>` prints each case's passes and mean input tokens
@@ -125,7 +132,9 @@ rule holds when no call failed. A `forbid` rule breaks on
 | `link-es` | localized trap: `issue link --type 'subtask of'`, not `issue command` |
 | `attach` | `issue attach` with a local file |
 | `api-read` | `ytrack api` read with `-X GET`, a query and `--fields` |
-| `help-first` | 12 comments: `--help` before any guessed flag (`--comments-limit`), or `--json comments` |
+| `help-first` | 12 comments in the text view: `--comments-limit 12`, with `--help` before any guessed flag |
+| `meeting-time` | `work-item add --meeting` with a `1h 30m` duration, today |
+| `create-stdin` | `issue create --description-file -` with the description piped in |
 
 A new case gets a row in `TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap`
 (`bench/bench_test.go`): the calls the skill teaches must pass and the trap

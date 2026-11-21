@@ -7,8 +7,8 @@ metadata:
 
 # ytrack
 
-**Never guess a flag: if the flag you need is not shown here, run
-`ytrack <command> --help` first.**
+**Never guess a flag: if this page does not show the flag or value you need
+(a count, a limit, a filter), run `ytrack <command> --help` first.**
 
 `ytrack` is a YouTrack CLI on your PATH: run the commands below yourself with
 your shell tool (this skill only explains them). It is modelled on `gh`, but
@@ -37,7 +37,7 @@ they do not cover.
 
 ```sh
 ytrack issue view APP-123 --json summary,state,assignee,customFields,comments
-ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments   # the latest 10 comments
+ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments   # latest 10; for more, see --help
 ytrack issue list -q 'project: APP Assignee: me #Unresolved'
 ytrack issue list --project APP --assignee me --state 'In Progress' --sort 'updated desc'
 ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state
@@ -61,7 +61,8 @@ ytrack issue edit APP-123 --field 'Priority=Critical' --field 'State=In Progress
 ytrack issue edit APP-123 --field 'Estimation=2d'     # period field: a duration such as 1w 2d 4h
 ytrack issue edit APP-123 --assignee ''               # unassign
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
-ytrack issue comment APP-123 --body-file reply.md     # long text; --body-file - reads stdin
+ytrack issue comment APP-123 --body-file reply.md     # long text
+cmd | ytrack issue create -p APP -s 'Title' --description-file -   # - reads stdin (also --body-file -)
 ytrack issue attach APP-123 dump.sql repro.sh
 ytrack issue attachments APP-123                    # files on the issue and its comments
 ```
@@ -113,6 +114,7 @@ ytrack issue unlink APP-1 APP-2 --type 'depends on'
 ```sh
 ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
 ytrack work-item add APP-123 --duration 45m --date 2026-10-06 --type Development
+ytrack work-item add APP-123 --duration '1h 30m' --meeting      # meeting time
 ytrack work-item list APP-123 --author me --since 2026-10-01 --json id,date,duration,text
 ytrack work-item edit APP-123 115-3 --duration 2h
 ytrack work-item delete APP-123 115-3 --yes

@@ -299,6 +299,12 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 		if p.flag("project") == "" || p.flag("summary") == "" {
 			return fail("--project and --summary are required when not running interactively")
 		}
+		if p.flag("description-file") == "-" && strings.TrimSpace(stdin) == "" {
+			return fail("the description is empty: nothing came on standard input")
+		}
+		if f := missingFile(cwd, p.flag("description-file")); f != "" {
+			return fail("open %s: no such file or directory", f)
+		}
 		return "https://" + fakeHost + "/issue/APP-130\n", "✓ Created APP-130\n", 0
 	case "issue command":
 		return command(p)

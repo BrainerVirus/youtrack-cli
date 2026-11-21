@@ -42,6 +42,7 @@ type CaseRow struct {
 	Graded         int      `json:"graded"`
 	Blocked        int      `json:"blocked,omitempty"`
 	Errors         int      `json:"errors,omitempty"`
+	NotLoaded      int      `json:"notLoaded,omitempty"`
 	SkillLoaded    int      `json:"skillLoaded"`
 	Failed         []string `json:"failed,omitempty"`
 	MeanTurns      float64  `json:"meanTurns"`
@@ -105,6 +106,9 @@ func summarize(model string, skillHash string, skillBytes int, results []CaseRes
 				continue
 			case "error":
 				row.Errors++
+				if r.Reason == notLoaded {
+					row.NotLoaded++
+				}
 				continue
 			case "fail":
 				row.Failed = append(row.Failed, r.Failed)
@@ -330,6 +334,11 @@ func regrade(casesDir, dir string) error {
 		}
 		for i, r := range cr.Runs {
 			if !graded(r) {
+				continue
+			}
+			if r.SkillListed && !r.SkillLoaded {
+				r.Status, r.Reason, r.Failures, r.Failed = "error", notLoaded, nil, ""
+				cr.Runs[i] = r
 				continue
 			}
 			failures := Grade(c, r.Calls, r.Commands, r.Answer)

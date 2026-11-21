@@ -58,6 +58,16 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 			[]Call{{Argv: []string{"issue", "link", "APP-3", "APP-7", "--type", "subtask of"}}},
 			"",
 		},
+		"meeting-time": {
+			[]Call{{Argv: []string{"work-item", "add", "APP-123", "--duration", "1h 30m", "--meeting"}}},
+			[]Call{{Argv: []string{"work-item", "add", "APP-123", "--duration", "1h30m", "--type", "Meeting"}}},
+			"",
+		},
+		"create-stdin": {
+			[]Call{{Argv: []string{"issue", "create", "-p", "APP", "-s", "Files in the export folder", "--description-file", "-"}}},
+			[]Call{{Argv: []string{"issue", "create", "-p", "APP", "-s", "Files", "--description", "a.csv b.csv"}}},
+			"",
+		},
 		"attach":   {calls("issue attach APP-123 crash.log"), calls("issue comment APP-123 --body log --attach crash.log"), ""},
 		"api-read": {[]Call{{Argv: []string{"api", "/issues", "-X", "GET", "-f", "query=project: APP timeout", "--fields", "idReadable,summary"}}}, calls("issue list -q timeout"), "APP-401 APP-405"},
 		"help-first": {
@@ -79,18 +89,23 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 			}
 		})
 	}
-	if len(cases) != 10 {
-		t.Errorf("%d cases, the table covers 10", len(cases))
+	if len(cases) != 12 {
+		t.Errorf("%d cases, the table covers 12", len(cases))
 	}
 }
 
-func TestGivenHelpFirstARunThatNeverGuessedNeedsNoHelp(t *testing.T) {
+func TestGivenHelpFirstOnlyTheFlagInTheTextViewPasses(t *testing.T) {
 	c := loadAll(t)["help-first"]
-	if f := Grade(c, calls("issue view APP-123 --json summary,comments"), nil, ""); len(f) != 0 {
-		t.Errorf("no guess, all comments: %v", f)
+	if f := Grade(c, calls("issue view APP-123 --comments --comments-limit 12"), nil, ""); len(f) != 0 {
+		t.Errorf("knew the flag, no guess: %v", f)
 	}
-	if f := Grade(c, calls("issue view APP-123 --comments"), nil, ""); len(f) != 1 || f[0] != "require: issue view with 12 comments" {
-		t.Errorf("no guess, only the default 10: %v", f)
+	for _, bad := range [][]Call{
+		calls("issue view APP-123 --json summary,comments"),
+		calls("issue view APP-123 --comments"),
+	} {
+		if f := Grade(c, bad, nil, ""); len(f) != 1 || f[0] != "require: issue view text with 12 comments" {
+			t.Errorf("%v: %v", bad, f)
+		}
 	}
 }
 
@@ -221,6 +236,15 @@ func TestGivenAStreamJSONTranscriptItReadsCommandsUsageAndTheAnswer(t *testing.T
 	if !tr.done || !tr.skillLoaded || !tr.skillListed || tr.workitPlugin || tr.turns != 3 || tr.answer != "Done" || tr.usage.TotalInput() != 1105 ||
 		len(tr.commands) != 1 || len(tr.denials) != 1 || tr.denials[0] != "curl x" {
 		t.Errorf("transcript = %+v", tr)
+	}
+}
+
+func TestGivenARunThatNeverLoadedTheSkillItIsNotGraded(t *testing.T) {
+	c := loadAll(t)["comment"]
+	cr := newCaseResult(c, "m", "k", []RunResult{{Run: 1, Status: "pass"}, {Run: 2, Status: "error", Reason: notLoaded}})
+	s := summarize("m", "h", 1, []CaseResult{cr})
+	if cr.Graded != 1 || s.Cases[0].NotLoaded != 1 || s.Cases[0].Errors != 1 {
+		t.Errorf("graded %d, row %+v", cr.Graded, s.Cases[0])
 	}
 }
 

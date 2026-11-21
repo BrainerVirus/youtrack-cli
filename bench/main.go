@@ -90,6 +90,7 @@ func runMain(args []string) int {
 	only := fl.String("case", "", "comma-separated case ids to run (default all)")
 	out := fl.String("out", "", "results directory (default bench/results/<model>)")
 	skillDir := fl.String("skill", "skills/ytrack", "skill directory installed in each world")
+	noSkill := fl.Bool("no-skill", false, "control: the same worlds without the skill (default --out bench/results/no-skill/<model>)")
 	jobs := fl.Int("jobs", 3, "runs in parallel")
 	budget := fl.Int("budget-runs", 40, "most claude runs this invocation starts")
 	force := fl.Bool("force", false, "re-run cases whose stored results match")
@@ -103,7 +104,11 @@ func runMain(args []string) int {
 		fmt.Fprintln(os.Stderr, "bench: --model is required")
 		return 1
 	}
-	if *out == "" {
+	switch {
+	case *out != "":
+	case *noSkill:
+		*out = filepath.Join("bench", "results", "no-skill", *model)
+	default:
 		*out = filepath.Join("bench", "results", *model)
 	}
 	var ids []string
@@ -115,6 +120,11 @@ func runMain(args []string) int {
 		err = os.MkdirAll(*out, 0o750)
 	}
 	skillHash, skillBytes, herr := hashTree(*skillDir)
+	logDir := filepath.Join("bench", ".transcripts", *model)
+	if *noSkill {
+		*skillDir, skillHash, skillBytes = "", "none", 0
+		logDir += "-no-skill"
+	}
 	fake, xerr := os.Executable()
 	for _, e := range []error{err, herr, xerr} {
 		if e != nil {
@@ -124,7 +134,7 @@ func runMain(args []string) int {
 	}
 	r := &runner{
 		claude: *claude, model: *model, skill: *skillDir, fake: fake, timeout: *timeout, keep: *keep,
-		logDir: filepath.Join("bench", ".transcripts", *model),
+		logDir: logDir,
 	}
 
 	// Reuse stored graded runs whose key matches; queue the missing ones.
@@ -168,7 +178,7 @@ func runMain(args []string) int {
 				res := r.runCase(ctx, t.c, t.run)
 				mu.Lock()
 				runs[t.c.ID] = append(runs[t.c.ID], res)
-				if res.Status == "error" {
+				if res.Status == "error" && res.Reason != notLoaded {
 					harnessErrors++
 				}
 				mu.Unlock()

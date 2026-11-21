@@ -67,7 +67,7 @@ type RunResult struct {
 type runner struct {
 	claude  string
 	model   string
-	skill   string
+	skill   string // "" for the no-skill control
 	fake    string // this executable, copied in as <harness>/bin/ytrack
 	timeout time.Duration
 	keep    bool
@@ -139,8 +139,14 @@ func (r *runner) runCase(ctx context.Context, c *Case, n int) (res RunResult) {
 	defer func() { scrubRun(sc, &res) }()
 
 	switch {
-	case !t.skillListed:
+	case r.skill != "" && !t.skillListed:
 		res.Status, res.Reason = "error", "the ytrack skill is not in the init event's skills"
+	case r.skill == "" && t.skillListed:
+		res.Status, res.Reason = "error", "the no-skill control lists a ytrack skill"
+	case r.skill != "" && !t.skillLoaded:
+		// The case measures the skill; a run that never read it measures
+		// nothing (it is counted under notLoaded, not graded).
+		res.Status, res.Reason = "error", notLoaded
 	case t.isError && t.subtype != "error_max_turns":
 		res.Status, res.Reason = "error", "claude: "+t.subtype
 	case hostBlocked(t.denials):
@@ -176,6 +182,9 @@ func scrubRun(sc *scrubber, res *RunResult) {
 	res.Answer, res.Reason = sc.scrub(res.Answer), sc.scrub(res.Reason)
 }
 
+// notLoaded is the reason of a with-skill run whose model never loaded the skill.
+const notLoaded = "the model did not load the ytrack skill"
+
 func errResult(res RunResult, err error) RunResult {
 	res.Status, res.Reason = "error", err.Error()
 	return res
@@ -192,8 +201,10 @@ func (r *runner) makeWorld(c *Case, project, harness string) error {
 			return err
 		}
 	}
-	if err := copyTree(r.skill, filepath.Join(project, ".claude", "skills", "ytrack")); err != nil {
-		return err
+	if r.skill != "" {
+		if err := copyTree(r.skill, filepath.Join(project, ".claude", "skills", "ytrack")); err != nil {
+			return err
+		}
 	}
 	for name, body := range c.Files {
 		p := filepath.Join(project, filepath.FromSlash(name))
