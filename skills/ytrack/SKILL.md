@@ -35,7 +35,7 @@ curl: use the commands below, and `ytrack api` for anything they do not cover.
 
 ```sh
 ytrack issue view APP-123 --json summary,state,assignee,customFields,comments
-ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments
+ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments   # latest 10; --help for more
 ytrack issue list -q 'project: APP Assignee: me #Unresolved'
 ytrack issue list --project APP --assignee me --state 'In Progress' --sort 'updated desc'
 ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state

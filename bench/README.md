@@ -77,7 +77,8 @@ harness, so even a real `ytrack` reached by mistake has no host and no token.
 `harness/bin/ytrack` is the bench binary itself (it acts as ytrack when run
 under that name). It parses argv with ytrack's real command tree, so an
 unknown command, flag or `--json` field fails with ytrack's own message and
-exit 1, and `--help` prints ytrack's real help. It never runs a command: a
+exit 1, and `--help` prints ytrack's real help. `--jq` filters the reply
+with the jq ytrack itself uses (`--jq` alone gives every field). It never runs a command: a
 parsed call is answered from the case's `fixtures.rules` (regex on the argv
 line, first match wins), then from built-in replies (issues and lists from
 `fixtures.issues` and `fixtures.list`, a success line for writes, the
@@ -137,7 +138,9 @@ failed rule and all of them, turns, tokens (`input`, `output`,
 skill was listed at start and loaded by the model, the Bash commands, the
 fake's calls, denials and the final answer. `summary.json` has per-case
 passes, mean turns, mean and standard deviation of total input, mean output
-and duration, and the totals.
+and duration, and the totals. A case whose stored runs were made with an
+earlier skill or case file (a partial re-run with `--case`) is still summed
+but marked `stale`, and `compare` marks it "(earlier skill)".
 
 Before writing, the bench replaces the world's path with `<world>`, the home
 directory with `~` and the login name with `<user>`, masks anything shaped

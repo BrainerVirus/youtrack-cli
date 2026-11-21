@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cli/go-gh/v2/pkg/jq"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -103,6 +104,9 @@ func (p parsed) flag(name string) string { return strings.Join(p.flags[name], ",
 
 func (p parsed) has(name string) bool { _, ok := p.flags[name]; return ok }
 
+// wantsJSON: --json, or --jq, which implies --json with every field.
+func (p parsed) wantsJSON() bool { return p.has("json") || p.has("jq") }
+
 // fakeYtrack answers one call: stdout, stderr and the exit code.
 func fakeYtrack(c *Case, args []string, cwd, stdin string) (string, string, int) {
 	ios, _, out, errOut := iostreams.Test()
@@ -127,17 +131,34 @@ func fakeYtrack(c *Case, args []string, cwd, stdin string) (string, string, int)
 	if hit == nil { // help, --version or a command group
 		return out.String(), errOut.String(), 0
 	}
+	o, e, code := answer(c, *hit, args, cwd, stdin)
+	return withJQ(*hit, o, e, code)
+}
+
+func answer(c *Case, p parsed, args []string, cwd, stdin string) (string, string, int) {
 	line := Call{Argv: args}.Line()
 	for _, r := range c.Fixtures.Rules {
 		if regexp.MustCompile(r.Match).MatchString(line) {
 			return r.Stdout, r.Stderr, r.Exit
 		}
 	}
-	rOut, rErr, code := reply(c, *hit, cwd, stdin)
+	rOut, rErr, code := reply(c, p, cwd, stdin)
 	if code == 0 {
-		remember(c, *hit, stdin)
+		remember(c, p, stdin)
 	}
 	return rOut, rErr, code
+}
+
+// withJQ filters a JSON reply with --jq, with the jq ytrack itself uses.
+func withJQ(p parsed, out, errOut string, code int) (string, string, int) {
+	if code != 0 || !p.has("jq") {
+		return out, errOut, code
+	}
+	var b bytes.Buffer
+	if err := jq.EvaluateFormatted(strings.NewReader(out), &b, p.flag("jq"), "", false); err != nil {
+		return "", errOut + "ytrack: " + err.Error() + "\n", 1
+	}
+	return b.String(), errOut, 0
 }
 
 // remember applies a successful write to the fixtures: fields, assignee and
@@ -295,7 +316,7 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 		return addWorkItem(p)
 	case "work-item list":
 		items, _ := c.Fixtures.Issues[issueID(p.args[0])]["workItems"].([]any)
-		if p.has("json") {
+		if p.wantsJSON() {
 			if items == nil {
 				items = []any{}
 			}
@@ -319,6 +340,9 @@ func issueID(arg string) string {
 }
 
 func pick(obj map[string]any, fields string) map[string]any {
+	if fields == "" {
+		return obj
+	}
 	out := map[string]any{}
 	for _, f := range strings.Split(fields, ",") {
 		if f = strings.TrimSpace(f); f != "" {
@@ -360,7 +384,7 @@ func viewIssue(c *Case, p parsed) (string, string, int) {
 	if !ok {
 		return fail("issue %s not found on %s", id, fakeHost)
 	}
-	if p.has("json") {
+	if p.wantsJSON() {
 		return toJSON(pick(issue, p.flag("json"))), "", 0
 	}
 	var b strings.Builder
@@ -387,7 +411,7 @@ func listIssues(c *Case, p parsed) (string, string, int) {
 	if len(c.Fixtures.List) == 0 {
 		return "", "no issues match\n", 0
 	}
-	if p.has("json") {
+	if p.wantsJSON() {
 		rows := make([]map[string]any, len(c.Fixtures.List))
 		for i, is := range c.Fixtures.List {
 			rows[i] = pick(is, p.flag("json"))
@@ -488,7 +512,7 @@ func link(c *Case, p parsed) (string, string, int) {
 		if len(links) == 0 {
 			return "", issueID(p.args[0]) + " has no links\n", 0
 		}
-		if p.has("json") {
+		if p.wantsJSON() {
 			return toJSON(links), "", 0
 		}
 		var b strings.Builder

@@ -114,6 +114,10 @@ func TestGivenTheFakeYtrack(t *testing.T) {
 		{"it attaches existing files", []string{"issue", "attach", "APP-1", "a.txt"}, 0, "a.txt\t8-120"},
 		{"it refuses an unknown --json field like ytrack", []string{"issue", "view", "APP-123", "--json", "bogus"}, 1, "unknown JSON field"},
 		{"it keeps every --json field", []string{"issue", "view", "APP-123", "--json", "state,assignee"}, 0, `"fullName": "Jane Doe"`},
+		{"it applies --jq like ytrack", []string{"issue", "view", "APP-123", "--json", "comments", "--jq", ".comments | length"}, 0, "14"},
+		{"it takes --jq alone as every field", []string{"issue", "view", "APP-123", "--jq", ".assignee.login"}, 0, "jdoe"},
+		{"it fails a bad --jq", []string{"issue", "view", "APP-123", "--jq", ".["}, 1, "ytrack: "},
+		{"it applies --jq to an api fixture", []string{"api", "/issues", "-X", "GET", "-f", "query=x", "--jq", ".[].idReadable"}, 0, "APP-405"},
 		{"it filters --json fields", []string{"issue", "view", "https://acme.youtrack.cloud/issue/APP-123", "--json", "state"}, 0, `"state": "In Progress"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

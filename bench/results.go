@@ -33,7 +33,10 @@ type CaseResult struct {
 
 // CaseRow is one case in summary.json.
 type CaseRow struct {
-	Case           string   `json:"case"`
+	Case string `json:"case"`
+	// Stale: the case's runs were made with an earlier version of the skill
+	// or case (a partial re-run); its numbers are not this skill's.
+	Stale          bool     `json:"stale,omitempty"`
 	Pass           bool     `json:"pass"`
 	Passes         int      `json:"passes"`
 	Graded         int      `json:"graded"`
@@ -235,6 +238,9 @@ func compare(w io.Writer, before, after Summary) bool {
 			continue
 		}
 		mark := ""
+		if a.Stale {
+			mark = "  (earlier skill)"
+		}
 		if rate(a.Passes, a.Graded) < rate(b.Passes, b.Graded) {
 			mark, dropped = "  DROP", true
 		}
@@ -282,21 +288,27 @@ func resultKey(c *Case, skillHash, model string) string {
 	return strings.Join([]string{benchVersion, c.hash, skillHash, model}, "-")
 }
 
-// writeSummary sums up every case of casesDir whose stored result was made
-// with this skill and model, and writes summary.json.
+// writeSummary sums up every case of casesDir with a stored result for this
+// model, marks a result made with another skill or case version stale, and
+// writes summary.json.
 func writeSummary(casesDir, out, model, skillHash string, skillBytes int) (Summary, error) {
 	cases, err := loadCases(casesDir, nil)
 	if err != nil {
 		return Summary{}, err
 	}
 	var results []CaseResult
+	stale := map[string]bool{}
 	for _, c := range cases {
 		cr, err := readCaseResult(filepath.Join(out, c.ID+".json"))
-		if err == nil && cr.Key == resultKey(c, skillHash, model) {
+		if err == nil && cr.Model == model {
 			results = append(results, cr)
+			stale[c.ID] = cr.Key != resultKey(c, skillHash, model)
 		}
 	}
 	s := summarize(model, skillHash, skillBytes, results)
+	for i := range s.Cases {
+		s.Cases[i].Stale = stale[s.Cases[i].Case]
+	}
 	return s, writeJSON(filepath.Join(out, "summary.json"), s)
 }
 
