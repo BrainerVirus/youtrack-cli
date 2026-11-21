@@ -202,7 +202,8 @@ func copyID(dir string) (id string, link bool) {
 // Copy states.
 const (
 	StateCurrent = "current" // holds the skill at the running version
-	StateStale   = "stale"   // holds the skill at another version
+	StateStale   = "stale"   // holds the skill at an older (or unparsable) version
+	StateNewer   = "newer"   // holds the skill from a newer ytrack, left alone by this one
 	StateMissing = "missing" // holds no ytrack skill (deleted or replaced)
 )
 
@@ -211,7 +212,7 @@ type Copy struct {
 	Dir     string // the skills directory
 	Path    string // Dir/ytrack
 	Version string // metadata.version of its SKILL.md; empty when missing
-	State   string // StateCurrent, StateStale or StateMissing
+	State   string // StateCurrent, StateStale, StateNewer or StateMissing
 	// Managed reports whether ytrack keeps the copy at its version (see
 	// Managed); a copy in a repository is updated by hand.
 	Managed bool
@@ -234,9 +235,13 @@ func Inspect(dir, version string) Copy {
 		return c
 	}
 	c.Version = m.Metadata["version"]
-	c.State = StateStale
-	if c.Version == version {
+	switch {
+	case c.Version == version:
 		c.State = StateCurrent
+	case update.Newer(c.Version, version):
+		c.State = StateNewer
+	default:
+		c.State = StateStale
 	}
 	return c
 }

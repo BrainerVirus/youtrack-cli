@@ -99,6 +99,25 @@ func TestSkillList(t *testing.T) {
 			t.Errorf("stdout %q", c.e.Stdout)
 		}
 	})
+
+	t.Run("given a copy from a newer ytrack, it reports newer, not stale, and does not suggest a sync that would downgrade it", func(t *testing.T) {
+		c := setupCopies(t)
+		if _, err := skill.Install(c.agents, "9.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		if code := c.e.Run("skill", "list"); code != 0 {
+			t.Fatalf("exit %d: %s", code, c.e.Stderr)
+		}
+		if !strings.Contains(c.e.Stdout.String(), c.agents+"\t9.0.0\tnewer\tauto") {
+			t.Errorf("stdout %q", c.e.Stdout)
+		}
+		if strings.Contains(c.e.Stderr.String(), "update the stale copies") {
+			t.Errorf("suggests a downgrading sync: %q", c.e.Stderr)
+		}
+		if !strings.Contains(c.e.Stderr.String(), "newer ytrack") {
+			t.Errorf("stderr %q does not explain the newer copy", c.e.Stderr)
+		}
+	})
 }
 
 func TestSkillSync(t *testing.T) {
