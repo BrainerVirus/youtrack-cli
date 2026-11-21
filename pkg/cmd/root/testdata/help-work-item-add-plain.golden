@@ -35,17 +35,17 @@ Examples:
   $ ytrack work-item add APP-123 --duration 1.5h --json id,date,duration
 
 Flags:
-      --date string         Day of the work: auto (today) or YYYY-MM-DD (default "auto")
-  -d, --duration string     Time spent, e.g. 1h30m, 90m or 1.5h
-  -h, --help                help for add
-  -q, --jq expression       Filter JSON output using a jq expression
-      --json fields         Output JSON with the specified fields
-      --meeting             Log meeting time (text defaults to "Meetings")
-  -t, --template template   Format JSON output using a Go template
-      --text string         Description of the work
-      --type name           Work item type name or id, e.g. Development or 117-0
+      --date string            Day of the work: auto (today) or YYYY-MM-DD (default "auto")
+  -d, --duration string        Time spent, e.g. 1h30m, 90m or 1.5h
+  -h, --help[=true|false]      help for add
+  -q, --jq expression          Filter JSON output using a jq expression
+      --json fields            Output JSON with the specified fields
+      --meeting[=true|false]   Log meeting time (text defaults to "Meetings")
+  -t, --template template      Format JSON output using a Go template
+      --text string            Description of the work
+      --type name              Work item type name or id, e.g. Development or 117-0
 
 Global Flags:
-      --debug       Log HTTP requests to stderr with credentials redacted
-      --host host   YouTrack host or service URL to use
-      --no-color    Disable color output
+      --debug[=true|false]      Log HTTP requests to stderr with credentials redacted
+      --host host               YouTrack host or service URL to use
+      --no-color[=true|false]   Disable color output

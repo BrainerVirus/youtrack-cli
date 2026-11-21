@@ -36,10 +36,10 @@ Available Commands:
   work-item   Track time spent on issues
 
 Flags:
-      --debug       Log HTTP requests to stderr with credentials redacted
-  -h, --help        help for ytrack
-      --host host   YouTrack host or service URL to use
-      --no-color    Disable color output
-  -v, --version     version for ytrack
+      --debug[=true|false]      Log HTTP requests to stderr with credentials redacted
+  -h, --help[=true|false]       help for ytrack
+      --host host               YouTrack host or service URL to use
+      --no-color[=true|false]   Disable color output
+  -v, --version[=true|false]    version for ytrack
 
 Use "ytrack [command] --help" for more information about a command.
