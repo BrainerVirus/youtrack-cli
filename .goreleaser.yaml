@@ -130,7 +130,7 @@ release:
     name: youtrack-cli
   prerelease: auto
   footer: |
-    Install or upgrade: `ytrack upgrade`, or see the README for `install.sh` and `install.ps1`.
+    Install or upgrade: `ytrack upgrade`, or see [docs/install.md](https://github.com/BrainerVirus/youtrack-cli/blob/main/docs/install.md) for `install.sh`, `install.ps1` and other installs.
 
     Verify a download: `sha256sum --check --ignore-missing ytrack_{{ .Version }}_checksums.txt`.
     The checksums file is signed with cosign keyless by this repository's release workflow:
