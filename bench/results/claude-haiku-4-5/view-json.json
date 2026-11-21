@@ -1,0 +1,106 @@
+{
+  "case": "view-json",
+  "model": "claude-haiku-4-5",
+  "key": "1-fdb7b965f8966f6e-48ccf401f04fcecd-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 783,
+        "cacheCreation": 10327,
+        "cacheRead": 54935
+      },
+      "costUSD": 0.0300905,
+      "durationMs": 10912,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "**APP-123 is currently:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 434,
+        "cacheCreation": 9987,
+        "cacheRead": 54791
+      },
+      "costUSD": 0.027651100000000005,
+      "durationMs": 7125,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "**APP-123** is currently:\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 593,
+        "cacheCreation": 10159,
+        "cacheRead": 54892
+      },
+      "costUSD": 0.0288002,
+      "durationMs": 8968,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "**APP-123** is currently:\n- **State**: In Progress\n- **Assigned to**: Jane Doe (login: jdoe)"
+    }
+  ]
+}

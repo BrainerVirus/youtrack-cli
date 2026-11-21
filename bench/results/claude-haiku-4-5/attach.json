@@ -1,0 +1,106 @@
+{
+  "case": "attach",
+  "model": "claude-haiku-4-5",
+  "key": "1-133f5d0cea49e03d-48ccf401f04fcecd-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 646,
+        "cacheCreation": 10292,
+        "cacheRead": 75195
+      },
+      "costUSD": 0.0313695,
+      "durationMs": 10577,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/ | grep -i crash",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! The crash.log file has been successfully attached to YouTrack issue APP-123 (attachment ID: 8-120)."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 625,
+        "cacheCreation": 10270,
+        "cacheRead": 75195
+      },
+      "costUSD": 0.031220499999999998,
+      "durationMs": 10762,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/ | grep -i crash",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've successfully attached the crash.log file to YouTrack issue APP-123. The attachment has been created with ID 8-120."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 687,
+        "cacheCreation": 10332,
+        "cacheRead": 75295
+      },
+      "costUSD": 0.0316645,
+      "durationMs": 11397,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/ | grep crash",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! The crash.log file has been successfully attached to YouTrack issue APP-123 (attachment ID: 8-120)."
+    }
+  ]
+}

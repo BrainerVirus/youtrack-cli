@@ -1,0 +1,39 @@
+{
+  "case": "api-read",
+  "model": "claude-haiku-5-5",
+  "key": "1-5625d45472a83f63-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: api GET /issues with a query and --fields",
+      "failures": [
+        "require: api GET /issues with a query and --fields",
+        "answer"
+      ],
+      "turns": 6,
+      "tokens": {
+        "input": 8,
+        "output": 1445,
+        "cacheCreation": 11631,
+        "cacheRead": 62382
+      },
+      "costUSD": 0.00367332,
+      "durationMs": 9622,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u0026\u0026 grep -ril \"passthrough\\|rest api\" --include=*.md --include=*.py --include=*.js --include=*.ts --include=*.sh . 2\u003e/dev/null | head -50",
+        "find .claude -maxdepth 3 | head -50; echo ---; cat .claude/settings*.json 2\u003e/dev/null; echo ---; which ytrack; ls \u003cworld\u003e 2\u003e/dev/null; env | grep -i \"youtrack\\|ytrack\" | sed 's/=.*/=\u003cset\u003e/'"
+      ],
+      "calls": null,
+      "denials": [
+        "find .claude -maxdepth 3 | head -50; echo ---; cat .claude/settings*.json 2\u003e/dev/null; echo ---; which ytrack; ls \u003cworld\u003e 2\u003e/dev/null; env | grep -i \"youtrack\\|ytrack\" | sed 's/=.*/=\u003cset\u003e/'"
+      ],
+      "answer": "I couldn't get the issues yet. No ytrack tool is loaded: the search for \"ytrack youtrack\" found nothing, and the broader search returned only EnterWorktree and PublishPlugin, which don't relate to YouTrack. The \"Tool loaded\" message doesn't match what I see, so I can't call the passthrough.\n\nMy Bash calls were also denied (the session is in don't-ask mode), so I couldn't search the environment or config for a ytrack setup. The project directory has only a `.claude` folder, and I couldn't read its settings file.\n\nTo continue, I need one of these from you:\n\n1. **The ytrack tool name.** If it's an MCP server, tell me its name, or check that it's connected and that the tool's name includes \"ytrack\" or \"youtrack\", then I can load it with ToolSearch.\n2. **Direct REST access.** Give me the YouTrack base URL and confirm the API token is set in the environment (for example `YOUTRACK_TOKEN`), and allow Bash for me. I'll then run a `curl` to `/api/issues?query=project:%20APP%20timeout\u0026fields=idReadable,summary` and show you the results.\n\nI haven't changed anything in the project."
+    }
+  ]
+}

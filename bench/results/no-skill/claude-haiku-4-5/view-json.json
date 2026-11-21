@@ -1,0 +1,36 @@
+{
+  "case": "view-json",
+  "model": "claude-haiku-4-5",
+  "key": "1-fdb7b965f8966f6e-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue view with --json fields",
+      "failures": [
+        "require: issue view with --json fields",
+        "answer"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 26,
+        "output": 754,
+        "cacheCreation": 7800,
+        "cacheRead": 52605
+      },
+      "costUSD": 0.0246565,
+      "durationMs": 9943,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u003cworld\u003e/project",
+        "find \u003cworld\u003e/project/.claude -type f"
+      ],
+      "calls": null,
+      "answer": "To fetch the YouTrack issue APP-123, I need a few details:\n\n1. **YouTrack URL** — What's your YouTrack instance URL? (e.g., `https://youtrack.example.com`)\n2. **API Token** — Do you have a YouTrack API token I can use, or should I use another auth method?\n\nOnce you provide these, I can query the issue using the YouTrack REST API to fetch just the state and assignee fields."
+    }
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "model": "claude-haiku-5-5",
+  "skillHash": "4c7c930f04322467",
+  "skillBytes": 18977,
+  "cases": [
+    {
+      "case": "api-read",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 60167.3,
+      "sdTotalInput": 98.6,
+      "meanOutput": 354.3,
+      "meanDurationMs": 4944,
+      "costUSD": 0.0087
+    },
+    {
+      "case": "attach",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 5,
+      "meanTotalInput": 74936.3,
+      "sdTotalInput": 12433.8,
+      "meanOutput": 437,
+      "meanDurationMs": 5375,
+      "costUSD": 0.0094
+    },
+    {
+      "case": "comment",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 5,
+      "meanTotalInput": 82015,
+      "sdTotalInput": 19.1,
+      "meanOutput": 380,
+      "meanDurationMs": 5241.7,
+      "costUSD": 0.0095
+    },
+    {
+      "case": "create-stdin",
+      "pass": true,
+      "passes": 2,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "forbid: a raw API call where a command exists"
+      ],
+      "meanTurns": 7,
+      "meanTotalInput": 114815,
+      "sdTotalInput": 52760.2,
+      "meanOutput": 1248.7,
+      "meanDurationMs": 12343,
+      "costUSD": 0.0125
+    },
+    {
+      "case": "help-first",
+      "pass": true,
+      "passes": 2,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "require: issue view text with 12 comments"
+      ],
+      "meanTurns": 5,
+      "meanTotalInput": 84213,
+      "sdTotalInput": 23684.2,
+      "meanOutput": 1166,
+      "meanDurationMs": 8033.7,
+      "costUSD": 0.0114
+    },
+    {
+      "case": "link-es",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 5,
+      "meanTotalInput": 82547.3,
+      "sdTotalInput": 22335.2,
+      "meanOutput": 709.3,
+      "meanDurationMs": 6411.3,
+      "costUSD": 0.0101
+    },
+    {
+      "case": "log-time",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4.7,
+      "meanTotalInput": 76086,
+      "sdTotalInput": 13679,
+      "meanOutput": 457,
+      "meanDurationMs": 5089.7,
+      "costUSD": 0.0098
+    },
+    {
+      "case": "meeting-time",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 60159.7,
+      "sdTotalInput": 130.2,
+      "meanOutput": 438.7,
+      "meanDurationMs": 5457.7,
+      "costUSD": 0.0089
+    },
+    {
+      "case": "my-issues-es",
+      "pass": true,
+      "passes": 2,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "forbid: the localized for: me keyword"
+      ],
+      "meanTurns": 4.3,
+      "meanTotalInput": 67681.3,
+      "sdTotalInput": 12791.9,
+      "meanOutput": 680,
+      "meanDurationMs": 6272.7,
+      "costUSD": 0.0096
+    },
+    {
+      "case": "search-query",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 60098.7,
+      "sdTotalInput": 40.1,
+      "meanOutput": 418,
+      "meanDurationMs": 4958.7,
+      "costUSD": 0.0088
+    },
+    {
+      "case": "set-field-es",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 5.3,
+      "meanTotalInput": 90838.7,
+      "sdTotalInput": 12970.9,
+      "meanOutput": 847.7,
+      "meanDurationMs": 7152.3,
+      "costUSD": 0.0109
+    },
+    {
+      "case": "view-json",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 60118.3,
+      "sdTotalInput": 107.3,
+      "meanOutput": 266.3,
+      "meanDurationMs": 4166,
+      "costUSD": 0.0086
+    }
+  ],
+  "totals": {
+    "cases": 12,
+    "casesPassed": 12,
+    "runs": 36,
+    "graded": 36,
+    "passes": 33,
+    "passRate": 0.9167,
+    "tokens": {
+      "input": 266,
+      "output": 22209,
+      "cacheCreation": 419651,
+      "cacheRead": 2321113
+    },
+    "totalInput": 2741030,
+    "meanTotalInputPerRun": 76139.7,
+    "costUSD": 0.1183
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "case": "log-time",
+  "model": "claude-haiku-5-5",
+  "key": "1-fd654376b92f2d39-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 338,
+        "cacheCreation": 11282,
+        "cacheRead": 49003
+      },
+      "costUSD": 0.0029160300000000004,
+      "durationMs": 4278,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status \u0026\u0026 ytrack work-item add APP-123 --duration 1h30m --date 2026-11-21 --text 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--date",
+            "2026-11-21",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Logged 1h30m of \"Code review\" on APP-123 for 2026-11-21 (work item 115-3, on acme.youtrack.cloud)."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 430,
+        "cacheCreation": 12269,
+        "cacheRead": 71659
+      },
+      "costUSD": 0.0033861900000000007,
+      "durationMs": 4985,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status; ytrack work-item add --help",
+        "ytrack work-item add APP-123 --duration 1h30m --text 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I logged 1h 30m on APP-123 for today (2026-11-21) with the description \"Code review\". The work item ID is 115-3 on acme.youtrack.cloud."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 603,
+        "cacheCreation": 12380,
+        "cacheRead": 71643
+      },
+      "costUSD": 0.00349473,
+      "durationMs": 6006,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status; echo \"---\"; ytrack work-item add --help",
+        "ytrack work-item add APP-123 --duration 1h30m --type 'Code review' --text 'Code review' --json id,date,duration,type,issue"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--type",
+            "Code review",
+            "--text",
+            "Code review",
+            "--json",
+            "id,date,duration,type,issue"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I logged 1h30m of code review time on APP-123 for today, 2026-11-21, under your account (jdoe) on acme.youtrack.cloud. The work item ID is 115-3.\n\nI used the activity type \"Code review\" and the description \"Code review\". The command accepted the type, so it exists in the project's time tracking settings."
+    }
+  ]
+}

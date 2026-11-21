@@ -1,0 +1,32 @@
+{
+  "case": "log-time",
+  "model": "claude-haiku-4-5",
+  "key": "1-fd654376b92f2d39-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: work-item add with 1h30m",
+      "failures": [
+        "require: work-item add with 1h30m"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 357,
+        "cacheCreation": 6989,
+        "cacheRead": 12670
+      },
+      "costUSD": 0.01704,
+      "durationMs": 5763,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I can help you log that time, but I need a bit more information. How do you typically track time for YouTrack issues? \n\nA few possibilities:\n- **YouTrack's built-in time tracking** — Do you have a YouTrack instance I should log it to? I'd need the base URL and authentication details.\n- **External time tracking system** — Are you using a separate tool (Toggl, Harvest, Linear time tracking, etc.)?\n- **Just a local record** — Should I note it somewhere in this project?\n\nWhat's your preferred method?"
+    }
+  ]
+}

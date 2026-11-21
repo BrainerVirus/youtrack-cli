@@ -1,0 +1,122 @@
+{
+  "case": "attach",
+  "model": "claude-haiku-5-5",
+  "key": "1-133f5d0cea49e03d-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 399,
+        "cacheCreation": 11389,
+        "cacheRead": 70726
+      },
+      "costUSD": 0.00318536,
+      "durationMs": 5551,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack auth status",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I attached `crash.log` to APP-123 on acme.youtrack.cloud. The upload returned `crash.log\t8-120`, which is the file name and its attachment ID."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 6,
+        "output": 501,
+        "cacheCreation": 11434,
+        "cacheRead": 49139
+      },
+      "costUSD": 0.0030292900000000005,
+      "durationMs": 5251,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/crash.log",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I attached `crash.log` to APP-123. The upload returned `crash.log\t8-120`, so YouTrack stored it with attachment ID 8-120."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 411,
+        "cacheCreation": 11383,
+        "cacheRead": 70716
+      },
+      "costUSD": 0.00319006,
+      "durationMs": 5323,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack auth status",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I attached `crash.log` to APP-123 on acme.youtrack.cloud, the default host you're logged in to. The attach returned `crash.log\t8-120`, which is the file name and its YouTrack attachment ID."
+    }
+  ]
+}

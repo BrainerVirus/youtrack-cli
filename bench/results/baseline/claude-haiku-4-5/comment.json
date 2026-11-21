@@ -1,0 +1,106 @@
+{
+  "case": "comment",
+  "model": "claude-haiku-4-5",
+  "key": "1-69ffb72ae5ff141c-4c7c930f04322467-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 486,
+        "cacheCreation": 11170,
+        "cacheRead": 55958
+      },
+      "costUSD": 0.030393800000000002,
+      "durationMs": 6148,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to issue APP-123. The comment is now visible at the issue's page."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 517,
+        "cacheCreation": 11188,
+        "cacheRead": 55945
+      },
+      "costUSD": 0.030583500000000003,
+      "durationMs": 7824,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done. Comment added to APP-123: \"Reproduced on 2026.2 with Safari 19.\" You can view it at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 653,
+        "cacheCreation": 11343,
+        "cacheRead": 56081
+      },
+      "costUSD": 0.0315871,
+      "durationMs": 9236,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible in the issue."
+    }
+  ]
+}

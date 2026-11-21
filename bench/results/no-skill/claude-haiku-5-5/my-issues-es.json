@@ -1,0 +1,38 @@
+{
+  "case": "my-issues-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-a4b5b672465539c6-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue list for me",
+      "failures": [
+        "require: issue list for me",
+        "answer"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 8,
+        "output": 1029,
+        "cacheCreation": 11628,
+        "cacheRead": 66439
+      },
+      "costUSD": 0.0035052900000000003,
+      "durationMs": 7904,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u0026\u0026 env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/' ; ls ~ -a | head -50; which yt youtrack 2\u003e/dev/null"
+      ],
+      "calls": null,
+      "denials": [
+        "ls -la \u0026\u0026 env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/' ; ls ~ -a | head -50; which yt youtrack 2\u003e/dev/null"
+      ],
+      "answer": "I couldn't get the list of your unresolved APP issues, so I have no results to show you yet.\n\n- **Bash is denied** in this session (don't-ask mode), so I couldn't run the `yt` CLI or call the YouTrack REST API with curl. I also couldn't check the project folder or environment for YouTrack URL and token settings.\n- **No YouTrack tool is available.** A search for YouTrack tools returned nothing. The only other tools I found were Monitor and RemoteTrigger, and neither can reach YouTrack.\n\nTo get the list, one of these would work:\n\n1. **Allow Bash for this session** (or switch out of don't-ask mode). I'd then run a query like `issues: project: APP assignee: me #Unresolved` through the YouTrack REST API. This needs your instance URL and a token in an environment variable, or I can look for them in the project config.\n2. **Connect a YouTrack MCP server** to this session. The tools would then appear for me to use directly.\n3. **Paste the query results here**, and I'll format them for you.\n\nOnce I have results, I'll show them in a table with issue ID, summary, state, and priority. I'll keep the field values in Spanish, as they appear in your instance."
+    }
+  ]
+}

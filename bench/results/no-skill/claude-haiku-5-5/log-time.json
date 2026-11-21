@@ -1,0 +1,32 @@
+{
+  "case": "log-time",
+  "model": "claude-haiku-5-5",
+  "key": "1-fd654376b92f2d39-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: work-item add with 1h30m",
+      "failures": [
+        "require: work-item add with 1h30m"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 6,
+        "output": 803,
+        "cacheCreation": 15092,
+        "cacheRead": 52653
+      },
+      "costUSD": 0.003947030000000001,
+      "durationMs": 6522,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I couldn't log the time. No YouTrack tool is available in this session. I searched the deferred tools for \"youtrack\" and for \"youtrack work time log issue APP-123\", and neither matched anything. The tools that did load are for worktrees, monitors, cron jobs, and remote triggers, none of which can reach YouTrack.\n\nTo log the 1h30m against APP-123, you can do one of these:\n\n- **Connect a YouTrack MCP server** (or another YouTrack integration) to this Claude Code session, then ask me again. I'll look for its tool and add the work item.\n- **Log it in YouTrack directly.** Open APP-123, add work item, enter `1h 30m`, and set the work type to code review if your instance uses work types.\n- **Use the YouTrack REST API** with a token: `POST /api/issues/APP-123/timeTracking/workItems` with `{\"duration\": {\"minutes\": 90}, \"date\": \u003cepoch ms\u003e, \"text\": \"Code review\"}`. I can run that with curl if you give me the base URL and a token in an environment variable.\n\nIf \"Tool loaded.\" meant you expected a YouTrack tool to appear, it didn't. Check that the MCP server is connected (`/mcp` shows its status), then tell me and I'll retry the search."
+    }
+  ]
+}

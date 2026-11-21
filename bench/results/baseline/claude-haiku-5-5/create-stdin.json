@@ -1,0 +1,219 @@
+{
+  "case": "create-stdin",
+  "model": "claude-haiku-5-5",
+  "key": "1-45bb42465b883e9f-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 2,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 860,
+        "cacheCreation": 11718,
+        "cacheRead": 70828
+      },
+      "costUSD": 0.00348268,
+      "durationMs": 9396,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -1 \u0026\u0026 echo \"---\" \u0026\u0026 ytrack auth status",
+        "ls -1 export/ | ytrack issue create --project APP --summary 'Files in the export folder' --description-file -"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "--project",
+            "APP",
+            "--summary",
+            "Files in the export folder",
+            "--description-file",
+            "-"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Created APP-130, \"Files in the export folder\", at https://acme.youtrack.cloud/issue/APP-130.\n\nI read \"the export folder\" as `export/` inside the project directory, so the description is the output of `ls -1 export/` piped straight into `ytrack issue create --description-file -`. The project root's `ls -1` would have listed only `export` and `notes.md`, which doesn't match the summary. If you wanted the root listing instead, tell me and I'll update the description."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 8,
+        "output": 855,
+        "cacheCreation": 13229,
+        "cacheRead": 72953
+      },
+      "costUSD": 0.00380363,
+      "durationMs": 10265,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -ld \u003cworld\u003e/project/export 2\u003e\u00261; ls -1 \u003cworld\u003e/project/export 2\u003e\u00261 | head -50",
+        "ytrack auth status; echo \"exit=$?\"; ytrack issue create --help",
+        "ls -1 export | ytrack issue create --project APP --summary 'Files in the export folder' --description-file -; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "--project",
+            "APP",
+            "--summary",
+            "Files in the export folder",
+            "--description-file",
+            "-"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I created APP-130 with the summary \"Files in the export folder\" at https://acme.youtrack.cloud/issue/APP-130.\n\nThe description is the piped output of `ls -1 export`, which lists `a.csv` and `b.csv`. I read the folder as the `export` directory under the project root. I did not check the description on the issue after creating it."
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "forbid: a raw API call where a command exists",
+      "failures": [
+        "forbid: a raw API call where a command exists"
+      ],
+      "turns": 10,
+      "tokens": {
+        "input": 16,
+        "output": 2031,
+        "cacheCreation": 13050,
+        "cacheRead": 162635
+      },
+      "costUSD": 0.005253450000000001,
+      "durationMs": 17368,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status; echo \"exit=$?\"",
+        "ls -1 | ytrack issue create --project APP --summary 'Files in the export folder' --description-file -; echo \"exit=$?\"",
+        "ls -d */ 2\u003e/dev/null; ls -1 | head -50",
+        "ls -1 export | ytrack issue edit APP-130 --description-file -; echo \"exit=$?\"; ytrack issue view APP-130 --json summary,description",
+        "ytrack issue view APP-130; echo \"exit=$?\"",
+        "ytrack issue list --project APP --all --limit 0 --json idReadable,summary; echo \"exit=$?\"",
+        "ytrack api /issues/APP-130 -X GET --fields idReadable,summary,description; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "--project",
+            "APP",
+            "--summary",
+            "Files in the export folder",
+            "--description-file",
+            "-"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-130",
+            "--description-file",
+            "-"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-130",
+            "--json",
+            "summary,description"
+          ],
+          "exit": 1,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-130"
+          ],
+          "exit": 1,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "--project",
+            "APP",
+            "--all",
+            "--limit",
+            "0",
+            "--json",
+            "idReadable,summary"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "api",
+            "/issues/APP-130",
+            "-X",
+            "GET",
+            "--fields",
+            "idReadable,summary,description"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I created APP-130, but I can't confirm it now, and its description is probably wrong.\n\n- **Created:** `https://acme.youtrack.cloud/issue/APP-130` with summary \"Files in the export folder\". On creation I piped `ls -1` from the project root instead of `export/`, so the first description lists `export` and `notes.md`.\n- **Edit:** I then piped `ls -1 export` into `ytrack issue edit APP-130 --description-file -`, which reported \"Updated APP-130\".\n- **Verification failed:** `ytrack issue view APP-130` says the issue is not found, `ytrack issue list --project APP --all` returns \"No issues match\", and `ytrack api /issues/APP-130` returns `[]`. So I can't confirm that the issue exists or what its description holds.\n\nPlease check APP-130 in YouTrack. If it's there, the description should be the `export/` listing. If it's missing, the create or edit may have gone to a different project or host than the one you use. I did not retry further."
+    }
+  ]
+}

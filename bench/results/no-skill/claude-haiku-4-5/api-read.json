@@ -1,0 +1,66 @@
+{
+  "case": "api-read",
+  "model": "claude-haiku-4-5",
+  "key": "1-5625d45472a83f63-none-claude-haiku-4-5",
+  "passes": 1,
+  "graded": 1,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 7,
+      "tokens": {
+        "input": 58,
+        "output": 1229,
+        "cacheCreation": 10274,
+        "cacheRead": 137247
+      },
+      "costUSD": 0.0404757,
+      "durationMs": 16311,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u003cworld\u003e/project",
+        "find \u003cworld\u003e/project -type f | head -20",
+        "which ytrack",
+        "ytrack --help",
+        "ytrack api --help",
+        "ytrack api /issues -X GET -f query='project: APP timeout' --fields idReadable,summary --paginate"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "api",
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "api",
+            "/issues",
+            "-X",
+            "GET",
+            "-f",
+            "query=project: APP timeout",
+            "--fields",
+            "idReadable,summary",
+            "--paginate"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Here are the YouTrack issues matching 'project: APP timeout':\n\n| idReadable | Summary |\n|-----------|---------|\n| **APP-401** | Upload times out after 30 s |\n| **APP-405** | Session timeout too short |\n\nTwo issues were found in the APP project related to timeouts."
+    }
+  ]
+}

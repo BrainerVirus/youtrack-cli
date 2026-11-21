@@ -1,0 +1,40 @@
+{
+  "case": "create-stdin",
+  "model": "claude-haiku-4-5",
+  "key": "1-45bb42465b883e9f-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue create with the description on stdin",
+      "failures": [
+        "require: issue create with the description on stdin",
+        "require: the description piped from ls"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 34,
+        "output": 938,
+        "cacheCreation": 8140,
+        "cacheRead": 72709
+      },
+      "costUSD": 0.0282749,
+      "durationMs": 11716,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "find \u003cworld\u003e/project -type d -name export 2\u003e/dev/null | head -1",
+        "ls -1 \u003cworld\u003e/project/export",
+        "ls -1 \u003cworld\u003e/project/export | youtrack issue create --project APP --summary 'Files in the export folder'"
+      ],
+      "calls": null,
+      "denials": [
+        "ls -1 \u003cworld\u003e/project/export | youtrack issue create --project APP --summary 'Files in the export folder'"
+      ],
+      "answer": "I need permission to run a Bash command to create the YouTrack issue. I want to pipe the output of `ls -1` directly to the YouTrack CLI to create an issue in project APP. This requires running:\n\n```bash\nls -1 \u003cworld\u003e/project/export | youtrack issue create --project APP --summary 'Files in the export folder'\n```\n\nThis will read the file listing and pass it as the description to YouTrack. May I proceed?"
+    }
+  ]
+}

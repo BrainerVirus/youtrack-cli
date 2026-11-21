@@ -1,0 +1,37 @@
+{
+  "case": "search-query",
+  "model": "claude-haiku-4-5",
+  "key": "1-618b93a1905fddff-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue list with a tag query on APP",
+      "failures": [
+        "require: issue list with a tag query on APP",
+        "answer"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 34,
+        "output": 885,
+        "cacheCreation": 7964,
+        "cacheRead": 72923
+      },
+      "costUSD": 0.027679300000000004,
+      "durationMs": 11890,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u003cworld\u003e/project 2\u003e\u00261 | head -20",
+        "find \u003cworld\u003e/project -type f -name \"*.md\" -o -name \"*config*\" -o -name \"*youtrack*\" 2\u003e/dev/null | head -20",
+        "find \u003cworld\u003e/project/.claude -type f 2\u003e/dev/null"
+      ],
+      "calls": null,
+      "answer": "I don't see any YouTrack configuration in this project directory. To query YouTrack for unresolved issues in project APP tagged as \"regression\", I need:\n\n1. **YouTrack instance URL** (e.g., `https://youtrack.example.com`)\n2. **Authentication** (API token or credentials)\n\nCould you provide:\n- The YouTrack URL for your instance?\n- An API token or authentication method?\n\nOnce I have those, I can query the YouTrack API to find all unresolved issues in project APP with the \"regression\" tag and list their IDs.\n\nAlternatively, if you have a YouTrack API token already set up as an environment variable (like `YOUTRACK_TOKEN`), I can try to use that directly."
+    }
+  ]
+}

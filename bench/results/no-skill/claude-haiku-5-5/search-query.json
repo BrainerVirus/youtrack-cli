@@ -1,0 +1,38 @@
+{
+  "case": "search-query",
+  "model": "claude-haiku-5-5",
+  "key": "1-618b93a1905fddff-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue list with a tag query on APP",
+      "failures": [
+        "require: issue list with a tag query on APP",
+        "answer"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 8,
+        "output": 995,
+        "cacheCreation": 11588,
+        "cacheRead": 70266
+      },
+      "costUSD": 0.00351856,
+      "durationMs": 8410,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "env | grep -i -o '^[A-Z_]*YOUTRACK[A-Z_]*' ; ls \u003cworld\u003e/project 2\u003e/dev/null | head -50"
+      ],
+      "calls": null,
+      "denials": [
+        "env | grep -i -o '^[A-Z_]*YOUTRACK[A-Z_]*' ; ls \u003cworld\u003e/project 2\u003e/dev/null | head -50"
+      ],
+      "answer": "I couldn't get the list of regression issues because I have no YouTrack access in this session.\n\n- **No YouTrack tool is loaded.** A ToolSearch for YouTrack returned only the Monitor and RemoteTrigger tools, and a direct lookup for a YouTrack issue-search tool found nothing.\n- **Bash is denied.** My attempt to check for YouTrack configuration in the environment was blocked by the permission mode, so I didn't try any other way around it.\n\nTo get the IDs, you could do one of these:\n\n1. **Connect a YouTrack MCP server** (or another YouTrack integration) and then ask again. I can run the search once its tool is available.\n2. **Allow Bash** and give me the YouTrack base URL, with a token in an environment variable. I would then query the REST API with a search like `project: APP tag: regression -resolved` and list the issue IDs.\n\nOnce either is in place, I'll return the IDs."
+    }
+  ]
+}

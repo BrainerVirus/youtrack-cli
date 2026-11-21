@@ -1,0 +1,115 @@
+{
+  "case": "search-query",
+  "model": "claude-haiku-5-5",
+  "key": "1-618b93a1905fddff-48ccf401f04fcecd-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 275,
+        "cacheCreation": 9629,
+        "cacheRead": 47427
+      },
+      "costUSD": 0.0025381700000000006,
+      "durationMs": 4902,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression #Unresolved",
+            "--json",
+            "idReadable",
+            "--limit",
+            "0"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with no result limit."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 284,
+        "cacheCreation": 9629,
+        "cacheRead": 47427
+      },
+      "costUSD": 0.0025426700000000003,
+      "durationMs": 5121,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression #Unresolved",
+            "--json",
+            "idReadable",
+            "--limit",
+            "0"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "There are two unresolved issues in project APP tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with `--limit 0` so all matches came back."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 293,
+        "cacheCreation": 9629,
+        "cacheRead": 47427
+      },
+      "costUSD": 0.0025471700000000005,
+      "durationMs": 5234,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression #Unresolved",
+            "--json",
+            "idReadable",
+            "--limit",
+            "0"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI ran `ytrack issue list -q 'project: APP tag: regression #Unresolved'` with no result limit, so this is the full set."
+    }
+  ]
+}

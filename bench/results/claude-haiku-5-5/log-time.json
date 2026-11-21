@@ -1,0 +1,120 @@
+{
+  "case": "log-time",
+  "model": "claude-haiku-5-5",
+  "key": "1-fd654376b92f2d39-48ccf401f04fcecd-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 306,
+        "cacheCreation": 9635,
+        "cacheRead": 47432
+      },
+      "costUSD": 0.00255492,
+      "durationMs": 4464,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 90m --date 2026-11-21 --text 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "90m",
+            "--date",
+            "2026-11-21",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I logged 90 minutes (1h30m) of work on APP-123 for today, 2026-11-21, with the description \"Code review\". The work item ID is 115-3, and it's on https://acme.youtrack.cloud/issue/APP-123."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 309,
+        "cacheCreation": 9682,
+        "cacheRead": 47472
+      },
+      "costUSD": 0.00256622,
+      "durationMs": 4531,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --date 2026-11-21 --text 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--date",
+            "2026-11-21",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I logged 1h30m on APP-123 for today (2026-11-21) with the description \"Code review\". The work item ID is 115-3."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 353,
+        "cacheCreation": 9710,
+        "cacheRead": 47501
+      },
+      "costUSD": 0.00259411,
+      "durationMs": 5215,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --date 2026-11-21 --text 'Code review' --type 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--date",
+            "2026-11-21",
+            "--text",
+            "Code review",
+            "--type",
+            "Code review"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Logged 1h30m on APP-123 for 2026-11-21 with the text \"Code review\" (work item 115-3).\n\nI set the activity type to \"Code review\" as you asked. The CLI accepted it, so the type exists on this instance."
+    }
+  ]
+}

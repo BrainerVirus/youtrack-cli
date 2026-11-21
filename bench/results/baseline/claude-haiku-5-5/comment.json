@@ -1,0 +1,133 @@
+{
+  "case": "comment",
+  "model": "claude-haiku-5-5",
+  "key": "1-69ffb72ae5ff141c-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 367,
+        "cacheCreation": 11324,
+        "cacheRead": 70661
+      },
+      "costUSD": 0.0031557100000000004,
+      "durationMs": 5233,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status",
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123 on acme.youtrack.cloud, the default host. ytrack returned the comment's link, so the post succeeded."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 377,
+        "cacheCreation": 11334,
+        "cacheRead": 70684
+      },
+      "costUSD": 0.00316294,
+      "durationMs": 5260,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status",
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123 on acme.youtrack.cloud, the active host, logged in as jdoe. The command returned the issue link with comment ID 4-17."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 396,
+        "cacheCreation": 11334,
+        "cacheRead": 70684
+      },
+      "costUSD": 0.00317244,
+      "durationMs": 5232,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status",
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123 on acme.youtrack.cloud, the active host. The command printed the comment's link: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
+    }
+  ]
+}

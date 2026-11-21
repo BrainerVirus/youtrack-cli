@@ -1,0 +1,121 @@
+{
+  "case": "meeting-time",
+  "model": "claude-haiku-5-5",
+  "key": "1-55945961b1404590-48ccf401f04fcecd-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 320,
+        "cacheCreation": 9653,
+        "cacheRead": 47431
+      },
+      "costUSD": 0.00256551,
+      "durationMs": 5533,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --date 2026-11-21 --meeting --text 'Meeting'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--date",
+            "2026-11-21",
+            "--meeting",
+            "--text",
+            "Meeting"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I logged 1h 30m of meeting time on APP-123 for today, 2026-11-21. The work item ID is 115-3.\n\nI added the text \"Meeting\" as the description, since you didn't give one. I can edit it if you want something more specific."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 341,
+        "cacheCreation": 9675,
+        "cacheRead": 47446
+      },
+      "costUSD": 0.0025805600000000004,
+      "durationMs": 5902,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration '1h 30m' --meeting --date 2026-11-21 --text 'Meeting'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h 30m",
+            "--meeting",
+            "--date",
+            "2026-11-21",
+            "--text",
+            "Meeting"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I logged 1h 30m of meeting time on APP-123 for today, 2026-11-21. The work item ID is 115-3.\n\nI used \"Meeting\" as the description text since you didn't give one. I can edit it if you want something more specific."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 360,
+        "cacheCreation": 9674,
+        "cacheRead": 47450
+      },
+      "costUSD": 0.0025899,
+      "durationMs": 4989,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --date 2026-11-21 --meeting --text 'Meeting'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--date",
+            "2026-11-21",
+            "--meeting",
+            "--text",
+            "Meeting"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "I logged a 1h 30m meeting on APP-123 for 2026-11-21. The work item ID is 115-3.\n\nI used \"Meeting\" as the work item text since you didn't give a description. If you want a more specific one, I can edit it with `ytrack work-item edit APP-123 115-3`."
+    }
+  ]
+}

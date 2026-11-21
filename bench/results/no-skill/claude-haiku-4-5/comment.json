@@ -1,0 +1,32 @@
+{
+  "case": "comment",
+  "model": "claude-haiku-4-5",
+  "key": "1-69ffb72ae5ff141c-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue comment with the text",
+      "failures": [
+        "require: issue comment with the text"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 412,
+        "cacheCreation": 6995,
+        "cacheRead": 12670
+      },
+      "costUSD": 0.017327000000000002,
+      "durationMs": 6340,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need a few details to add a comment to the YouTrack issue:\n\n1. **YouTrack URL**: What's your YouTrack instance URL? (e.g., `https://youtrack.example.com` or `https://example.youtrack.cloud`)\n2. **Authentication**: Do you have an API token or permanent token I can use? Or should I use a different auth method?\n\nOnce you provide these, I can use the YouTrack REST API to add the comment to APP-123."
+    }
+  ]
+}

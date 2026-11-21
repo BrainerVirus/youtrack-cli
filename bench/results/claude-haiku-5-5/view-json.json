@@ -1,0 +1,106 @@
+{
+  "case": "view-json",
+  "model": "claude-haiku-5-5",
+  "key": "1-fdb7b965f8966f6e-48ccf401f04fcecd-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 272,
+        "cacheCreation": 9658,
+        "cacheRead": 47473
+      },
+      "costUSD": 0.0025429299999999997,
+      "durationMs": 4588,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "APP-123 is **In Progress**, assigned to **Jane Doe** (login `jdoe`)."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 273,
+        "cacheCreation": 9696,
+        "cacheRead": 47475
+      },
+      "costUSD": 0.00255105,
+      "durationMs": 4823,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json idReadable,summary,state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,summary,state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "APP-123 (\"Login fails on Safari\") is in **In Progress** and assigned to **Jane Doe** (login `jdoe`)."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 288,
+        "cacheCreation": 9682,
+        "cacheRead": 47461
+      },
+      "costUSD": 0.00255561,
+      "durationMs": 4699,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json idReadable,summary,state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,summary,state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "APP-123 (\"Login fails on Safari\") is **In Progress** and assigned to **Jane Doe** (login `jdoe`)."
+    }
+  ]
+}

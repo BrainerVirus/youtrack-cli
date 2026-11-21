@@ -1,0 +1,127 @@
+{
+  "case": "search-query",
+  "model": "claude-haiku-5-5",
+  "key": "1-618b93a1905fddff-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 344,
+        "cacheCreation": 11134,
+        "cacheRead": 48920
+      },
+      "costUSD": 0.0028886000000000003,
+      "durationMs": 4664,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --jq '.[].idReadable' --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression #Unresolved",
+            "--json",
+            "idReadable",
+            "--jq",
+            ".[].idReadable",
+            "--limit",
+            "0"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with `--limit 0`, so this is the full result set."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 478,
+        "cacheCreation": 11224,
+        "cacheRead": 48910
+      },
+      "costUSD": 0.0029735000000000004,
+      "durationMs": 5480,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status 2\u003e\u00261; echo \"---\"; ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --jq '.[].idReadable' 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression #Unresolved",
+            "--json",
+            "idReadable",
+            "--jq",
+            ".[].idReadable"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nThe query was `project: APP tag: regression #Unresolved` on acme.youtrack.cloud. The `--jq` filter didn't apply, so the output was the raw JSON array; the IDs are taken from it."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 432,
+        "cacheCreation": 11152,
+        "cacheRead": 48938
+      },
+      "costUSD": 0.0029363800000000006,
+      "durationMs": 4732,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --jq '.[].idReadable' --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression #Unresolved",
+            "--json",
+            "idReadable",
+            "--jq",
+            ".[].idReadable",
+            "--limit",
+            "0"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Two unresolved issues in project APP are tagged `regression`: **APP-201** and **APP-207**.\n\nI ran `ytrack issue list -q 'project: APP tag: regression #Unresolved' --limit 0`. The `--jq` filter didn't apply, so the output was raw JSON, but the two IDs are clear from it."
+    }
+  ]
+}

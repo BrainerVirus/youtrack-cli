@@ -1,0 +1,33 @@
+{
+  "case": "my-issues-es",
+  "model": "claude-haiku-4-5",
+  "key": "1-a4b5b672465539c6-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue list for me",
+      "failures": [
+        "require: issue list for me",
+        "answer"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 438,
+        "cacheCreation": 6989,
+        "cacheRead": 12670
+      },
+      "costUSD": 0.017445000000000002,
+      "durationMs": 6455,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have direct access to your YouTrack instance. To fetch your unresolved issues from the APP project, I'll need:\n\n1. **YouTrack instance URL** (e.g., `https://youtrack.yourcompany.com`)\n2. **Authentication method** — either:\n   - A personal access token (preferred for API access)\n   - Your username/password (less secure)\n\nOnce you provide these, I can query the YouTrack API for issues assigned to you in the APP project with an unresolved status.\n\nAlternatively, if you'd prefer not to share credentials, I can help you:\n- Build a JQL-style query you can run directly in YouTrack\n- Set up a script you can run locally to fetch this data\n\nWhat would work best for you?"
+    }
+  ]
+}

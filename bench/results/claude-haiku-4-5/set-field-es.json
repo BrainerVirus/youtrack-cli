@@ -1,0 +1,106 @@
+{
+  "case": "set-field-es",
+  "model": "claude-haiku-4-5",
+  "key": "1-01c86e605c442e01-48ccf401f04fcecd-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 609,
+        "cacheCreation": 10136,
+        "cacheRead": 54922
+      },
+      "costUSD": 0.0288372,
+      "durationMs": 9347,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --field 'Priority=Critical'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical. The issue is now updated: https://acme.youtrack.cloud/issue/APP-123"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 775,
+        "cacheCreation": 10310,
+        "cacheRead": 54758
+      },
+      "costUSD": 0.0299988,
+      "durationMs": 10871,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --field 'Priority=Critical'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical. The ytrack CLI handled the Spanish localization automatically."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 580,
+        "cacheCreation": 10101,
+        "cacheRead": 54835
+      },
+      "costUSD": 0.0286135,
+      "durationMs": 9194,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --field 'Priority=Critical'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical in your YouTrack instance."
+    }
+  ]
+}

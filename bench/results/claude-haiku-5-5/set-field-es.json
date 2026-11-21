@@ -1,0 +1,184 @@
+{
+  "case": "set-field-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-01c86e605c442e01-48ccf401f04fcecd-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 692,
+        "cacheCreation": 10367,
+        "cacheRead": 88833
+      },
+      "costUSD": 0.00330873,
+      "durationMs": 8090,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json summary,customFields",
+        "ytrack issue edit APP-123 --field 'Priority=Critical'",
+        "ytrack issue view APP-123 --json customFields --jq '.customFields[] | select(.name==\"Priority\")'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "summary,customFields"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "customFields",
+            "--jq",
+            ".customFields[] | select(.name==\"Priority\")"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "APP-123's Priority is now Critical, up from Major. I re-read the field afterward and it shows \"Critical\".\n\nI passed the English value `Critical` directly and didn't need a localized name. The instance is in Spanish, but the field's value was accepted as written."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 758,
+        "cacheCreation": 10437,
+        "cacheRead": 88849
+      },
+      "costUSD": 0.0033558900000000003,
+      "durationMs": 8276,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json idReadable,customFields",
+        "ytrack issue edit APP-123 --field 'Priority=Critical'",
+        "ytrack issue view APP-123 --json idReadable,customFields --jq '.customFields[] | select(.name==\"Priority\")'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,customFields"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,customFields",
+            "--jq",
+            ".customFields[] | select(.name==\"Priority\")"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "APP-123's Priority is now Critical, up from Major. I confirmed the change by reading the issue back.\n\nI used the English value name \"Critical\" and YouTrack accepted it, so no Spanish label was needed. The issue is still In Progress and nothing else changed."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 840,
+        "cacheCreation": 10518,
+        "cacheRead": 88946
+      },
+      "costUSD": 0.0034140600000000004,
+      "durationMs": 8240,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json summary,customFields",
+        "ytrack issue edit APP-123 --field 'Priority=Critical'",
+        "ytrack issue view APP-123 --json customFields --jq '.customFields[] | select(.name==\"Priority\")'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "summary,customFields"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "customFields",
+            "--jq",
+            ".customFields[] | select(.name==\"Priority\")"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "APP-123 (“Login fails on Safari”) now has Priority set to Critical, up from Major. I read it back to confirm.\n\nI used the English value name `Critical` directly. The field values come back in English from the API even though the instance UI is in Spanish, so no localized name was needed."
+    }
+  ]
+}

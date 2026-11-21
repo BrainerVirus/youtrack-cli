@@ -1,0 +1,113 @@
+{
+  "case": "my-issues-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-a4b5b672465539c6-48ccf401f04fcecd-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 329,
+        "cacheCreation": 9663,
+        "cacheRead": 47383
+      },
+      "costUSD": 0.0025715300000000003,
+      "durationMs": 4636,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP Assignee: me #Unresolved' --limit 0 --json idReadable,summary,state,priority"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved",
+            "--limit",
+            "0",
+            "--json",
+            "idReadable,summary,state,priority"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "You have 2 unresolved issues assigned to you in project APP:\n\n| Issue | Summary | State |\n|---|---|---|\n| APP-310 | Export to CSV drops the header | Open |\n| APP-315 | Dark mode contrast on buttons | In Progress |"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 453,
+        "cacheCreation": 9681,
+        "cacheRead": 47398
+      },
+      "costUSD": 0.00263728,
+      "durationMs": 5582,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP Assignee: me #Unresolved' --limit 0 --json idReadable,summary,state,priority 2\u003e\u00261"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved",
+            "--limit",
+            "0",
+            "--json",
+            "idReadable,summary,state,priority"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Tienes 2 issues sin resolver asignados a ti en el proyecto APP:\n\n| Issue | Resumen | Estado |\n|---|---|---|\n| APP-310 | Export to CSV drops the header | Open |\n| APP-315 | Dark mode contrast on buttons | In Progress |\n\nLos resúmenes salen en inglés tal como están guardados en YouTrack. Si quieres ver los detalles o comentarios de alguno, dime cuál."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 478,
+        "cacheCreation": 9762,
+        "cacheRead": 47463
+      },
+      "costUSD": 0.00266663,
+      "durationMs": 5569,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP Assignee: me #Unresolved' --json idReadable,summary,state,priority"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved",
+            "--json",
+            "idReadable,summary,state,priority"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Tienes 2 incidencias sin resolver asignadas a ti en el proyecto APP:\n\n| ID | Resumen | Estado |\n|---|---|---|\n| APP-310 | Export to CSV drops the header | Open |\n| APP-315 | Dark mode contrast on buttons | In Progress |\n\nUsé la consulta `project: APP Assignee: me #Unresolved`, que funciona en cualquier idioma. Los nombres de los campos y los resúmenes se muestran tal como están en la instancia."
+    }
+  ]
+}

@@ -7,133 +7,91 @@ metadata:
 
 # ytrack
 
-`ytrack` is a YouTrack CLI modelled on `gh`, but it is not `gh`: its flags and
-nouns differ. Check `ytrack <command> --help` before guessing a flag. Never
-scrape the YouTrack web page and never call the REST API with curl; use the
-commands below, and `ytrack api` for anything they do not cover.
+**Never guess a flag: if this page does not show the flag or value you need
+(a count, a limit, a filter), run `ytrack <command> --help` first.**
 
-## Hosts and auth
+`ytrack` is a YouTrack CLI on your PATH: run the commands below yourself with
+your shell tool (this skill only explains them). It is modelled on `gh`, but
+its flags and nouns differ. Never scrape the YouTrack web page or call the
+REST API with curl: use the commands below, and `ytrack api` for anything
+they do not cover.
 
-```sh
-ytrack auth status                               # logged-in hosts; the active one is marked
-ytrack auth status --json host,url,active,login,state
-ytrack auth switch --host acme.youtrack.cloud    # change the default host
-ytrack auth paths                                # folders tied to each host
-```
+## Hosts, auth and exit codes
 
-- Pick the host with the global `--host` flag on any command. There is no
-  hostname flag: `gh auth status --hostname` habits fail here.
-- A command uses `--host`, else the host of an issue URL, else
-  `YTRACK_HOST`, else the host whose `ytrack auth paths` match the current
-  folder, else the default host. With more than one logged-in host, run
-  `ytrack auth status` in the folder you work in: it marks the active host
-  and says why (`--host`, `YTRACK_HOST`, a matching path or the default).
-  Pass `--host` when that is not the instance you need. Change paths only
-  when the user asks (`ytrack auth paths --host <h> --add '<dir>/**'`).
-- An issue URL selects its own host, but when `--host` or `YTRACK_HOST`
-  names another host the command fails with exit 1 ("the issue URL is on X
-  but --host is Y"). For a URL from another host, drop `--host` and unset
-  `YTRACK_HOST`, or pass the URL's host as `--host`.
-- When the folder or the default host picks a host without the issue's
-  project and exactly one other logged-in host has it, ytrack uses that host
-  and prints `using <host> for APP-* (...)` on stderr; no `--host` needed.
-  If that pick is stale (a project was just created or moved), delete the
-  cache file `projects.json` in `~/.cache/ytrack/` (or `$YTRACK_CACHE_DIR`).
-- When a key is not found, run `ytrack auth status` in this folder first.
-  The error names the host that answered and why it was chosen; it suggests
-  `try --host <h>` only when another logged-in host owns the key's project.
-  Never switch hosts on any other error, and never read `hosts.yml` by hand.
-- Tokens are the user's. Never ask for one, never put one in a command line
-  or an environment variable, never run `ytrack auth token`. If no host is
-  logged in, ask the user to run `ytrack auth login` themselves.
-
-## Exit codes
-
-0 ok, 1 failure (including usage errors), 2 cancelled, 4 authentication
-required. On exit 4, stop and tell the user that ytrack is not logged in to
-that host or its token was rejected, and that they should run
-`ytrack auth login --host <host>` themselves. Do not retry with another host
-and do not fall back to the web page. On exit 1, read stderr: it names the
-bad flag or value and the command to run. `ytrack auth status` itself exits
-4 when any logged-in host has no token or a rejected one, even if the active
-host works.
+- Pick a host with the global `--host` flag (`gh auth status --hostname`
+  habits fail). `ytrack auth status` lists the logged-in hosts and says which
+  one is active and why.
+- An issue URL selects its own host; when `--host` or `YTRACK_HOST` names
+  another, it exits 1 ("the issue URL is on X but --host is Y"): drop
+  `--host` and unset `YTRACK_HOST`, or pass the URL's host.
+- Exit 0 ok, 1 failure (stderr names the bad flag or value and what to run),
+  2 cancelled, 4 not logged in or token rejected: stop and tell the user to
+  run `ytrack auth login --host <host>` themselves. Do not retry with another
+  host and do not fall back to the web page.
+- Tokens are the user's: never ask for one, never put one in a command line
+  or an environment variable, never run `ytrack auth token`.
+- Several hosts, or a key not found:
+  [references/hosts.md](references/hosts.md).
 
 ## Read issues
 
 ```sh
-ytrack issue view APP-123
-ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments
-ytrack issue view https://acme.youtrack.cloud/projects/APP/issues/APP-123
 ytrack issue view APP-123 --json summary,state,assignee,customFields,comments
+ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments   # latest 10; for more, see --help
 ytrack issue list -q 'project: APP Assignee: me #Unresolved'
 ytrack issue list --project APP --assignee me --state 'In Progress' --sort 'updated desc'
 ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state
 ```
 
-- `-q`/`--query` takes YouTrack search syntax, sent as is. Without
-  `--query` or `--state` only unresolved issues are listed; `--all` adds
-  resolved ones. `--limit` defaults to 30, `--limit 0` is all.
-- Query syntax: [references/queries.md](references/queries.md).
+- `--json <fields>` prints only those fields (`--help` lists them); ask for
+  the ones you need. `--jq <expr>` filters it; spell `--jq` out, since in
+  `issue list` `-q` is `--query`.
+- `-q` takes YouTrack search syntax, sent as is:
+  [references/queries.md](references/queries.md). Without `-q` or `--state`
+  only unresolved issues are listed; `--all` adds resolved ones. `--limit`
+  defaults to 30, `--limit 0` is all.
+- Query keywords such as `for:` are localized; `Assignee: me` (or
+  `--assignee me`), `project:` and `#Unresolved` work on every locale.
 
-## Create, edit, comment
+## Create, edit, comment, attach
 
 ```sh
-ytrack issue create --project APP --summary 'Login fails on Safari' --description-file notes.md
-ytrack issue create -p APP -s 'Crash on start' --field Type=Bug --field Priority=Critical --assignee me --tag backend
+ytrack issue create -p APP -s 'Crash on start' --description-file notes.md --field Type=Bug --assignee me --tag backend
+ytrack issue edit APP-123 --field 'Priority=Critical' --field 'State=In Progress' --add-tag backend
 ytrack issue edit APP-123 --field 'Estimation=2d'     # period field: a duration such as 1w 2d 4h
-ytrack issue edit APP-123 --summary 'New title' --field 'State=In Progress' --add-tag backend
-ytrack issue edit APP-123 --assignee ''             # unassign
+ytrack issue edit APP-123 --assignee ''               # unassign
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
-ytrack issue comment APP-123 --body-file reply.md   # long or multi-line text
-ytrack issue comment APP-123 --body 'Repro: ![](shot.png)' --attach shot.png --attach trace.html
-ytrack issue attach APP-123 dump.sql repro.sh       # attach to the issue: name<TAB>id per file
+ytrack issue comment APP-123 --body-file reply.md     # long text
+cmd | ytrack issue create -p APP -s 'Title' --description-file -   # - reads stdin (also --body-file -)
+ytrack issue attach APP-123 dump.sql repro.sh
 ytrack issue attachments APP-123                    # files on the issue and its comments
-ytrack issue download APP-123 -o out/               # save them all: name<TAB>bytes per file
-ytrack issue download APP-123 trace.log 8-123 --comment 4-17 --clobber
 ```
 
 - An issue has a `--summary` and a `--description`; a comment has a `--body`.
-- `--field 'Name=Value'` sets a custom field by its project field name;
-  `ytrack issue view APP-123 --json customFields` lists the names and values.
-  Period fields (Estimation, Spent time) take a duration like `1w 2d 4h`.
-  `issue edit` reads the issue back and exits 1 naming a field YouTrack did
-  not change; then use `ytrack issue command APP-123 '<Name> <Value>'`.
+  Without a terminal, `issue create` needs `--project` and `--summary`.
+  Never pass `--editor` (it waits for a human).
+- `--field 'Name=Value'` sets a custom field by its project field name
+  (`ytrack issue view APP-123 --json customFields` lists them). `issue edit`
+  exits 1 naming a field YouTrack did not change; then use `issue command`.
 - `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tags.
-- `--body-file -` (comment) and `--description-file -` (create, edit) read
-  standard input, e.g. text you pipe in.
-- Files go up with `--attach` (comment) or `ytrack issue attach` (issue),
-  never through `ytrack api` multipart or curl. In a comment, `![](name)`
-  shows an attached image inline and `[text](name)` links to an attached
-  file; `name` is the file's base name. A missing file fails before
-  anything is posted. Once the comment is posted, never run the command
-  again, even after a warning or exit 1: the comment and the uploads exist,
-  and a rerun posts a duplicate. A warning that a file is on the issue, not
-  the comment, still means the comment shows it; exit 1 names the files that
-  are neither on it nor shown. Check with `ytrack issue attachments APP-123`
-  (the last column is the comment ID), and add a missing file with
-  `ytrack issue attach APP-123 <file>`.
-- Files come down with `ytrack issue download`, never by fetching the signed
-  `url` with `ytrack api` or curl with a token. It uses the issue's host,
-  like `issue view`; an unexpected 404 means the wrong host, so check
-  `ytrack auth status` in the current folder. It never overwrites a file
-  without `--clobber` and exits 1 naming each file that failed.
-- Without a terminal, `issue create` needs `--project` and `--summary`. Never
-  pass `--editor` (it waits for a human).
+- Once a comment is posted, never run the command again, even after a
+  warning or exit 1: a rerun posts a duplicate.
+- Files go up with `issue attach` (issue) or `issue comment --attach`
+  (comment) and come down with `issue download`, never through `ytrack api`
+  or curl: [references/attachments.md](references/attachments.md).
 
 ## YouTrack commands
 
 ```sh
 ytrack issue command APP-123 'State Fixed' --dry-run    # preview, changes nothing
-ytrack issue command APP-123 'State Fixed' --comment 'Fixed in 2026.3'
-ytrack issue command APP-123 APP-124 'Assignee me' --silent
+ytrack issue command APP-123 APP-124 'State Fixed' --comment 'Fixed in 2026.3'
 ```
 
-- Always `--dry-run` first: it shows how YouTrack parses each part and exits
-  1 when a part is not understood.
-- Command keywords are localized on non-English instances (a Spanish
-  instance rejects `for me`); write `<Field name> <value>`, such as
-  `Assignee me` or `State Fixed`, which works on every locale.
-- Prefer `ytrack issue edit` for plain field, tag and assignee changes.
+- Prefer `issue edit` for fields, tags and the assignee, and `issue link` for
+  links. Use a command for several issues at once or what edit cannot do,
+  always with `--dry-run` first.
+- Command keywords are localized (a Spanish instance rejects `for me`);
+  write `<Field name> <value>`, such as `Assignee me` or `State Fixed`.
   More: [references/commands.md](references/commands.md).
 
 ## Links between issues
@@ -146,72 +104,52 @@ ytrack issue link APP-1 --list --json phrase,issues
 ytrack issue unlink APP-1 APP-2 --type 'depends on'
 ```
 
-- Read "APP-1 <phrase> APP-2". `--type` is one of the phrases
-  `--list-types` prints (case is ignored); the phrase picks the direction.
-  An undirected type also takes its name (`--type Relates`); a directed
-  type's name (`Depend`) is refused because it has no direction.
-- Use these, never `ytrack issue command APP-1 'depends on APP-2'`: link
-  keywords in the command language are localized, the phrases are not.
+- Read "APP-1 <phrase> APP-2": `--type` is a phrase `--list-types` prints, and
+  it sets the direction. A directed type's name (`Depend`) is refused.
+- Never link with `issue command`: link words in commands are localized, the
+  phrases are not.
 
 ## Time tracking (work items)
 
 ```sh
-ytrack work-item list APP-123 --author me --since 2026-10-01 --json id,date,duration,text
 ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
 ytrack work-item add APP-123 --duration 45m --date 2026-10-06 --type Development
-ytrack work-item add APP-123 --duration 30m --meeting
+ytrack work-item add APP-123 --duration '1h 30m' --meeting      # meeting time
+ytrack work-item list APP-123 --author me --since 2026-10-01 --json id,date,duration,text
 ytrack work-item edit APP-123 115-3 --duration 2h
 ytrack work-item delete APP-123 115-3 --yes
 ```
 
-- `--duration` takes `1h30m`, `1h 30m`, `90m`, `1.5h`, `2 hours 15 minutes`
-  or bare minutes (`90`). Days and weeks are refused.
-- `--date` is `auto` (today, the default) or `YYYY-MM-DD`.
-- `edit` and `delete` take the work item ID (`115-3`) from
-  `ytrack work-item list APP-123 --json id`. Without a terminal, `delete`
-  needs `--yes`; confirm with the user before deleting.
-
-## JSON output
-
-- `--json <fields>` prints JSON with those fields; `--help` lists them.
-  `--jq <expr>` filters it; without `--json` it gets every field.
-- Spell out `--jq`: in `ytrack issue list`, `-q` is `--query`.
-
-```sh
-ytrack issue list -q 'project: APP #Unresolved' --json idReadable,summary --jq '.[].idReadable'
-ytrack work-item list APP-123 --json duration --jq 'map(.duration.minutes) | add'
-```
+- `--duration` takes `1h30m`, `90m`, `1.5h` or bare minutes; days and weeks
+  are refused. `--date` is today unless you pass `YYYY-MM-DD`.
+- `edit` and `delete` take the work item ID from
+  `ytrack work-item list APP-123 --json id`; confirm with the user before
+  deleting.
 
 ## REST API escape hatch
 
 ```sh
 ytrack api /users/me --fields login,fullName
 ytrack api /issues -X GET -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
-ytrack api /issues/APP-123/links --fields 'linkType(name),direction,issues(idReadable)'
 ```
 
-`ytrack api` sends the stored token for you. YouTrack returns only the
-attributes named in `--fields`. Any `-f`, `-F` or `--input` makes the
-request a POST with a JSON body unless you pass `-X GET`; a POST to `/issues`
-creates an issue. Every read with parameters needs `-X GET` (`--paginate`
-refuses POST; read-only parameters without `-X` are refused). Details: [references/api.md](references/api.md).
+`ytrack api` sends the stored token for you; YouTrack returns only the
+attributes named in `--fields`. Any `-f`, `-F` or `--input` makes a POST (a
+POST to `/issues` creates an issue) unless you pass `-X GET`, so every read
+with parameters needs `-X GET`. More: [references/api.md](references/api.md).
 
 ## gh habits that are wrong here
 
 - `gh issue list --search` → `ytrack issue list -q '<YouTrack query>'`
+- `gh issue list --repo` → `ytrack issue list --project APP`
 - `gh issue create --title --body` → `ytrack issue create --summary --description`
 - `gh issue close` → `ytrack issue command APP-123 'State Fixed'`
 - `gh issue edit --add-label` → `ytrack issue edit APP-123 --add-tag <name>`
-- `gh issue list --repo` → `ytrack issue list --project APP`
-- `gh auth status --hostname` → `ytrack auth status --host <host>`
 - Issue IDs are `APP-123`, never `#123`; `#` starts a query tag such as `#Unresolved`.
-- `--state open|closed` does not exist: states are project values (`Open`,
-  `In Progress`, `Fixed`); use `#Unresolved` or `--all`.
+- `--state open|closed` does not exist: use `#Unresolved` or `--all`.
 
 ## This skill's version
 
-`metadata.version` above is the ytrack that wrote this copy; ytrack rewrites
-the copies in the home directory when a newer release first runs. If
-`ytrack version` differs and a command here fails, run `ytrack skill list`:
-a `manual` copy (in a repository) is updated with
-`ytrack skill install --dir <dir>`, but only when the user asks.
+If `ytrack version` differs from `metadata.version` above and a command
+fails, run `ytrack skill list`; update a `manual` copy with
+`ytrack skill install --dir <dir>` only when the user asks.

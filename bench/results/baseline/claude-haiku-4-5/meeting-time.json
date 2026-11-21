@@ -1,0 +1,113 @@
+{
+  "case": "meeting-time",
+  "model": "claude-haiku-4-5",
+  "key": "1-55945961b1404590-4c7c930f04322467-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 747,
+        "cacheCreation": 11414,
+        "cacheRead": 55938
+      },
+      "costUSD": 0.0321848,
+      "durationMs": 10168,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --date 2026-11-21 --meeting"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--date",
+            "2026-11-21",
+            "--meeting"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've logged 1h 30m as a meeting on APP-123 for today (work item ID: 115-3). You can view it here: https://acme.youtrack.cloud/issue/APP-123"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 1127,
+        "cacheCreation": 11791,
+        "cacheRead": 56029
+      },
+      "costUSD": 0.0348479,
+      "durationMs": 14097,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --date 2026-11-21 --meeting"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--date",
+            "2026-11-21",
+            "--meeting"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! I've logged 1h 30m on APP-123 for today (2026-11-21) as a meeting. The work item ID is 115-3."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 582,
+        "cacheCreation": 11248,
+        "cacheRead": 55910
+      },
+      "costUSD": 0.031025,
+      "durationMs": 8495,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --meeting"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--meeting"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done. I've logged 1h 30m on APP-123 for today (2026-11-21) as a meeting. Work item ID: 115-3."
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "case": "link-es",
+  "model": "claude-haiku-4-5",
+  "key": "1-173ab6d51aff04a9-48ccf401f04fcecd-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 1152,
+        "cacheCreation": 10826,
+        "cacheRead": 77957
+      },
+      "costUSD": 0.0352437,
+      "durationMs": 15647,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link --list-types",
+        "ytrack issue link APP-7 APP-3 --type 'subtask of'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-7",
+            "APP-3",
+            "--type",
+            "subtask of"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! APP-7 is now a subtask of APP-3."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 812,
+        "cacheCreation": 10486,
+        "cacheRead": 77621
+      },
+      "costUSD": 0.0328301,
+      "durationMs": 11235,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link --list-types",
+        "ytrack issue link APP-3 APP-7 --type 'parent for'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "APP-7",
+            "--type",
+            "parent for"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! APP-7 is now a subtask of APP-3."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 1052,
+        "cacheCreation": 10716,
+        "cacheRead": 77800
+      },
+      "costUSD": 0.034508000000000004,
+      "durationMs": 13436,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link --list-types",
+        "ytrack issue link APP-3 APP-7 --type 'parent for'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "APP-7",
+            "--type",
+            "parent for"
+          ],
+          "exit": 0,
+          "day": "2026-11-21"
+        }
+      ],
+      "answer": "Done! APP-7 is now a subtask of APP-3. The link was created successfully."
+    }
+  ]
+}

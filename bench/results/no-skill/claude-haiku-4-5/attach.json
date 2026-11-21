@@ -1,0 +1,35 @@
+{
+  "case": "attach",
+  "model": "claude-haiku-4-5",
+  "key": "1-133f5d0cea49e03d-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue attach crash.log",
+      "failures": [
+        "require: issue attach crash.log"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 26,
+        "output": 979,
+        "cacheCreation": 8019,
+        "cacheRead": 52599
+      },
+      "costUSD": 0.0262189,
+      "durationMs": 12541,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/ | grep -i crash",
+        "which youtrack 2\u003e/dev/null || echo \"YouTrack CLI not found in PATH\""
+      ],
+      "calls": null,
+      "answer": "Could you provide:\n- **YouTrack URL** (e.g., `https://youtrack.example.com` or your instance URL)\n- **API token or credentials** to authenticate with YouTrack\n\nOnce you provide these, I can attach the crash.log file to issue APP-123 using the YouTrack API."
+    }
+  ]
+}
