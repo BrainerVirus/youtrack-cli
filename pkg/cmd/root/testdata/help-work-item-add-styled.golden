@@ -9,7 +9,8 @@ setting in config.yml (an IANA zone such as Europe/Madrid) when set,
 otherwise the system timezone (TZ). YouTrack stores the day only.
 
 --type takes a work item type name from the project's time tracking
-settings (case is ignored); an unknown name lists the valid ones.
+settings (case is ignored) or its id; names follow the instance's language,
+ids do not. An unknown value lists the valid names with their ids.
 
 --meeting logs meeting time: the text defaults to "Meetings", as in workit.
 Any --text or --type you give still applies.
@@ -42,7 +43,7 @@ Any --text or --type you give still applies.
       <accent>--meeting</>             Log meeting time (text defaults to "Meetings")
   <accent>-t, --template</><dim> template</>   Format JSON output using a Go template
       <accent>--text</><dim> string</>         Description of the work
-      <accent>--type</><dim> name</>           Work item type name, e.g. Development
+      <accent>--type</><dim> name</>           Work item type name or id, e.g. Development or 117-0
 
 <bold>Global Flags:</>
       <accent>--debug</>       Log HTTP requests to stderr with credentials redacted

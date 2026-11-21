@@ -324,12 +324,22 @@ func TestWorkItemAddType(t *testing.T) {
 		}
 	})
 
+	t.Run("given a type ID, it posts that type, whatever the instance's language calls it", func(t *testing.T) {
+		env, yt := loggedIn(t)
+		mustRun(t, env, "work-item", "add", "NSR-40", "--duration", "1h", "--type", "117-1")
+		ty, _ := lastBody(t, yt, "POST", "/timeTracking/workItems")["type"].(map[string]any)
+		if ty["id"] != "117-1" {
+			t.Errorf("type = %v, want id 117-1", ty)
+		}
+	})
+
 	t.Run("given an unknown type, it lists the valid ones and posts nothing", func(t *testing.T) {
 		env, yt := loggedIn(t)
 		if code := env.Run("work-item", "add", "NSR-40", "--duration", "1h", "--type", "Coding"); code != 1 {
 			t.Errorf("exit %d", code)
 		}
-		want := "unknown work item type \"Coding\" in project NSR; valid types:\n  Development\n  Testing\n  Documentation"
+		// Each type's ID is listed too: names follow the instance's language, IDs do not (#53).
+		want := "unknown work item type \"Coding\" in project NSR; valid types (name or id):\n  Development (117-0)\n  Testing (117-1)\n  Documentation (117-2)"
 		if !strings.Contains(env.Stderr.String(), want) {
 			t.Errorf("stderr = %q", env.Stderr)
 		}
@@ -443,7 +453,7 @@ func TestWorkItemEdit(t *testing.T) {
 
 	t.Run("given an unknown type, it lists the valid ones and changes nothing", func(t *testing.T) {
 		env, yt := loggedIn(t)
-		if code := env.Run("work-item", "edit", "NSR-40", "115-1", "--type", "Coding"); code != 1 || !strings.Contains(env.Stderr.String(), "valid types:\n  Development") {
+		if code := env.Run("work-item", "edit", "NSR-40", "115-1", "--type", "Coding"); code != 1 || !strings.Contains(env.Stderr.String(), "valid types (name or id):\n  Development (117-0)") {
 			t.Errorf("exit %d: %s", code, env.Stderr)
 		}
 		if len(requests(yt, "POST", "/timeTracking/workItems/115-1")) != 0 {

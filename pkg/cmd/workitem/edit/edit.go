@@ -68,7 +68,7 @@ JSON fields:
 				ch.Text = &opts.text
 			}
 			if fl.Changed("type") && opts.typeName == "" {
-				return clierr.FlagErrorf("`--type` needs a work item type name")
+				return clierr.FlagErrorf("`--type` needs a work item type name or id")
 			}
 			if fl.Changed("date") && opts.date == "" {
 				return clierr.FlagErrorf("`--date` needs auto or a YYYY-MM-DD day")
@@ -89,7 +89,7 @@ JSON fields:
 	fl := cmd.Flags()
 	fl.StringVarP(&opts.duration, "duration", "d", "", "New time spent, e.g. 1h30m, 90m or 1.5h")
 	fl.StringVar(&opts.date, "date", "", "New day: auto (today) or YYYY-MM-DD")
-	fl.StringVar(&opts.typeName, "type", "", "New work item type `name`")
+	fl.StringVar(&opts.typeName, "type", "", "New work item type `name` or id")
 	fl.StringVar(&opts.text, "text", "", "New description")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, shared.Fields)
 	return cmd

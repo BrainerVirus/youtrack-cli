@@ -166,7 +166,8 @@ func ItemOnIssue(ctx context.Context, c *transport.Client, host hosts.Host, issu
 	return item, nil
 }
 
-// ResolveType finds the ID of the work item type called name (ignoring case)
+// ResolveType finds the ID of the work item type called name (ignoring case),
+// or whose ID is name,
 // in the time tracking settings of the issue's project p.
 func ResolveType(ctx context.Context, c *transport.Client, p adapter.IssueProject, name string) (string, error) {
 	project := p.ShortName
@@ -186,13 +187,14 @@ func ResolveType(ctx context.Context, c *transport.Client, p adapter.IssueProjec
 	var folded string
 	names := make([]string, 0, len(s.Types))
 	for _, t := range s.Types {
-		if t.Name == name {
+		// The ID works in every UI language; names are translated (#53).
+		if t.Name == name || t.ID == name {
 			return t.ID, nil
 		}
 		if folded == "" && strings.EqualFold(t.Name, name) {
 			folded = t.ID
 		}
-		names = append(names, t.Name)
+		names = append(names, t.Name+" ("+t.ID+")")
 	}
 	if folded != "" {
 		return folded, nil
@@ -200,7 +202,7 @@ func ResolveType(ctx context.Context, c *transport.Client, p adapter.IssueProjec
 	if len(names) == 0 {
 		return "", clierr.FlagErrorf("unknown work item type %q: project %s has no work item types", name, project)
 	}
-	return "", clierr.FlagErrorf("unknown work item type %q in project %s; valid types:\n  %s", name, project, strings.Join(names, "\n  "))
+	return "", clierr.FlagErrorf("unknown work item type %q in project %s; valid types (name or id):\n  %s", name, project, strings.Join(names, "\n  "))
 }
 
 // NotFound turns a 404 on a work item into a clear message.

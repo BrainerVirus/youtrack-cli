@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `work-item add` and `work-item edit` take a work item type's id in `--type` as well as its name, so the same command works on instances in any language; an unknown type lists each valid name with its id (#53).
 - `--jq` or `--template` without `--json` now uses every `--json` field instead of failing, as `ytrack api --jq` already did (#53).
 
 ### Added
