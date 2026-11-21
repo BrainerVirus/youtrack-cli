@@ -371,10 +371,9 @@ func listTypes(ctx context.Context, f *cmdutil.Factory, opts *options) error {
 // up and a missing one is named in ytrack's own words (#62).
 func addError(ctx context.Context, client *transport.Client, err error, issue, target string, host hosts.Host) error {
 	if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusBadRequest {
-		if _, lookErr := adapter.GetIssue(ctx, client, target, []string{"idReadable"}); lookErr != nil {
-			if notFound := shared.NotFound(lookErr, target, host); notFound != lookErr {
-				return notFound
-			}
+		_, lookErr := adapter.GetIssue(ctx, client, target, []string{"idReadable"})
+		if lookAPI, ok := errors.AsType[*transport.APIError](lookErr); ok && lookAPI.StatusCode == http.StatusNotFound {
+			return shared.NotFound(lookErr, target, host)
 		}
 		return err
 	}
