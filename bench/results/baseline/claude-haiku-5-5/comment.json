@@ -30,7 +30,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -40,7 +41,8 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123 on acme.youtrack.cloud, the default host. ytrack returned the comment's link, so the post succeeded."
@@ -69,7 +71,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -79,7 +82,8 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123 on acme.youtrack.cloud, the active host, logged in as jdoe. The command returned the issue link with comment ID 4-17."
@@ -108,7 +112,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -118,7 +123,8 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123 on acme.youtrack.cloud, the active host. The command printed the comment's link: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"

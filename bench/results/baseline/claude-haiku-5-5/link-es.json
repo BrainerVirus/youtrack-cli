@@ -31,7 +31,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -39,7 +40,8 @@
             "link",
             "--list-types"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -50,7 +52,8 @@
             "--type",
             "subtask of"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -61,7 +64,8 @@
             "--json",
             "phrase,issues"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -72,7 +76,8 @@
             "--json",
             "phrase,issues"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -82,7 +87,8 @@
             "--json",
             "summary,links"
           ],
-          "exit": 1
+          "exit": 1,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -90,7 +96,8 @@
             "view",
             "APP-7"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-7 is now a subtask of APP-3. The link command reported success, and APP-7's link list shows \"subtask of\" → APP-3.\n\nThe check from APP-3's side returned \"APP-3 has no links.\" That is inconsistent with the APP-7 result, so I'd recheck APP-3 in YouTrack's web UI before relying on it.\n\nThe Spanish instance wasn't a problem: I used the link phrases from `ytrack issue link --list-types`, which are not localized, rather than a command-language keyword."
@@ -122,7 +129,8 @@
             "--type",
             "parent for"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-7 is now a subtask of APP-3. ytrack confirmed the link with `✓ APP-3 parent for APP-7`.\n\nI used the link phrase `parent for` rather than a command like `Subtask of`, because the phrases are not localized and the Spanish instance would reject the command form."
@@ -151,7 +159,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -159,7 +168,8 @@
             "link",
             "--list-types"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -170,7 +180,8 @@
             "--type",
             "subtask of"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-7 is now a subtask of APP-3 on acme.youtrack.cloud. ytrack confirmed it with \"✓ APP-7 subtask of APP-3\".\n\nI used the `subtask of` link type, which is the inward phrase of YouTrack's Subtask type. Since the instance is in Spanish, I didn't use the `command` keyword (`subtask of APP-3`), because command keywords are localized. The link command uses the English phrases on every locale."

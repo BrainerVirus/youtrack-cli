@@ -33,7 +33,8 @@
             "--assignee",
             "me"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| Issue | State | Assignee | Summary |\n|-------|-------|----------|---------|\n| APP-310 | Open | Jane Doe | Export to CSV drops the header |\n| APP-315 | In Progress | Jane Doe | Dark mode contrast on buttons |\n\nWould you like to view details on any of these issues or take any actions?"
@@ -70,7 +71,8 @@
             "--json",
             "idReadable,summary,state"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| Issue | Status | Summary |\n|-------|--------|---------|\n| APP-310 | Open | Export to CSV drops the header |\n| APP-315 | In Progress | Dark mode contrast on buttons |\n\nWould you like to view more details about any of these issues, update their status, or take any other action?"
@@ -104,7 +106,8 @@
             "--state",
             "Unresolved"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| Issue | State | Assignee | Summary |\n|-------|-------|----------|---------|\n| APP-310 | Open | Jane Doe | Export to CSV drops the header |\n| APP-315 | In Progress | Jane Doe | Dark mode contrast on buttons |\n\nWould you like to view details on any of these issues or take any action on them?"

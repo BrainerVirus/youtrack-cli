@@ -33,7 +33,8 @@
             "APP-123",
             "\u003cworld\u003e/project/crash.log"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -41,7 +42,8 @@
             "attachments",
             "APP-123"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "`crash.log` is now attached to APP-123. `ytrack issue attachments APP-123` lists `crash.log` with a size of 68 bytes, which matches the local file. I ran the attach command once, so there's no duplicate upload."
@@ -71,7 +73,8 @@
             "attach",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -80,7 +83,8 @@
             "APP-123",
             "crash.log"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I attached `crash.log` (68 bytes) to APP-123. The command printed `crash.log  8-120`, which is the attachment name and its ID."
@@ -111,7 +115,8 @@
             "APP-123",
             "\u003cworld\u003e/project/crash.log"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -119,7 +124,8 @@
             "attachments",
             "APP-123"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I attached `crash.log` (68 bytes) to APP-123.\n\nThe attach command printed `crash.log\t8-120` with no explicit success message. `ytrack issue attachments APP-123` then listed `crash.log` at 68 bytes, so the upload is confirmed."

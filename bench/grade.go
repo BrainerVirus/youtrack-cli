@@ -9,6 +9,9 @@ import (
 type Call struct {
 	Argv []string `json:"argv"`
 	Exit int      `json:"exit"`
+	// Day is the local date the call was made (YYYY-MM-DD). In the line the
+	// rules match it reads {{today}}, so a rule can say "today" without a date.
+	Day string `json:"day,omitempty"`
 }
 
 // Line is the argv the rules match: words joined by single spaces, without
@@ -90,6 +93,9 @@ func lines(r Rule, calls []Call, commands []string, okOnly bool) []string {
 	for i, c := range calls {
 		if !okOnly || c.Exit == 0 {
 			out[i] = c.Line()
+			if c.Day != "" {
+				out[i] = strings.ReplaceAll(out[i], c.Day, "{{today}}")
+			}
 		}
 	}
 	return out

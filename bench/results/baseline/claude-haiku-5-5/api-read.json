@@ -36,7 +36,8 @@
             "idReadable,summary",
             "--paginate"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I ran the query `project: APP timeout` through `ytrack api /issues` and it returned two issues:\n\n| idReadable | summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe query had no state filter, so resolved issues were included as well."
@@ -71,7 +72,8 @@
             "idReadable,summary",
             "--paginate"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I ran the query through `ytrack api` against `/issues`, which returned two matches:\n\n| idReadable | summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |"
@@ -106,7 +108,8 @@
             "idReadable,summary",
             "--paginate"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "The query `project: APP timeout` matched two issues:\n\n| idReadable | summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nI ran it through `ytrack api /issues` with `-X GET`, the query as the `query` parameter, and `--fields idReadable,summary`, with pagination on."

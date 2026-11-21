@@ -32,7 +32,8 @@
             "--json",
             "state,assignee"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123 is **In Progress**, assigned to **Jane Doe** (login `jdoe`)."
@@ -63,7 +64,8 @@
             "--json",
             "idReadable,summary,state,assignee"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123 (\"Login fails on Safari\") is in **In Progress** and assigned to **Jane Doe** (login `jdoe`)."
@@ -94,7 +96,8 @@
             "--json",
             "idReadable,summary,state,assignee"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123 (\"Login fails on Safari\") is **In Progress** and assigned to **Jane Doe** (login `jdoe`)."

@@ -1,7 +1,7 @@
 {
   "case": "create-stdin",
   "model": "claude-haiku-5-5",
-  "key": "1-cdae0a9d4c001827-4c7c930f04322467-claude-haiku-5-5",
+  "key": "1-134b0ab2b8a00c6c-4c7c930f04322467-claude-haiku-5-5",
   "passes": 2,
   "graded": 3,
   "pass": true,
@@ -30,7 +30,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -43,7 +44,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Created APP-130, \"Files in the export folder\", at https://acme.youtrack.cloud/issue/APP-130.\n\nI read \"the export folder\" as `export/` inside the project directory, so the description is the output of `ls -1 export/` piped straight into `ytrack issue create --description-file -`. The project root's `ls -1` would have listed only `export` and `notes.md`, which doesn't match the summary. If you wanted the root listing instead, tell me and I'll update the description."
@@ -73,7 +75,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -81,7 +84,8 @@
             "create",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -94,7 +98,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I created APP-130 with the summary \"Files in the export folder\" at https://acme.youtrack.cloud/issue/APP-130.\n\nThe description is the piped output of `ls -1 export`, which lists `a.csv` and `b.csv`. I read the folder as the `export` directory under the project root. I did not check the description on the issue after creating it."
@@ -132,7 +137,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -145,7 +151,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -155,7 +162,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -165,7 +173,8 @@
             "--json",
             "summary,description"
           ],
-          "exit": 1
+          "exit": 1,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -173,7 +182,8 @@
             "view",
             "APP-130"
           ],
-          "exit": 1
+          "exit": 1,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -187,7 +197,8 @@
             "--json",
             "idReadable,summary"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -198,7 +209,8 @@
             "--fields",
             "idReadable,summary,description"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I created APP-130, but I can't confirm it now, and its description is probably wrong.\n\n- **Created:** `https://acme.youtrack.cloud/issue/APP-130` with summary \"Files in the export folder\". On creation I piped `ls -1` from the project root instead of `export/`, so the first description lists `export` and `notes.md`.\n- **Edit:** I then piped `ls -1 export` into `ytrack issue edit APP-130 --description-file -`, which reported \"Updated APP-130\".\n- **Verification failed:** `ytrack issue view APP-130` says the issue is not found, `ytrack issue list --project APP --all` returns \"No issues match\", and `ytrack api /issues/APP-130` returns `[]`. So I can't confirm that the issue exists or what its description holds.\n\nPlease check APP-130 in YouTrack. If it's there, the description should be the `export/` listing. If it's missing, the create or edit may have gone to a different project or host than the one you use. I did not retry further."

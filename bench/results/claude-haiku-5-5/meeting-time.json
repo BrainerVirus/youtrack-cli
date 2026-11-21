@@ -1,7 +1,7 @@
 {
   "case": "meeting-time",
   "model": "claude-haiku-5-5",
-  "key": "1-8bac3951df2f0587-48ccf401f04fcecd-claude-haiku-5-5",
+  "key": "1-55945961b1404590-48ccf401f04fcecd-claude-haiku-5-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -37,7 +37,8 @@
             "--text",
             "Meeting"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I logged 1h 30m of meeting time on APP-123 for today, 2026-11-21. The work item ID is 115-3.\n\nI added the text \"Meeting\" as the description, since you didn't give one. I can edit it if you want something more specific."
@@ -73,7 +74,8 @@
             "--text",
             "Meeting"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I logged 1h 30m of meeting time on APP-123 for today, 2026-11-21. The work item ID is 115-3.\n\nI used \"Meeting\" as the description text since you didn't give one. I can edit it if you want something more specific."
@@ -109,7 +111,8 @@
             "--text",
             "Meeting"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I logged a 1h 30m meeting on APP-123 for 2026-11-21. The work item ID is 115-3.\n\nI used \"Meeting\" as the work item text since you didn't give a description. If you want a more specific one, I can edit it with `ytrack work-item edit APP-123 115-3`."

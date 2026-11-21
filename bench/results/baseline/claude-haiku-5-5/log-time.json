@@ -29,7 +29,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -43,7 +44,8 @@
             "--text",
             "Code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Logged 1h30m of \"Code review\" on APP-123 for 2026-11-21 (work item 115-3, on acme.youtrack.cloud)."
@@ -72,7 +74,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -80,7 +83,8 @@
             "add",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -92,7 +96,8 @@
             "--text",
             "Code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I logged 1h 30m on APP-123 for today (2026-11-21) with the description \"Code review\". The work item ID is 115-3 on acme.youtrack.cloud."
@@ -121,7 +126,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -129,7 +135,8 @@
             "add",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -145,7 +152,8 @@
             "--json",
             "id,date,duration,type,issue"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I logged 1h30m of code review time on APP-123 for today, 2026-11-21, under your account (jdoe) on acme.youtrack.cloud. The work item ID is 115-3.\n\nI used the activity type \"Code review\" and the description \"Code review\". The command accepted the type, so it exists in the project's time tracking settings."

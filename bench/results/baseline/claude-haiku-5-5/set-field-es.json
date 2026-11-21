@@ -30,7 +30,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -40,7 +41,8 @@
             "--json",
             "idReadable,summary,customFields"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -50,7 +52,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -62,7 +65,8 @@
             "--jq",
             ".customFields[] | select(.name==\"Priority\")"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "The Priority of APP-123 (\"Login fails on Safari\") is now Critical, up from Major. I read the issue back and the field shows Critical.\n\nI used `ytrack issue edit APP-123 --field 'Priority=Critical'` on acme.youtrack.cloud, the only logged-in host. The instance is in Spanish, but the value name was accepted as written, so no localized name was needed."
@@ -91,7 +95,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -101,7 +106,8 @@
             "--json",
             "customFields,summary"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -111,7 +117,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -123,7 +130,8 @@
             "--jq",
             ".customFields[] | select(.name==\"Priority\")"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123 (\"Login fails on Safari\") now has Priority set to **Critical**, up from Major. I read the field back and it shows Critical.\n\nThe instance is in Spanish, but `Priority=Critical` was accepted as-is, so I didn't need the localized value name."
@@ -153,7 +161,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -163,7 +172,8 @@
             "--json",
             "summary,customFields"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -173,7 +183,8 @@
             "Priority Critical",
             "--dry-run"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -183,7 +194,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -195,7 +207,8 @@
             "--jq",
             ".customFields[] | select(.name==\"Priority\")"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123's Priority is now **Critical**, changed from Major. I read it back from YouTrack to confirm.\n\nThe instance accepted the English value name \"Critical\" without a Spanish equivalent. I previewed the change with `--dry-run` first, and the API returns the priority as \"Critical\", so no localized name was needed."

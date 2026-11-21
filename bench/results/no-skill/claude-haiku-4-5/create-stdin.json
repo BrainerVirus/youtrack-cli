@@ -1,7 +1,7 @@
 {
   "case": "create-stdin",
   "model": "claude-haiku-4-5",
-  "key": "1-cdae0a9d4c001827-none-claude-haiku-4-5",
+  "key": "1-134b0ab2b8a00c6c-none-claude-haiku-4-5",
   "passes": 0,
   "graded": 1,
   "pass": false,
@@ -11,7 +11,8 @@
       "status": "fail",
       "failed": "require: issue create with the description on stdin",
       "failures": [
-        "require: issue create with the description on stdin"
+        "require: issue create with the description on stdin",
+        "require: the description piped from ls"
       ],
       "turns": 4,
       "tokens": {

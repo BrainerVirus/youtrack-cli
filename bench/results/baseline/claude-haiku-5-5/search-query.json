@@ -37,7 +37,8 @@
             "--limit",
             "0"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with `--limit 0`, so this is the full result set."
@@ -65,7 +66,8 @@
             "auth",
             "status"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -78,7 +80,8 @@
             "--jq",
             ".[].idReadable"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nThe query was `project: APP tag: regression #Unresolved` on acme.youtrack.cloud. The `--jq` filter didn't apply, so the output was the raw JSON array; the IDs are taken from it."
@@ -114,7 +117,8 @@
             "--limit",
             "0"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Two unresolved issues in project APP are tagged `regression`: **APP-201** and **APP-207**.\n\nI ran `ytrack issue list -q 'project: APP tag: regression #Unresolved' --limit 0`. The `--jq` filter didn't apply, so the output was raw JSON, but the two IDs are clear from it."

@@ -31,7 +31,8 @@
             "view",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -42,7 +43,8 @@
             "--comments-limit",
             "12"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Here are the last 12 comments on APP-123, from `ytrack issue view APP-123 --comments --comments-limit 12`:\n\n```\nAPP-123 Login fails on Safari\nState: In Progress  Assignee: Jane Doe  Priority: Major\n\nUsers on Safari cannot log in: the form reloads without an error.\n\nMin Lee (2026-10-03T10:00:00Z):\nReproduced on Safari 18.1.\n\nJane Doe (2026-10-04T10:00:00Z):\nLooks like the session cookie is dropped.\n\nMin Lee (2026-10-05T10:00:00Z):\nSameSite=None is missing on the cookie.\n\nJane Doe (2026-10-06T10:00:00Z):\nPatch in review: sets SameSite and Secure.\n\nMin Lee (2026-10-07T10:00:00Z):\nReview: also needs the logout cookie.\n\nJane Doe (2026-10-08T10:00:00Z):\nUpdated the patch for logout.\n\nMin Lee (2026-10-09T10:00:00Z):\nQA: login works on Safari 18.1 with the patch.\n\nJane Doe (2026-10-10T10:00:00Z):\nQA: Safari 19 beta still fails on the second login.\n\nMin Lee (2026-10-11T10:00:00Z):\nSecond login fails because of a stale CSRF token.\n\nJane Doe (2026-10-12T10:00:00Z):\nFix for the CSRF token refresh pushed.\n\nMin Lee (2026-10-13T10:00:00Z):\nQA: Safari 19 passes now.\n\nJane Doe (2026-10-14T10:00:00Z):\nWaiting for the release train 2026.3.\n```\n\n**Where the fix stands:** The SameSite/Secure cookie patch, including the logout cookie, fixed Safari 18.1, and a later CSRF token refresh fix made Safari 19 pass QA on 2026-10-13. The issue is still In Progress, waiting for the 2026.3 release train."
@@ -72,7 +74,8 @@
             "view",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -83,7 +86,8 @@
             "--comments-limit",
             "12"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Here are the last 12 comments on APP-123, \"Login fails on Safari\" (State: In Progress, Assignee: Jane Doe, Priority: Major):\n\n```\nUsers on Safari cannot log in: the form reloads without an error.\n\nMin Lee (2026-10-03T10:00:00Z):\nReproduced on Safari 18.1.\n\nJane Doe (2026-10-04T10:00:00Z):\nLooks like the session cookie is dropped.\n\nMin Lee (2026-10-05T10:00:00Z):\nSameSite=None is missing on the cookie.\n\nJane Doe (2026-10-06T10:00:00Z):\nPatch in review: sets SameSite and Secure.\n\nMin Lee (2026-10-07T10:00:00Z):\nReview: also needs the logout cookie.\n\nJane Doe (2026-10-08T10:00:00Z):\nUpdated the patch for logout.\n\nMin Lee (2026-10-09T10:00:00Z):\nQA: login works on Safari 18.1 with the patch.\n\nJane Doe (2026-10-10T10:00:00Z):\nQA: Safari 19 beta still fails on the second login.\n\nMin Lee (2026-10-11T10:00:00Z):\nSecond login fails because of a stale CSRF token.\n\nJane Doe (2026-10-12T10:00:00Z):\nFix for the CSRF token refresh pushed.\n\nMin Lee (2026-10-13T10:00:00Z):\nQA: Safari 19 passes now.\n\nJane Doe (2026-10-14T10:00:00Z):\nWaiting for the release train 2026.3.\n```\n\n**Where the fix stands:** The cookie fix (SameSite and Secure, including the logout cookie) works on Safari 18.1, and a follow-up CSRF token refresh fix has been pushed that makes Safari 19 pass in QA. The remaining step is the release train 2026.3, so the issue is still In Progress until that ships."
@@ -113,7 +117,8 @@
             "view",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -124,7 +129,8 @@
             "--comments-limit",
             "12"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Here are the last 12 comments on APP-123, from the normal text view:\n\n```\nAPP-123 Login fails on Safari\nState: In Progress  Assignee: Jane Doe  Priority: Major\n\nMin Lee (2026-10-03T10:00:00Z):\nReproduced on Safari 18.1.\n\nJane Doe (2026-10-04T10:00:00Z):\nLooks like the session cookie is dropped.\n\nMin Lee (2026-10-05T10:00:00Z):\nSameSite=None is missing on the cookie.\n\nJane Doe (2026-10-06T10:00:00Z):\nPatch in review: sets SameSite and Secure.\n\nMin Lee (2026-10-07T10:00:00Z):\nReview: also needs the logout cookie.\n\nJane Doe (2026-10-08T10:00:00Z):\nUpdated the patch for logout.\n\nMin Lee (2026-10-09T10:00:00Z):\nQA: login works on Safari 18.1 with the patch.\n\nJane Doe (2026-10-10T10:00:00Z):\nQA: Safari 19 beta still fails on the second login.\n\nMin Lee (2026-10-11T10:00:00Z):\nSecond login fails because of a stale CSRF token.\n\nJane Doe (2026-10-12T10:00:00Z):\nFix for the CSRF token refresh pushed.\n\nMin Lee (2026-10-13T10:00:00Z):\nQA: Safari 19 passes now.\n\nJane Doe (2026-10-14T10:00:00Z):\nWaiting for the release train 2026.3.\n```\n\n**Where the fix stands:** The cookie fix (SameSite and Secure, plus the logout cookie) and the CSRF token refresh fix are both in, and QA confirmed that login passes on Safari 18.1 and Safari 19. The issue is still In Progress, waiting for the 2026.3 release train."

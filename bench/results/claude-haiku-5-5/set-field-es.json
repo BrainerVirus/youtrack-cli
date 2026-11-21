@@ -34,7 +34,8 @@
             "--json",
             "summary,customFields"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -44,7 +45,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -56,7 +58,8 @@
             "--jq",
             ".customFields[] | select(.name==\"Priority\")"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123's Priority is now Critical, up from Major. I re-read the field afterward and it shows \"Critical\".\n\nI passed the English value `Critical` directly and didn't need a localized name. The instance is in Spanish, but the field's value was accepted as written."
@@ -89,7 +92,8 @@
             "--json",
             "idReadable,customFields"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -99,7 +103,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -111,7 +116,8 @@
             "--jq",
             ".customFields[] | select(.name==\"Priority\")"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123's Priority is now Critical, up from Major. I confirmed the change by reading the issue back.\n\nI used the English value name \"Critical\" and YouTrack accepted it, so no Spanish label was needed. The issue is still In Progress and nothing else changed."
@@ -144,7 +150,8 @@
             "--json",
             "summary,customFields"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -154,7 +161,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -166,7 +174,8 @@
             "--jq",
             ".customFields[] | select(.name==\"Priority\")"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-123 (“Login fails on Safari”) now has Priority set to Critical, up from Major. I read it back to confirm.\n\nI used the English value name `Critical` directly. The field values come back in English from the API even though the instance UI is in Spanish, so no localized name was needed."

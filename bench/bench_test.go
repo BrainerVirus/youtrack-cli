@@ -80,8 +80,12 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 		if c == nil {
 			t.Fatalf("no case %s", id)
 		}
+		// Shell commands the taught run typed, for rules on commands.
+		goodCmds := map[string][]string{
+			"create-stdin": {"ls -1 ./export | ytrack issue create -p APP -s 'Files in the export folder' --description-file -"},
+		}[id]
 		t.Run(id, func(t *testing.T) {
-			if f := Grade(c, tc.good, nil, tc.answer); len(f) != 0 {
+			if f := Grade(c, tc.good, goodCmds, tc.answer); len(f) != 0 {
 				t.Errorf("taught calls fail: %v", f)
 			}
 			if f := Grade(c, tc.bad, nil, tc.answer); len(f) == 0 {
@@ -89,6 +93,25 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 			}
 		})
 	}
+	t.Run("meeting-time takes the call's own date as today, whatever the month", func(t *testing.T) {
+		c := cases["meeting-time"]
+		day := "2031-02-03"
+		ok := []Call{{Argv: strings.Fields("work-item add APP-123 --duration 90m --meeting --date " + day), Day: day}}
+		if f := Grade(c, ok, nil, ""); len(f) != 0 {
+			t.Errorf("--date today fails: %v", f)
+		}
+		other := []Call{{Argv: strings.Fields("work-item add APP-123 --duration 90m --meeting --date 2031-02-02"), Day: day}}
+		if f := Grade(c, other, nil, ""); len(f) == 0 {
+			t.Error("another date passes")
+		}
+	})
+	t.Run("create-stdin needs the ls output piped in", func(t *testing.T) {
+		c := cases["create-stdin"]
+		call := []Call{{Argv: strings.Fields("issue create -p APP -s Files --description-file -")}}
+		if f := Grade(c, call, []string{"echo hi | ytrack issue create -p APP -s Files --description-file -"}, ""); len(f) == 0 {
+			t.Error("a description that is not the ls output passes")
+		}
+	})
 	if len(cases) != 12 {
 		t.Errorf("%d cases, the table covers 12", len(cases))
 	}

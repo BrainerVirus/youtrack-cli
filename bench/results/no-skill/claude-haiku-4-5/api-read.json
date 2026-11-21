@@ -33,14 +33,16 @@
           "argv": [
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
             "api",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -54,7 +56,8 @@
             "idReadable,summary",
             "--paginate"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Here are the YouTrack issues matching 'project: APP timeout':\n\n| idReadable | Summary |\n|-----------|---------|\n| **APP-401** | Upload times out after 30 s |\n| **APP-405** | Session timeout too short |\n\nTwo issues were found in the APP project related to timeouts."

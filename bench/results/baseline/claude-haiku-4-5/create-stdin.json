@@ -1,7 +1,7 @@
 {
   "case": "create-stdin",
   "model": "claude-haiku-4-5",
-  "key": "1-cdae0a9d4c001827-4c7c930f04322467-claude-haiku-4-5",
+  "key": "1-134b0ab2b8a00c6c-4c7c930f04322467-claude-haiku-4-5",
   "passes": 1,
   "graded": 3,
   "pass": false,
@@ -43,7 +43,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 1
+          "exit": 1,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -51,7 +52,8 @@
             "create",
             "--help"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -64,7 +66,8 @@
             "-F",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -72,7 +75,8 @@
             "view",
             "APP-130"
           ],
-          "exit": 1
+          "exit": 1,
+          "day": "2026-11-21"
         }
       ],
       "answer": "✓ Done! I've successfully created YouTrack issue **APP-130** with:\n- **Summary:** \"Files in the export folder\"\n- **Description:** The output from `ls -1 export` piped directly in (containing `a.csv` and `b.csv`)\n\nThe issue is available at: https://acme.youtrack.cloud/issue/APP-130"
@@ -107,7 +111,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! Created issue **APP-130** with the summary \"Files in the export folder\" and the output of `ls -1` as the description:\n\n```\nexport\nnotes.md\n```\n\nThe issue is at: https://acme.youtrack.cloud/issue/APP-130"
@@ -117,7 +122,8 @@
       "status": "fail",
       "failed": "require: issue create with the description on stdin",
       "failures": [
-        "require: issue create with the description on stdin"
+        "require: issue create with the description on stdin",
+        "require: the description piped from ls"
       ],
       "turns": 6,
       "tokens": {

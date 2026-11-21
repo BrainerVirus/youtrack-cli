@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/cli/go-gh/v2/pkg/jq"
 	"github.com/spf13/cobra"
@@ -58,7 +59,7 @@ func fakeMain(args []string) int {
 	}
 	fmt.Fprint(os.Stdout, out)
 	fmt.Fprint(os.Stderr, errOut)
-	logCall(filepath.Join(harness, "calls.jsonl"), Call{Argv: args, Exit: code})
+	logCall(filepath.Join(harness, "calls.jsonl"), Call{Argv: args, Exit: code, Day: time.Now().Format(time.DateOnly)})
 	return code
 }
 

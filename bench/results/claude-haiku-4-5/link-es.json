@@ -31,7 +31,8 @@
             "link",
             "--list-types"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -42,7 +43,8 @@
             "--type",
             "subtask of"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! APP-7 is now a subtask of APP-3."
@@ -72,7 +74,8 @@
             "link",
             "--list-types"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -83,7 +86,8 @@
             "--type",
             "parent for"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! APP-7 is now a subtask of APP-3."
@@ -113,7 +117,8 @@
             "link",
             "--list-types"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -124,7 +129,8 @@
             "--type",
             "parent for"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! APP-7 is now a subtask of APP-3. The link was created successfully."

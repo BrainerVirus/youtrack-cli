@@ -32,7 +32,8 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
@@ -63,7 +64,8 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible at: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
@@ -94,7 +96,8 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Comment added to APP-123: \"Reproduced on 2026.2 with Safari 19.\" — view it at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"

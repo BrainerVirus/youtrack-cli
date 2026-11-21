@@ -31,7 +31,8 @@
             "link",
             "--list-types"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -42,7 +43,8 @@
             "--type",
             "subtask of"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -53,7 +55,8 @@
             "--json",
             "phrase,issues"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-7 is now a subtask of APP-3. The link shows up on APP-7 as \"subtask of APP-3\", and the command exited 0.\n\nSince your instance runs in Spanish, I used the language-neutral link type name `Subtask` (phrases \"parent for\" / \"subtask of\"), so no localized wording was involved."
@@ -84,7 +87,8 @@
             "link",
             "--list-types"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -95,7 +99,8 @@
             "--type",
             "parent for"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -106,7 +111,8 @@
             "--json",
             "phrase,issues"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -117,7 +123,8 @@
             "--json",
             "phrase,issues"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         },
         {
           "argv": [
@@ -127,7 +134,8 @@
             "--json",
             "summary,links"
           ],
-          "exit": 1
+          "exit": 1,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-7 is now a subtask of APP-3.\n\nI ran `ytrack issue link APP-3 APP-7 --type 'parent for'`, which the link-type list shows as the \"Subtask\" type. Listing links from APP-3 returns `parent for: APP-7`, so the link is confirmed from that side. Listing from APP-7 returned \"has no links\", which contradicts that, so I'm not treating the check from that side as reliable.\n\nThe Spanish locale didn't affect this, since link phrases are not localized. I didn't use `issue command`, because the skill says to use `issue link` for links."
@@ -159,7 +167,8 @@
             "--type",
             "parent for"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "APP-7 is now a subtask of APP-3. The CLI confirmed the link as \"APP-3 parent for APP-7\".\n\nI used the \"parent for\" link type, which is how YouTrack models subtasks. Since the instance runs in Spanish, I avoided typing the link as a command, because command keywords are localized. The link type phrases are not."

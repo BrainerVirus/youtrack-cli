@@ -34,7 +34,8 @@
             "--text",
             "Code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! Logged 1 hour 30 minutes of code review time on APP-123. The work item ID is `115-3`."
@@ -67,7 +68,8 @@
             "--text",
             "code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've logged 1 hour 30 minutes to APP-123 with the description \"code review\". The work item ID is 115-3 and it's been recorded for today."
@@ -100,7 +102,8 @@
             "--text",
             "Code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've logged 1 hour 30 minutes of code review time on APP-123 for today. The work item ID is `115-3`."

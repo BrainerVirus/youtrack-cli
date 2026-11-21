@@ -1,7 +1,7 @@
 {
   "case": "create-stdin",
   "model": "claude-haiku-4-5",
-  "key": "1-cdae0a9d4c001827-48ccf401f04fcecd-claude-haiku-4-5",
+  "key": "1-134b0ab2b8a00c6c-48ccf401f04fcecd-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -37,7 +37,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! Created YouTrack issue **APP-130** with the summary \"Files in the export folder\" and the output of `ls -1` (a.csv and b.csv) as the description. The issue is at https://acme.youtrack.cloud/issue/APP-130"
@@ -73,7 +74,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! Created YouTrack issue **APP-130** with the summary \"Files in the export folder\" and the output of `ls -1` piped directly into the description. The description now contains:\n```\na.csv\nb.csv\n```"
@@ -109,7 +111,8 @@
             "--description-file",
             "-"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've created YouTrack issue **APP-130** with the summary \"Files in the export folder\" and the output of `ls -1 export/` piped directly into the description. The issue is now at: https://acme.youtrack.cloud/issue/APP-130"

@@ -36,7 +36,8 @@
             "--text",
             "Code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I logged 90 minutes (1h30m) of work on APP-123 for today, 2026-11-21, with the description \"Code review\". The work item ID is 115-3, and it's on https://acme.youtrack.cloud/issue/APP-123."
@@ -71,7 +72,8 @@
             "--text",
             "Code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "I logged 1h30m on APP-123 for today (2026-11-21) with the description \"Code review\". The work item ID is 115-3."
@@ -108,7 +110,8 @@
             "--type",
             "Code review"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Logged 1h30m on APP-123 for 2026-11-21 with the text \"Code review\" (work item 115-3).\n\nI set the activity type to \"Code review\" as you asked. The CLI accepted it, so the type exists on this instance."

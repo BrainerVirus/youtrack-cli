@@ -32,7 +32,8 @@
             "--json",
             "idReadable,state,assignee"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "**APP-123** is currently **In Progress** and assigned to **Jane Doe** (jdoe)."
@@ -63,7 +64,8 @@
             "--json",
             "state,assignee"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "**APP-123 Status:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
@@ -94,7 +96,8 @@
             "--json",
             "state,assignee"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "**APP-123 Status:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"

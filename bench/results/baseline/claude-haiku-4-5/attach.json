@@ -32,7 +32,8 @@
             "APP-123",
             "crash.log"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "denials": [
@@ -94,7 +95,8 @@
             "APP-123",
             "crash.log"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! The crash.log file has been successfully attached to issue APP-123 with attachment ID `8-120`."

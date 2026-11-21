@@ -1,7 +1,7 @@
 {
   "case": "meeting-time",
   "model": "claude-haiku-4-5",
-  "key": "1-8bac3951df2f0587-4c7c930f04322467-claude-haiku-4-5",
+  "key": "1-55945961b1404590-4c7c930f04322467-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -35,7 +35,8 @@
             "2026-11-21",
             "--meeting"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've logged 1h 30m as a meeting on APP-123 for today (work item ID: 115-3). You can view it here: https://acme.youtrack.cloud/issue/APP-123"
@@ -69,7 +70,8 @@
             "2026-11-21",
             "--meeting"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've logged 1h 30m on APP-123 for today (2026-11-21) as a meeting. The work item ID is 115-3."
@@ -101,7 +103,8 @@
             "1h30m",
             "--meeting"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done. I've logged 1h 30m on APP-123 for today (2026-11-21) as a meeting. Work item ID: 115-3."

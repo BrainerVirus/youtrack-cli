@@ -32,7 +32,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done. Issue APP-123's Priority has been set to Critical."
@@ -63,7 +64,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done. I've set the Priority of APP-123 to Critical. The issue has been updated successfully on your YouTrack instance."
@@ -94,7 +96,8 @@
             "--field",
             "Priority=Critical"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical. The issue has been updated at https://acme.youtrack.cloud/issue/APP-123."

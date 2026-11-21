@@ -36,7 +36,8 @@
             "idReadable,summary",
             "--paginate"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Here are the YouTrack issues matching the query 'project: APP timeout':\n\n| Issue ID | Summary |\n|----------|---------|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe REST API call retrieved 2 matching issues with their `idReadable` and `summary` fields as requested."
@@ -71,7 +72,8 @@
             "idReadable,summary",
             "--paginate"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Here are the YouTrack issues matching the query `project: APP timeout`:\n\n| idReadable | summary |\n|------------|---------|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe REST API query found 2 issues in the APP project with \"timeout\" in their content."
@@ -106,7 +108,8 @@
             "idReadable,summary",
             "--paginate"
           ],
-          "exit": 0
+          "exit": 0,
+          "day": "2026-11-21"
         }
       ],
       "answer": "Here are the YouTrack issues matching the query 'project: APP timeout':\n\n| ID | Summary |\n|---|---|\n| **APP-401** | Upload times out after 30 s |\n| **APP-405** | Session timeout too short |"
