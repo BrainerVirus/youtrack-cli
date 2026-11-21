@@ -61,6 +61,7 @@ ytrack issue edit APP-123 --assignee ''               # unassign
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 ytrack issue comment APP-123 --body-file reply.md     # long text; --body-file - reads stdin
 ytrack issue attach APP-123 dump.sql repro.sh
+ytrack issue attachments APP-123                    # files on the issue and its comments
 ```
 
 - An issue has a `--summary` and a `--description`; a comment has a `--body`.
