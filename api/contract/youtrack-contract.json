@@ -24,7 +24,12 @@
     {"method": "GET", "path": "/admin/projects/{id}/customFields", "query": ["fields", "$skip", "$top"], "response": "ProjectCustomField"},
     {"method": "GET", "path": "/admin/projects/{id}/customFields/{projectCustomFieldId}", "query": ["fields"], "response": "ProjectCustomField"},
     {"method": "POST", "path": "/commands", "query": ["fields"], "response": "CommandList"},
-    {"method": "POST", "path": "/commands/assist", "query": ["fields"], "response": "CommandList"}
+    {"method": "POST", "path": "/commands/assist", "query": ["fields"], "response": "CommandList"},
+    {"method": "GET", "path": "/issueLinkTypes", "query": ["fields", "$skip", "$top"], "response": "IssueLinkType"},
+    {"method": "GET", "path": "/issues/{id}/links", "query": ["fields", "$skip", "$top"], "response": "IssueLink"},
+    {"method": "GET", "path": "/issues/{id}/links/{issueLinkId}/issues", "query": ["fields", "$skip", "$top"], "response": "Issue"},
+    {"method": "POST", "path": "/issues/{id}/links/{issueLinkId}/issues", "query": ["fields"], "response": "Issue"},
+    {"method": "DELETE", "path": "/issues/{id}/links/{issueLinkId}/issues/{issueId}", "query": [], "response": ""}
   ],
   "undocumented": [
     {"$comment": "Uploads files to a comment (multipart, like POST /issues/{id}/attachments). The comment's attachments collection is missing from /api/openapi.json, so the openapi-contract workflow does not check it; a GET of it answers the comment's files on YouTrack Cloud (an unknown sub-resource answers 'No subresource for path'), and YouTrack ignores the other ways to attach a file to a comment (files inside the create-comment JSON, attachment IDs in a comment update; issues #31 and #44).", "method": "POST", "path": "/issues/{id}/comments/{issueCommentId}/attachments", "query": ["fields"], "response": "IssueAttachment"}
@@ -86,6 +91,8 @@
       "text": [],
       "issue": ["Issue"]
     },
+    "IssueLink": {"id": [], "direction": [], "linkType": ["IssueLinkType"], "issues": ["Issue"]},
+    "IssueLinkType": {"id": [], "name": [], "sourceToTarget": [], "targetToSource": [], "directed": []},
     "DurationValue": {"minutes": [], "presentation": []},
     "WorkItemType": {"id": [], "name": []},
     "ProjectTimeTrackingSettings": {"enabled": [], "workItemTypes": ["WorkItemType"]},
