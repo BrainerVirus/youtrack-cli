@@ -62,7 +62,8 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 		"api-read": {[]Call{{Argv: []string{"api", "/issues", "-X", "GET", "-f", "query=project: APP timeout", "--fields", "idReadable,summary"}}}, calls("issue list -q timeout"), "APP-401 APP-405"},
 		"help-first": {
 			calls("issue view APP-123 --comments --help", "issue view APP-123 --comments --comments-limit 12"),
-			[]Call{{Argv: strings.Fields("issue view APP-123 --comments --limit 12"), Exit: 1}, {Argv: strings.Fields("issue view --help")}, {Argv: strings.Fields("issue view APP-123 --comments --comments-limit 12")}}, "",
+			[]Call{{Argv: strings.Fields("issue view APP-123 --comments --limit 12"), Exit: 1}, {Argv: strings.Fields("issue view --help")}, {Argv: strings.Fields("issue view APP-123 --comments --comments-limit 12")}},
+			"",
 		},
 	} {
 		c := cases[id]
