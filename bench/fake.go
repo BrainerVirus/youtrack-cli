@@ -180,6 +180,12 @@ func remember(c *Case, p parsed, stdin string) {
 	case "issue link":
 		links, _ := issue["links"].([]any)
 		issue["links"] = append(links, map[string]any{"phrase": strings.ToLower(p.flag("type")), "issues": p.args[1:]})
+	case "issue attach":
+		items, _ := issue["attachments"].([]any)
+		for i, f := range p.args[1:] {
+			items = append(items, map[string]any{"name": filepath.Base(f), "id": fmt.Sprintf("8-%d", 120+i), "size": 68})
+		}
+		issue["attachments"] = items
 	case "work-item add":
 		items, _ := issue["workItems"].([]any)
 		issue["workItems"] = append(items, map[string]any{"id": "115-3", "date": "today", "duration": map[string]any{"presentation": p.flag("duration")}, "text": p.flag("text")})
@@ -280,7 +286,11 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 	case "issue unlink":
 		return "", "✓ Removed the link\n", 0
 	case "issue attachments":
-		return "", "", 0
+		var b strings.Builder
+		for _, a := range attachmentsOf(c, p.args[0]) {
+			fmt.Fprintf(&b, "%s\t%s\t%v\t\n", a["name"], a["id"], a["size"])
+		}
+		return b.String(), "", 0
 	case "work-item add":
 		return addWorkItem(p)
 	case "work-item list":
@@ -298,7 +308,7 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 	case "work-item edit", "work-item delete":
 		return "", "✓ Done\n", 0
 	case "api":
-		return api(p)
+		return api(c, p)
 	}
 	return "", "", 0
 }
@@ -519,7 +529,20 @@ func addWorkItem(p parsed) (string, string, int) {
 
 var readParams = []string{"query", "fields", "customFields", "$top", "$skip"}
 
-func api(p parsed) (string, string, int) {
+var apiAttachments = regexp.MustCompile(`issues/([A-Za-z]+-\d+)/attachments/?$`)
+
+func attachmentsOf(c *Case, id string) []map[string]any {
+	items, _ := c.Fixtures.Issues[issueID(id)]["attachments"].([]any)
+	out := []map[string]any{}
+	for _, it := range items {
+		if m, ok := it.(map[string]any); ok {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func api(c *Case, p parsed) (string, string, int) {
 	params := slices.Concat(p.flags["raw-field"], p.flags["field"])
 	method := strings.ToUpper(p.flag("method"))
 	if method == "" {
@@ -541,6 +564,9 @@ func api(p parsed) (string, string, int) {
 		return fail("--paginate only works with GET requests")
 	}
 	if method == http.MethodGet {
+		if m := apiAttachments.FindStringSubmatch(p.args[0]); m != nil {
+			return toJSON(attachmentsOf(c, m[1])), "", 0
+		}
 		return "[]\n", "", 0
 	}
 	return "{\"$type\":\"Ok\"}\n", "", 0

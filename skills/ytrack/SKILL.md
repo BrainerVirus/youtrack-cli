@@ -7,8 +7,9 @@ metadata:
 
 # ytrack
 
-`ytrack` is a YouTrack CLI modelled on `gh`, but its flags and nouns differ.
-Before you use a flag this page does not show, or need more than an example
+`ytrack` is a YouTrack CLI on your PATH: run the commands below yourself with
+your shell tool (this skill only explains them). It is modelled on `gh`, but
+its flags and nouns differ. Before you use a flag this page does not show, or need more than an example
 here gives (a count, a limit, a filter), run `ytrack <command> --help`; never
 guess a flag. Never scrape the YouTrack web page or call the REST API with
 curl: use the commands below, and `ytrack api` for anything they do not cover.

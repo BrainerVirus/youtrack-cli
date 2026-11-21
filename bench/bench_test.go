@@ -143,6 +143,18 @@ func TestGivenAWriteTheFakeShowsItOnTheNextRead(t *testing.T) {
 			t.Fatalf("%v: exit %d %s", args, code, errOut)
 		}
 	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "crash.log"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, errOut, code := fakeYtrack(c, []string{"issue", "attach", "APP-123", "crash.log"}, dir, ""); code != 0 {
+		t.Fatal(errOut)
+	}
+	for _, args := range [][]string{{"issue", "attachments", "APP-123"}, {"api", "/issues/APP-123/attachments", "--fields", "name"}} {
+		if out, _, _ := fakeYtrack(c, args, dir, ""); !strings.Contains(out, "crash.log") {
+			t.Errorf("%v after the attach = %s", args, out)
+		}
+	}
 	out, _, _ := fakeYtrack(c, []string{"issue", "view", "APP-123", "--json", "customFields"}, t.TempDir(), "")
 	if !strings.Contains(out, `"Critical"`) || !strings.Contains(out, `"Fixed"`) {
 		t.Errorf("view after the writes = %s", out)
