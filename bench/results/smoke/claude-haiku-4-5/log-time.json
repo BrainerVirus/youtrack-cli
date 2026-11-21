@@ -1,7 +1,7 @@
 {
   "case": "log-time",
   "model": "claude-haiku-4-5",
-  "key": "1-fd654376b92f2d39-a71ba559bfc37c35-claude-haiku-4-5",
+  "key": "1-fd654376b92f2d39-cd010055c90e005e-claude-haiku-4-5",
   "passes": 1,
   "graded": 1,
   "pass": true,
@@ -12,16 +12,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 659,
-        "cacheCreation": 10176,
-        "cacheRead": 54814
+        "output": 491,
+        "cacheCreation": 9981,
+        "cacheRead": 54731
       },
-      "costUSD": 0.029156400000000002,
-      "durationMs": 9626,
+      "costUSD": 0.0279181,
+      "durationMs": 7845,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack work-item add APP-123 --duration 1h30m --text \"Code review\""
+        "ytrack work-item add APP-123 --duration 1h30m --text 'Code review'"
       ],
       "calls": [
         {
@@ -37,7 +37,7 @@
           "exit": 0
         }
       ],
-      "answer": "Done. I've logged 1h30m of code review time on APP-123 for today."
+      "answer": "Done! I've logged 1h30m of code review time on APP-123 for today (work item ID: 115-3)."
     }
   ]
 }

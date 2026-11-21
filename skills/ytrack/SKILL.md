@@ -7,12 +7,14 @@ metadata:
 
 # ytrack
 
+**Never guess a flag: if the flag you need is not shown here, run
+`ytrack <command> --help` first.**
+
 `ytrack` is a YouTrack CLI on your PATH: run the commands below yourself with
 your shell tool (this skill only explains them). It is modelled on `gh`, but
-its flags and nouns differ. Before you use a flag this page does not show, or need more than an example
-here gives (a count, a limit, a filter), run `ytrack <command> --help`; never
-guess a flag. Never scrape the YouTrack web page or call the REST API with
-curl: use the commands below, and `ytrack api` for anything they do not cover.
+its flags and nouns differ. Never scrape the YouTrack web page or call the
+REST API with curl: use the commands below, and `ytrack api` for anything
+they do not cover.
 
 ## Hosts, auth and exit codes
 
@@ -35,7 +37,7 @@ curl: use the commands below, and `ytrack api` for anything they do not cover.
 
 ```sh
 ytrack issue view APP-123 --json summary,state,assignee,customFields,comments
-ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments   # latest 10; --help for more
+ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments   # the latest 10 comments
 ytrack issue list -q 'project: APP Assignee: me #Unresolved'
 ytrack issue list --project APP --assignee me --state 'In Progress' --sort 'updated desc'
 ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state

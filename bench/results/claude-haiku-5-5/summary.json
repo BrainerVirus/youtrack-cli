@@ -1,7 +1,7 @@
 {
   "model": "claude-haiku-5-5",
-  "skillHash": "a71ba559bfc37c35",
-  "skillBytes": 18189,
+  "skillHash": "cd010055c90e005e",
+  "skillBytes": 18119,
   "cases": [
     {
       "case": "api-read",
@@ -52,11 +52,11 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 58228.3,
-      "sdTotalInput": 38.4,
-      "meanOutput": 961.7,
-      "meanDurationMs": 9905.3,
-      "costUSD": 0.0094
+      "meanTotalInput": 58285.7,
+      "sdTotalInput": 39.1,
+      "meanOutput": 1018.7,
+      "meanDurationMs": 7104.3,
+      "costUSD": 0.0095
     },
     {
       "case": "link-es",
@@ -102,6 +102,7 @@
     },
     {
       "case": "search-query",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -115,6 +116,7 @@
     },
     {
       "case": "set-field-es",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -150,12 +152,12 @@
     "passRate": 1,
     "tokens": {
       "input": 210,
-      "output": 14239,
-      "cacheCreation": 296299,
-      "cacheRead": 1728118
+      "output": 14410,
+      "cacheCreation": 296487,
+      "cacheRead": 1728102
     },
-    "totalInput": 2024627,
-    "meanTotalInputPerRun": 67487.6,
-    "costUSD": 0.0837
+    "totalInput": 2024799,
+    "meanTotalInputPerRun": 67493.3,
+    "costUSD": 0.0838
   }
 }

@@ -1,7 +1,7 @@
 {
   "case": "attach",
   "model": "claude-haiku-4-5",
-  "key": "1-133f5d0cea49e03d-a71ba559bfc37c35-claude-haiku-4-5",
+  "key": "1-133f5d0cea49e03d-cd010055c90e005e-claude-haiku-4-5",
   "passes": 1,
   "graded": 1,
   "pass": true,
@@ -11,13 +11,13 @@
       "status": "pass",
       "turns": 5,
       "tokens": {
-        "input": 28,
-        "output": 644,
-        "cacheCreation": 10195,
-        "cacheRead": 54992
+        "input": 36,
+        "output": 627,
+        "cacheCreation": 10242,
+        "cacheRead": 75176
       },
-      "costUSD": 0.0291372,
-      "durationMs": 11265,
+      "costUSD": 0.031172599999999998,
+      "durationMs": 8211,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -35,7 +35,7 @@
           "exit": 0
         }
       ],
-      "answer": "Done! I've successfully attached the crash.log file to YouTrack issue APP-123. The file has been uploaded and is now accessible on the issue."
+      "answer": "Done! The crash.log file has been successfully attached to YouTrack issue APP-123 (attachment ID: 8-120)."
     }
   ]
 }

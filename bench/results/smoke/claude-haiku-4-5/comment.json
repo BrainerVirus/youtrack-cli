@@ -1,7 +1,7 @@
 {
   "case": "comment",
   "model": "claude-haiku-4-5",
-  "key": "1-69ffb72ae5ff141c-a71ba559bfc37c35-claude-haiku-4-5",
+  "key": "1-69ffb72ae5ff141c-cd010055c90e005e-claude-haiku-4-5",
   "passes": 1,
   "graded": 1,
   "pass": true,
@@ -12,12 +12,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 495,
-        "cacheCreation": 9959,
-        "cacheRead": 54739
+        "output": 646,
+        "cacheCreation": 10121,
+        "cacheRead": 54844
       },
-      "costUSD": 0.0278949,
-      "durationMs": 11510,
+      "costUSD": 0.0289844,
+      "durationMs": 9589,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -35,7 +35,7 @@
           "exit": 0
         }
       ],
-      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to issue APP-123. The comment is now visible at: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
+      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible at the URL returned above."
     }
   ]
 }

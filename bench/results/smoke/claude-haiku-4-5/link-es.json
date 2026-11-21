@@ -1,7 +1,7 @@
 {
   "case": "link-es",
   "model": "claude-haiku-4-5",
-  "key": "1-173ab6d51aff04a9-a71ba559bfc37c35-claude-haiku-4-5",
+  "key": "1-173ab6d51aff04a9-cd010055c90e005e-claude-haiku-4-5",
   "passes": 1,
   "graded": 1,
   "pass": true,
@@ -11,13 +11,13 @@
       "status": "pass",
       "turns": 5,
       "tokens": {
-        "input": 36,
-        "output": 688,
-        "cacheCreation": 10321,
-        "cacheRead": 77435
+        "input": 35,
+        "output": 936,
+        "cacheCreation": 10515,
+        "cacheRead": 77589
       },
-      "costUSD": 0.0318615,
-      "durationMs": 8575,
+      "costUSD": 0.0335039,
+      "durationMs": 12106,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [

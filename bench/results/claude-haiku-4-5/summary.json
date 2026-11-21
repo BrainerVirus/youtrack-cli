@@ -1,7 +1,7 @@
 {
   "model": "claude-haiku-4-5",
-  "skillHash": "a71ba559bfc37c35",
-  "skillBytes": 18189,
+  "skillHash": "cd010055c90e005e",
+  "skillBytes": 18119,
   "cases": [
     {
       "case": "api-read",
@@ -47,20 +47,16 @@
     },
     {
       "case": "help-first",
-      "pass": false,
-      "passes": 1,
+      "pass": true,
+      "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "failed": [
-        "require: issue view --help before a guessed flag",
-        "require: issue view --help before a guessed flag"
-      ],
-      "meanTurns": 6,
-      "meanTotalInput": 112615.7,
-      "sdTotalInput": 349.1,
-      "meanOutput": 1131,
-      "meanDurationMs": 18781.7,
-      "costUSD": 0.1162
+      "meanTurns": 4,
+      "meanTotalInput": 65901.7,
+      "sdTotalInput": 147.6,
+      "meanOutput": 1351,
+      "meanDurationMs": 15063.7,
+      "costUSD": 0.1037
     },
     {
       "case": "link-es",
@@ -106,6 +102,7 @@
     },
     {
       "case": "search-query",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -119,6 +116,7 @@
     },
     {
       "case": "set-field-es",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -147,19 +145,19 @@
   ],
   "totals": {
     "cases": 10,
-    "casesPassed": 9,
+    "casesPassed": 10,
     "runs": 30,
     "graded": 30,
-    "passes": 28,
-    "passRate": 0.9333,
+    "passes": 30,
+    "passRate": 1,
     "tokens": {
-      "input": 944,
-      "output": 21452,
-      "cacheCreation": 309123,
-      "cacheRead": 1934862
+      "input": 896,
+      "output": 22112,
+      "cacheCreation": 308243,
+      "cacheRead": 1795648
     },
-    "totalInput": 2244929,
-    "meanTotalInputPerRun": 74831,
-    "costUSD": 0.9199
+    "totalInput": 2104787,
+    "meanTotalInputPerRun": 70159.6,
+    "costUSD": 0.9075
   }
 }
