@@ -136,6 +136,23 @@ ytrack issue command APP-123 APP-124 'Assignee me' --silent
 - Prefer `ytrack issue edit` for plain field, tag and assignee changes.
   More: [references/commands.md](references/commands.md).
 
+## Links between issues
+
+```sh
+ytrack issue link --list-types                          # each type's two phrases
+ytrack issue link APP-1 APP-2 --type 'depends on'       # APP-1 depends on APP-2
+ytrack issue link APP-1 APP-5 APP-6 --type 'parent for'
+ytrack issue link APP-1 --list --json phrase,issues
+ytrack issue unlink APP-1 APP-2 --type 'depends on'
+```
+
+- Read "APP-1 <phrase> APP-2". `--type` is one of the phrases
+  `--list-types` prints (case is ignored); the phrase picks the direction.
+  An undirected type also takes its name (`--type Relates`); a directed
+  type's name (`Depend`) is refused because it has no direction.
+- Use these, never `ytrack issue command APP-1 'depends on APP-2'`: link
+  keywords in the command language are localized, the phrases are not.
+
 ## Time tracking (work items)
 
 ```sh

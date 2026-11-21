@@ -1234,6 +1234,37 @@ and exits 1 naming the failures. The host is resolved like `issue view`
 (issue URL, then the key's owning host). The signed file path is listed
 under `files` in the API contract, outside the OpenAPI check.
 
+## 14.8 Links
+
+```bash
+ytrack issue link APP-1 APP-2... --type <phrase> [--json issue,type,phrase,direction,issues]
+ytrack issue link APP-1 --list [--json issue,type,phrase,direction,issues]
+ytrack issue link --list-types [--json id,name,sourceToTarget,targetToSource,directed]
+ytrack issue unlink APP-1 APP-2... --type <phrase>
+```
+
+A link reads "APP-1 *phrase* APP-2". `--type` matches, ignoring case, a link
+type's `sourceToTarget` or `targetToSource` phrase from
+`GET /issueLinkTypes?fields=id,name,sourceToTarget,targetToSource,directed`,
+or the name of an undirected type. The phrase picks the issue's link
+collection: `sourceToTarget` is `<typeId>s` (OUTWARD), `targetToSource` is
+`<typeId>t` (INWARD) and an undirected type is `<typeId>` (BOTH). A directed
+type's name, an unknown phrase or one that matches two types is a usage
+error that lists the valid values, before any write. These phrases are the
+type's own and do not change with the UI language, whereas link keywords in
+`issue command` are localized, which is why links have their own command.
+The `localized*` phrases are not matched.
+
+`link` sends `POST /issues/{id}/links/{linkId}/issues` with
+`{"idReadable": "<target>"}` per target (linking an existing link again is a
+no-op on YouTrack). `--list` reads `GET /issues/{id}/links?fields=id,
+direction,linkType(...),issues(idReadable)` and prints `phrase<TAB>issue`
+per linked issue, skipping empty ends. `unlink` reads
+`GET /issues/{id}/links/{linkId}/issues?fields=id,idReadable`, refuses with
+nothing removed when a target is not on that end, then sends
+`DELETE /issues/{id}/links/{linkId}/issues/{targetDatabaseId}` (YouTrack
+answers 404 for a readable ID there).
+
 ---
 
 # 15. YouTrack commands as a first-class feature

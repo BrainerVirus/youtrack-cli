@@ -12,7 +12,9 @@ Work with YouTrack issues
   <accent>create     </> Create an issue
   <accent>download   </> Download the attachments of an issue
   <accent>edit       </> Edit an issue
+  <accent>link       </> Link issues, or list an issue's links or the link types
   <accent>list       </> List issues
+  <accent>unlink     </> Remove links between issues
   <accent>view       </> Show an issue
 
 <bold>Flags:</>
