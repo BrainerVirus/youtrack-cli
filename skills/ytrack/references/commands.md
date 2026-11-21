@@ -43,7 +43,12 @@ quotes inside the command: `State In Progress`.
 - adding or removing one value of a multi-value field without replacing the
   others (`add Fix versions 2026.3`, `remove Fix versions 2026.2`; keywords,
   so `--dry-run` first)
-- links between issues (`relates to APP-7`, `duplicates APP-9`; keywords)
 - anything else the YouTrack command dialog can do
+
+Links between issues are not a command job: link phrases such as
+`depends on APP-7` are localized in the command language, so use
+`ytrack issue link APP-1 APP-7 --type 'depends on'` and
+`ytrack issue unlink APP-1 APP-7 --type 'depends on'`, which take the link
+type's own phrase on every locale (`ytrack issue link --list-types`).
 
 Reference: https://www.jetbrains.com/help/youtrack/cloud/commands.html

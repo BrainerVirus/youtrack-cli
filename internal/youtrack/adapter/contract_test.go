@@ -12,6 +12,7 @@ import (
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter/customfields"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/link"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	workitem "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/shared"
 )
@@ -233,6 +234,10 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"work-item", "add", "NSR-40", "--duration", "1h30m", "--type", "Testing", "--text", "contract", "--date", "2026-10-06"},
 		{"work-item", "edit", "NSR-40", "115-1", "--duration", "2h", "--type", "Documentation", "--text", "", "--date", "2026-10-05"},
 		{"work-item", "delete", "NSR-40", "115-2", "--yes"},
+		{"issue", "link", "--list-types", "--json", strings.Join(link.TypeFields, ",")},
+		{"issue", "link", "NSR-40", "NSR-41", "--type", "depends on"},
+		{"issue", "link", "NSR-40", "--list", "--json", strings.Join(link.LinkFields, ",")},
+		{"issue", "unlink", "NSR-40", "NSR-41", "--type", "depends on"},
 		{
 			"issue", "create", "-p", "NSR", "-s", "contract", "--description", "body", "--assignee", "me", "--tag", "backend",
 			"--field", "Priority=Critical", "--field", "Subsystem=Auth,Web", "--field", "Due Date=2026-10-20",

@@ -216,6 +216,29 @@ notifications (it needs the *Apply Commands Silently* permission; on a 403,
 retry without it). `--json` reports `issue`, `url`, `issues` (every issue with its
 URL), `command`, `dryRun` and `commands` (the parsed parts).
 
+### Links
+
+```sh
+ytrack issue link --list-types                        # name and both phrases of each link type
+ytrack issue link APP-1 APP-2 --type 'depends on'     # APP-1 depends on APP-2
+ytrack issue link APP-1 APP-5 APP-6 --type 'parent for'
+ytrack issue link APP-1 --list                        # phrase<TAB>issue per linked issue
+ytrack issue link APP-1 --list --json phrase,direction,issues
+ytrack issue unlink APP-1 APP-2 --type 'depends on'
+```
+
+A link reads "APP-1 *phrase* APP-2". `--type` takes a link type's phrase as
+the instance defines it (`depends on`, `is required for`, `subtask of`,
+`relates to`, ...; case is ignored), and the phrase picks the direction. An
+undirected type also answers to its name (`--type Relates`); a directed
+type's name (`Depend`) says no direction and is refused with the list of
+valid phrases. These phrases are the same in every UI language, unlike link
+keywords in `issue command`, which YouTrack localizes. `--json` reports
+`issue`, `type`, `phrase`, `direction` (`OUTWARD`, `INWARD` or `BOTH`) and
+`issues`; `--list-types --json` reports `id`, `name`, `sourceToTarget`,
+`targetToSource` and `directed`. `issue unlink` refuses, and removes nothing,
+when a target is not linked that way.
+
 ## Time tracking
 
 ```sh

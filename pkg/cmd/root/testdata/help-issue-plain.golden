@@ -12,7 +12,9 @@ Available Commands:
   create      Create an issue
   download    Download the attachments of an issue
   edit        Edit an issue
+  link        Link issues, or list an issue's links or the link types
   list        List issues
+  unlink      Remove links between issues
   view        Show an issue
 
 Flags:

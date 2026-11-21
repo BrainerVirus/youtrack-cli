@@ -67,6 +67,9 @@ type Request struct {
 //	                                reads, updates (merging the body) or deletes one,
 //	                                found by ID across all issues (any {id})
 //	GET  /api/admin/projects/{id}/timeTrackingSettings   TimeTracking[project id]
+//	GET  /api/issueLinkTypes, GET /api/issues/{id}/links, and GET|POST|DELETE
+//	                                /api/issues/{id}/links/{link}/issues[/{issue}]
+//	                                read and change Links (see linkRoutes)
 //	GET  /api/plain                 a text/plain body
 //	GET  /users/me                  the web token page (no auth; 404 if HubTokenPage)
 //
@@ -101,6 +104,11 @@ type FakeYouTrack struct {
 	MissingFiles []string
 	// WorkItems holds each issue's work items by readable ID.
 	WorkItems map[string][]map[string]any
+	// LinkTypes are the issue link types; nil means YouTrack Cloud's
+	// predefined ones (Relates, Depend, Duplicate, Subtask).
+	LinkTypes []map[string]any
+	// Links are the links between Issues.
+	Links []Link
 	// TimeTracking holds project time tracking settings by project ID.
 	TimeTracking map[string]map[string]any
 	// Projects, ProjectFields (by project ID) and Tags back issue writes.
@@ -217,6 +225,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 	mux.HandleFunc("POST /api/issues/{id}/comments/{comment}/attachments", yt.attachToComment)
 	yt.workItemRoutes(mux)
 	yt.issueWriteRoutes(mux)
+	yt.linkRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = io.WriteString(w, "plain text")
