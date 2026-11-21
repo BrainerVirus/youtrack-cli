@@ -43,7 +43,7 @@ func NewCmdAdd(f *cmdutil.Factory) *cobra.Command {
 "2 hours 15 minutes", or a bare number of minutes (90). Days and weeks are
 not accepted because their length depends on the YouTrack work schedule.
 
-` + shared.DateHelp + `
+` + shared.AddDateHelp + `
 
 --type takes a work item type name from the project's time tracking
 settings (case is ignored) or its id; names follow the instance's language,

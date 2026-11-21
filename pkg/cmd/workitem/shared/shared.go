@@ -33,10 +33,16 @@ const FieldsHelp = `  id        work item ID, e.g. 115-3
   issue     readable ID of the issue
   url       issue web URL`
 
-// DateHelp explains --date for command help.
-const DateHelp = `--date auto (the default) is today in your work timezone: the timezone
+// DateHelp explains --date for command help; AddDateHelp also says it is
+// the default, which it is only for work-item add.
+const (
+	DateHelp    = "--date auto is today in your work timezone: " + dateHelpTail
+	AddDateHelp = "--date auto (the default) is today in your work timezone: " + dateHelpTail
+
+	dateHelpTail = `the timezone
 setting in config.yml (an IANA zone such as Europe/Madrid) when set,
 otherwise the system timezone (TZ). YouTrack stores the day only.`
+)
 
 var itemIDPattern = regexp.MustCompile(`^[0-9]+-[0-9]+$`)
 
