@@ -51,6 +51,10 @@ func fakeMain(args []string) int {
 	stdin, _ := readStdinIfPiped()
 	cwd, _ := os.Getwd()
 	out, errOut, code := fakeYtrack(&c, args, cwd, stdin)
+	// A write changes the fixtures, so a later read shows it.
+	if after, err := json.Marshal(&c); err == nil && !bytes.Equal(after, b) {
+		_ = os.WriteFile(filepath.Join(harness, "case.json"), after, 0o600)
+	}
 	fmt.Fprint(os.Stdout, out)
 	fmt.Fprint(os.Stderr, errOut)
 	logCall(filepath.Join(harness, "calls.jsonl"), Call{Argv: args, Exit: code})
@@ -93,12 +97,9 @@ type parsed struct {
 	flags map[string][]string
 }
 
-func (p parsed) flag(name string) string {
-	if v := p.flags[name]; len(v) > 0 {
-		return v[0]
-	}
-	return ""
-}
+// flag is a flag's value; a list flag such as --json fields comes back
+// comma-joined, as it was written.
+func (p parsed) flag(name string) string { return strings.Join(p.flags[name], ",") }
 
 func (p parsed) has(name string) bool { _, ok := p.flags[name]; return ok }
 
@@ -132,7 +133,94 @@ func fakeYtrack(c *Case, args []string, cwd, stdin string) (string, string, int)
 			return r.Stdout, r.Stderr, r.Exit
 		}
 	}
-	return reply(c, *hit, cwd, stdin)
+	rOut, rErr, code := reply(c, *hit, cwd, stdin)
+	if code == 0 {
+		remember(c, *hit, stdin)
+	}
+	return rOut, rErr, code
+}
+
+// remember applies a successful write to the fixtures: fields, assignee and
+// summary (issue edit, issue command), comments, links and work items.
+func remember(c *Case, p parsed, stdin string) {
+	if len(p.args) == 0 || p.has("dry-run") || p.has("list") || p.has("list-types") {
+		return
+	}
+	issue := c.Fixtures.Issues[issueID(p.args[0])]
+	if issue == nil {
+		return
+	}
+	switch p.path {
+	case "issue edit":
+		for _, fv := range p.flags["field"] {
+			name, value, _ := strings.Cut(fv, "=")
+			setField(issue, name, value)
+		}
+		if p.has("assignee") {
+			setField(issue, "Assignee", p.flag("assignee"))
+		}
+		if p.has("summary") {
+			issue["summary"] = p.flag("summary")
+		}
+	case "issue command":
+		text := p.args[len(p.args)-1]
+		for _, name := range append(fieldNames(issue), "Assignee") {
+			if v, ok := strings.CutPrefix(strings.ToLower(text), strings.ToLower(name)+" "); ok {
+				setField(issue, name, text[len(text)-len(v):])
+				break
+			}
+		}
+	case "issue comment":
+		body := p.flag("body")
+		if p.flag("body-file") == "-" {
+			body = stdin
+		}
+		comments, _ := issue["comments"].([]any)
+		issue["comments"] = append(comments, map[string]any{"id": "4-99", "author": map[string]any{"login": "jdoe", "fullName": "Jane Doe"}, "text": body})
+	case "issue link":
+		links, _ := issue["links"].([]any)
+		issue["links"] = append(links, map[string]any{"phrase": strings.ToLower(p.flag("type")), "issues": p.args[1:]})
+	case "work-item add":
+		items, _ := issue["workItems"].([]any)
+		issue["workItems"] = append(items, map[string]any{"id": "115-3", "date": "today", "duration": map[string]any{"presentation": p.flag("duration")}, "text": p.flag("text")})
+	}
+}
+
+func fieldNames(issue map[string]any) []string {
+	var names []string
+	fields, _ := issue["customFields"].([]any)
+	for _, f := range fields {
+		if m, ok := f.(map[string]any); ok {
+			names = append(names, str(m["name"]))
+		}
+	}
+	return names
+}
+
+func setField(issue map[string]any, name, value string) {
+	var v any = value
+	if strings.EqualFold(name, "Assignee") {
+		switch value {
+		case "":
+			v = nil
+		case "me", "jdoe":
+			v = map[string]any{"login": "jdoe", "fullName": "Jane Doe"}
+		default:
+			v = map[string]any{"login": value, "fullName": value}
+		}
+	}
+	key := strings.ToLower(name)
+	if _, ok := issue[key]; ok {
+		issue[key] = v
+	}
+	fields, _ := issue["customFields"].([]any)
+	for _, f := range fields {
+		if m, ok := f.(map[string]any); ok && strings.EqualFold(str(m["name"]), name) {
+			m["value"] = v
+			return
+		}
+	}
+	issue["customFields"] = append(fields, map[string]any{"name": name, "value": v})
 }
 
 // stubRuns replaces every leaf command's run with one that records the
@@ -188,7 +276,7 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 	case "issue command":
 		return command(p)
 	case "issue link":
-		return link(p)
+		return link(c, p)
 	case "issue unlink":
 		return "", "✓ Removed the link\n", 0
 	case "issue attachments":
@@ -196,10 +284,17 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 	case "work-item add":
 		return addWorkItem(p)
 	case "work-item list":
+		items, _ := c.Fixtures.Issues[issueID(p.args[0])]["workItems"].([]any)
 		if p.has("json") {
-			return "[]\n", "", 0
+			if items == nil {
+				items = []any{}
+			}
+			return toJSON(items), "", 0
 		}
-		return "", "no work items\n", 0
+		if len(items) == 0 {
+			return "", "no work items\n", 0
+		}
+		return toJSON(items), "", 0
 	case "work-item edit", "work-item delete":
 		return "", "✓ Done\n", 0
 	case "api":
@@ -247,6 +342,11 @@ func str(v any) string {
 func viewIssue(c *Case, p parsed) (string, string, int) {
 	id := issueID(p.args[0])
 	issue, ok := c.Fixtures.Issues[id]
+	for _, is := range c.Fixtures.List {
+		if !ok && str(is["idReadable"]) == id {
+			issue, ok = is, true
+		}
+	}
 	if !ok {
 		return fail("issue %s not found on %s", id, fakeHost)
 	}
@@ -363,7 +463,7 @@ var linkTypes = []linkType{
 	{"Relates", "relates to", "relates to"},
 }
 
-func link(p parsed) (string, string, int) {
+func link(c *Case, p parsed) (string, string, int) {
 	if p.has("list-types") {
 		var b strings.Builder
 		b.WriteString("NAME\tOUTWARD\tINWARD\n")
@@ -373,7 +473,20 @@ func link(p parsed) (string, string, int) {
 		return b.String(), "", 0
 	}
 	if p.has("list") {
-		return "", issueID(p.args[0]) + " has no links\n", 0
+		issue := c.Fixtures.Issues[issueID(p.args[0])]
+		links, _ := issue["links"].([]any)
+		if len(links) == 0 {
+			return "", issueID(p.args[0]) + " has no links\n", 0
+		}
+		if p.has("json") {
+			return toJSON(links), "", 0
+		}
+		var b strings.Builder
+		for _, l := range links {
+			m, _ := l.(map[string]any)
+			fmt.Fprintf(&b, "%s\t%v\n", m["phrase"], m["issues"])
+		}
+		return b.String(), "", 0
 	}
 	if len(p.args) < 2 || !p.has("type") {
 		return fail("give the issue, the issues to link and --type <phrase>")

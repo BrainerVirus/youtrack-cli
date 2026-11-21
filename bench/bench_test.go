@@ -113,6 +113,7 @@ func TestGivenTheFakeYtrack(t *testing.T) {
 		{"it fails on a missing attachment", []string{"issue", "attach", "APP-1", "a.txt", "nope.log"}, 1, "nope.log"},
 		{"it attaches existing files", []string{"issue", "attach", "APP-1", "a.txt"}, 0, "a.txt\t8-120"},
 		{"it refuses an unknown --json field like ytrack", []string{"issue", "view", "APP-123", "--json", "bogus"}, 1, "unknown JSON field"},
+		{"it keeps every --json field", []string{"issue", "view", "APP-123", "--json", "state,assignee"}, 0, `"fullName": "Jane Doe"`},
 		{"it filters --json fields", []string{"issue", "view", "https://acme.youtrack.cloud/issue/APP-123", "--json", "state"}, 0, `"state": "In Progress"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -121,6 +122,33 @@ func TestGivenTheFakeYtrack(t *testing.T) {
 				t.Errorf("exit %d, output %q; want exit %d containing %q", code, out+errOut, tc.code, tc.contains)
 			}
 		})
+	}
+}
+
+func TestGivenAListedIssueTheFakeViewsIt(t *testing.T) {
+	c := loadAll(t)["my-issues-es"]
+	out, errOut, code := fakeYtrack(c, []string{"issue", "view", "APP-315", "--json", "summary,state"}, t.TempDir(), "")
+	if code != 0 || !strings.Contains(out, "Dark mode") || !strings.Contains(out, "In Progress") {
+		t.Errorf("exit %d, %s%s", code, out, errOut)
+	}
+}
+
+func TestGivenAWriteTheFakeShowsItOnTheNextRead(t *testing.T) {
+	c := loadAll(t)["set-field-es"]
+	for _, args := range [][]string{
+		{"issue", "edit", "APP-123", "--field", "Priority=Critical"},
+		{"issue", "command", "APP-123", "State Fixed"},
+	} {
+		if _, errOut, code := fakeYtrack(c, args, t.TempDir(), ""); code != 0 {
+			t.Fatalf("%v: exit %d %s", args, code, errOut)
+		}
+	}
+	out, _, _ := fakeYtrack(c, []string{"issue", "view", "APP-123", "--json", "customFields"}, t.TempDir(), "")
+	if !strings.Contains(out, `"Critical"`) || !strings.Contains(out, `"Fixed"`) {
+		t.Errorf("view after the writes = %s", out)
+	}
+	if out, _, _ := fakeYtrack(c, []string{"issue", "view", "APP-123"}, t.TempDir(), ""); !strings.Contains(out, "Priority: Critical") {
+		t.Errorf("text view after the edit = %s", out)
 	}
 }
 
