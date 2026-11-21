@@ -1,0 +1,106 @@
+{
+  "case": "meeting-time",
+  "model": "claude-haiku-4-5",
+  "key": "1-8bac3951df2f0587-48ccf401f04fcecd-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 716,
+        "cacheCreation": 10268,
+        "cacheRead": 54800
+      },
+      "costUSD": 0.029624000000000004,
+      "durationMs": 10062,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --meeting"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--meeting"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done. I've logged 1h 30m as a meeting on APP-123 for today (work item ID: 115-3)."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 896,
+        "cacheCreation": 10405,
+        "cacheRead": 54796
+      },
+      "costUSD": 0.0307976,
+      "durationMs": 11305,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --meeting"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--meeting"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done! I've logged 1h 30m as a meeting on APP-123 for today (2026-11-21). The work item ID is 115-3 and you can view it here: https://acme.youtrack.cloud/issue/APP-123"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 1013,
+        "cacheCreation": 10529,
+        "cacheRead": 54780
+      },
+      "costUSD": 0.031629,
+      "durationMs": 12931,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration '1h 30m' --meeting"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h 30m",
+            "--meeting"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done. I logged 1h 30m as a meeting on APP-123 for today. The work item (ID: 115-3) is recorded at https://acme.youtrack.cloud/issue/APP-123."
+    }
+  ]
+}

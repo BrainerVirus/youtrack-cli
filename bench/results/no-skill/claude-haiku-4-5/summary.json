@@ -1,0 +1,213 @@
+{
+  "model": "claude-haiku-4-5",
+  "skillHash": "none",
+  "skillBytes": 0,
+  "cases": [
+    {
+      "case": "api-read",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 0,
+      "meanTurns": 7,
+      "meanTotalInput": 147579,
+      "sdTotalInput": 0,
+      "meanOutput": 1229,
+      "meanDurationMs": 16311,
+      "costUSD": 0.0405
+    },
+    {
+      "case": "attach",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue attach crash.log"
+      ],
+      "meanTurns": 3,
+      "meanTotalInput": 60644,
+      "sdTotalInput": 0,
+      "meanOutput": 979,
+      "meanDurationMs": 12541,
+      "costUSD": 0.0262
+    },
+    {
+      "case": "comment",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue comment with the text"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19675,
+      "sdTotalInput": 0,
+      "meanOutput": 412,
+      "meanDurationMs": 6340,
+      "costUSD": 0.0173
+    },
+    {
+      "case": "create-stdin",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue create with the description on stdin"
+      ],
+      "meanTurns": 4,
+      "meanTotalInput": 80883,
+      "sdTotalInput": 0,
+      "meanOutput": 938,
+      "meanDurationMs": 11716,
+      "costUSD": 0.0283
+    },
+    {
+      "case": "help-first",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue view text with 12 comments"
+      ],
+      "meanTurns": 3,
+      "meanTotalInput": 60772,
+      "sdTotalInput": 0,
+      "meanOutput": 1008,
+      "meanDurationMs": 13122,
+      "costUSD": 0.0265
+    },
+    {
+      "case": "link-es",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue link with the subtask phrase"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19666,
+      "sdTotalInput": 0,
+      "meanOutput": 569,
+      "meanDurationMs": 6572,
+      "costUSD": 0.0181
+    },
+    {
+      "case": "log-time",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: work-item add with 1h30m"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19669,
+      "sdTotalInput": 0,
+      "meanOutput": 357,
+      "meanDurationMs": 5763,
+      "costUSD": 0.017
+    },
+    {
+      "case": "meeting-time",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: work-item add --meeting 1h 30m"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19665,
+      "sdTotalInput": 0,
+      "meanOutput": 505,
+      "meanDurationMs": 6744,
+      "costUSD": 0.0178
+    },
+    {
+      "case": "my-issues-es",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue list for me"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19669,
+      "sdTotalInput": 0,
+      "meanOutput": 438,
+      "meanDurationMs": 6455,
+      "costUSD": 0.0174
+    },
+    {
+      "case": "search-query",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue list with a tag query on APP"
+      ],
+      "meanTurns": 4,
+      "meanTotalInput": 80921,
+      "sdTotalInput": 0,
+      "meanOutput": 885,
+      "meanDurationMs": 11890,
+      "costUSD": 0.0277
+    },
+    {
+      "case": "set-field-es",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue edit --field Priority=Critical"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19665,
+      "sdTotalInput": 0,
+      "meanOutput": 349,
+      "meanDurationMs": 5588,
+      "costUSD": 0.017
+    },
+    {
+      "case": "view-json",
+      "pass": false,
+      "passes": 0,
+      "graded": 1,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue view with --json fields"
+      ],
+      "meanTurns": 3,
+      "meanTotalInput": 60431,
+      "sdTotalInput": 0,
+      "meanOutput": 754,
+      "meanDurationMs": 9943,
+      "costUSD": 0.0247
+    }
+  ],
+  "totals": {
+    "cases": 12,
+    "casesPassed": 1,
+    "runs": 12,
+    "graded": 12,
+    "passes": 1,
+    "passRate": 0.0833,
+    "tokens": {
+      "input": 264,
+      "output": 8423,
+      "cacheCreation": 92194,
+      "cacheRead": 516781
+    },
+    "totalInput": 609239,
+    "meanTotalInputPerRun": 50769.9,
+    "costUSD": 0.2784
+  }
+}

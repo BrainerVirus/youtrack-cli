@@ -1,0 +1,38 @@
+{
+  "case": "attach",
+  "model": "claude-haiku-5-5",
+  "key": "1-133f5d0cea49e03d-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue attach crash.log",
+      "failures": [
+        "require: issue attach crash.log"
+      ],
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 1197,
+        "cacheCreation": 8866,
+        "cacheRead": 64855
+      },
+      "costUSD": 0.0030210500000000004,
+      "durationMs": 8785,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u003cworld\u003e/project; find \u003cworld\u003e/project -iname 'crash.log' 2\u003e/dev/null",
+        "env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/'; which yt youtrack-cli 2\u003e/dev/null; grep -ril youtrack ~/.claude* 2\u003e/dev/null | head"
+      ],
+      "calls": null,
+      "denials": [
+        "env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/'; which yt youtrack-cli 2\u003e/dev/null; grep -ril youtrack ~/.claude* 2\u003e/dev/null | head"
+      ],
+      "answer": "I couldn't attach `crash.log` to APP-123. This session has no YouTrack integration I can use.\n\n- **File found:** `\u003cworld\u003e/project/crash.log` (68 bytes), ready to upload.\n- **No YouTrack tool:** a ToolSearch for \"youtrack\" returned no matching tools, so there's no connector to call.\n- **Bash denied:** I tried to check for YouTrack settings or a CLI on this machine, but the permission mode denied the Bash call, so I stopped there rather than work around it.\n\nTo finish, any one of these would work:\n\n1. **Connect a YouTrack MCP server** to this Claude Code setup, then ask me again and I'll attach the file to APP-123.\n2. **Allow Bash and give me the YouTrack base URL**, with a token in an environment variable. I'd upload with `curl` to `/api/issues/APP-123/attachments`.\n3. **Upload it yourself** in the YouTrack web UI: open APP-123, choose Attachments, and select `crash.log`."
+    }
+  ]
+}

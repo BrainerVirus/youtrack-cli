@@ -1,0 +1,37 @@
+{
+  "case": "link-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-173ab6d51aff04a9-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue link with the subtask phrase",
+      "failures": [
+        "require: issue link with the subtask phrase"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 6,
+        "output": 1100,
+        "cacheCreation": 15811,
+        "cacheRead": 44428
+      },
+      "costUSD": 0.0041570800000000005,
+      "durationMs": 8449,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u0026\u0026 env | grep -i -E 'youtrack|yt_' ; cat ~/.config/youtrack* 2\u003e/dev/null; ls ~/.claude 2\u003e/dev/null"
+      ],
+      "calls": null,
+      "denials": [
+        "ls -la \u0026\u0026 env | grep -i -E 'youtrack|yt_' ; cat ~/.config/youtrack* 2\u003e/dev/null; ls ~/.claude 2\u003e/dev/null"
+      ],
+      "answer": "I couldn't make APP-7 a subtask of APP-3. I have no YouTrack access in this session.\n\n- **Shell access is blocked.** Bash was denied by the permission mode, so I can't run `curl` against the YouTrack REST API or look for a local YouTrack config.\n- **No YouTrack tool is loaded.** The deferred-tool search returned only unrelated tools (design sync, worktrees, remote triggers, messaging), and none of them can reach YouTrack.\n\nTo do it, I need one of these:\n\n1. **Allow Bash for this task.** I'll call the REST API with `curl`, using the instance URL and a permanent token you provide or that already sits in an environment variable. The call is `POST /api/commands` with body `{\"query\": \"subtask of APP-3\", \"issues\": [{\"idReadable\": \"APP-7\"}]}`.\n2. **Connect a YouTrack MCP server.** If one is configured, I can use its issue-link tool directly.\n3. **Make the change in the YouTrack UI.** Open APP-7, run the command `subtask of APP-3` from the command box, or use Link issue → \"Subtask of\" → APP-3.\n\nOn the Spanish instance: the command text is the same in any language, so `subtask of APP-3` works. The link type shows up in Spanish in the UI, but it is the same \"subtask\" relation."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "case": "comment",
   "model": "claude-haiku-5-5",
-  "key": "1-69ffb72ae5ff141c-6b892570bf541ef3-claude-haiku-5-5",
+  "key": "1-69ffb72ae5ff141c-48ccf401f04fcecd-claude-haiku-5-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,12 +12,74 @@
       "turns": 4,
       "tokens": {
         "input": 6,
-        "output": 286,
-        "cacheCreation": 9562,
-        "cacheRead": 47381
+        "output": 339,
+        "cacheCreation": 9686,
+        "cacheRead": 47498
       },
-      "costUSD": 0.0025298100000000004,
-      "durationMs": 4673,
+      "costUSD": 0.00258228,
+      "durationMs": 6385,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The command returned the issue's comment link: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 337,
+        "cacheCreation": 9691,
+        "cacheRead": 47503
+      },
+      "costUSD": 0.0025823300000000003,
+      "durationMs": 6834,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. It's live at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 289,
+        "cacheCreation": 9644,
+        "cacheRead": 47463
+      },
+      "costUSD": 0.0025485300000000002,
+      "durationMs": 6260,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -36,68 +98,6 @@
         }
       ],
       "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. It's at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0."
-    },
-    {
-      "run": 2,
-      "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 6,
-        "output": 291,
-        "cacheCreation": 9562,
-        "cacheRead": 47381
-      },
-      "costUSD": 0.0025323100000000003,
-      "durationMs": 4814,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "comment",
-            "APP-123",
-            "--body",
-            "Reproduced on 2026.2 with Safari 19."
-          ],
-          "exit": 0
-        }
-      ],
-      "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The command returned the issue link: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
-    },
-    {
-      "run": 3,
-      "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 6,
-        "output": 288,
-        "cacheCreation": 9568,
-        "cacheRead": 47387
-      },
-      "costUSD": 0.0025320700000000004,
-      "durationMs": 4740,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "comment",
-            "APP-123",
-            "--body",
-            "Reproduced on 2026.2 with Safari 19."
-          ],
-          "exit": 0
-        }
-      ],
-      "answer": "I added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. It's at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
     }
   ]
 }

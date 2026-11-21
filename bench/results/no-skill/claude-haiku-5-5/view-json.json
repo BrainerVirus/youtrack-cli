@@ -1,0 +1,38 @@
+{
+  "case": "view-json",
+  "model": "claude-haiku-5-5",
+  "key": "1-fdb7b965f8966f6e-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue view with --json fields",
+      "failures": [
+        "require: issue view with --json fields",
+        "answer"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 6,
+        "output": 755,
+        "cacheCreation": 8209,
+        "cacheRead": 44468
+      },
+      "costUSD": 0.00246458,
+      "durationMs": 6064,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u0026\u0026 (command -v yt youtrack ytcli 2\u003e/dev/null; env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/')"
+      ],
+      "calls": null,
+      "denials": [
+        "ls -la \u0026\u0026 (command -v yt youtrack ytcli 2\u003e/dev/null; env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/')"
+      ],
+      "answer": "I couldn't get the state or assignee of APP-123. I don't have a YouTrack tool in this session, and Bash was denied, so I had no way to call the YouTrack API or CLI.\n\n- **ToolSearch for YouTrack** returned only `EnterWorktree`, so no YouTrack integration is loaded.\n- **Bash** was denied in don't-ask mode, so I couldn't check the project for a YouTrack CLI, MCP config, or environment variables.\n\nTo get the answer, one of these would work:\n\n1. Enable Bash for this session so I can check for a YouTrack CLI or configured credentials, then query the issue.\n2. Connect a YouTrack MCP server, if you have one, so its tools load here.\n3. Paste the issue's state and assignee here, and I'll summarize it."
+    }
+  ]
+}

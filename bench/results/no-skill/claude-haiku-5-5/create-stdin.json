@@ -1,0 +1,38 @@
+{
+  "case": "create-stdin",
+  "model": "claude-haiku-5-5",
+  "key": "1-cdae0a9d4c001827-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue create with the description on stdin",
+      "failures": [
+        "require: issue create with the description on stdin"
+      ],
+      "turns": 5,
+      "tokens": {
+        "input": 6,
+        "output": 1383,
+        "cacheCreation": 17120,
+        "cacheRead": 54167
+      },
+      "costUSD": 0.0046577699999999994,
+      "durationMs": 8876,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -1; echo \"---\"; ls -la \u003cworld\u003e/project | head -50",
+        "ls -1 export; echo \"---\"; which ytrack youtrack yt 2\u003e/dev/null; env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/'; ls -la \u003cworld\u003e/project/.claude"
+      ],
+      "calls": null,
+      "denials": [
+        "ls -1 export; echo \"---\"; which ytrack youtrack yt 2\u003e/dev/null; env | grep -i -E 'youtrack|yt_' | sed 's/=.*/=\u003cset\u003e/'; ls -la \u003cworld\u003e/project/.claude"
+      ],
+      "answer": "I couldn't create the YouTrack issue, and I haven't pipe anything into a description.\n\n- **No YouTrack tool is available.** A ToolSearch for \"youtrack\" returned no matches, and none of the loaded tools can reach YouTrack.\n- **Bash was denied.** The session is in \"don't ask\" mode and the call was refused, so I couldn't run `ls -1 export` or call a YouTrack CLI.\n- **The one listing I got was the wrong folder.** My earlier `ls -1` ran in the project root and showed `export` and `notes.md`. That is not the contents of `export/`.\n\nTo finish, I need one of these from you:\n1. Allow Bash for this session, or approve a rerun of `ls -1 export`. Then I can pipe its output into the issue, provided a YouTrack CLI or API is configured on this machine.\n2. Add a YouTrack MCP server or tool to this session. Then I can create the issue directly in project APP with the summary \"Files in the export folder\" and the `ls -1` output as the description.\n\nIf you meant the project root rather than `export/`, say so and I'll use that listing instead."
+    }
+  ]
+}

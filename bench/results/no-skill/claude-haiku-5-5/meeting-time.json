@@ -1,0 +1,37 @@
+{
+  "case": "meeting-time",
+  "model": "claude-haiku-5-5",
+  "key": "1-8bac3951df2f0587-none-claude-haiku-5-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: work-item add --meeting 1h 30m",
+      "failures": [
+        "require: work-item add --meeting 1h 30m"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 8,
+        "output": 1067,
+        "cacheCreation": 21811,
+        "cacheRead": 76620
+      },
+      "costUSD": 0.0056627,
+      "durationMs": 8082,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u0026\u0026 (grep -ril \"youtrack\" . --exclude-dir=node_modules --exclude-dir=.git 2\u003e/dev/null | head -50) ; env | grep -i -E \"youtrack|yt_\" | sed 's/=.*/=\u003cset\u003e/'"
+      ],
+      "calls": null,
+      "denials": [
+        "ls -la \u0026\u0026 (grep -ril \"youtrack\" . --exclude-dir=node_modules --exclude-dir=.git 2\u003e/dev/null | head -50) ; env | grep -i -E \"youtrack|yt_\" | sed 's/=.*/=\u003cset\u003e/'"
+      ],
+      "answer": "I couldn't log the 1h 30m on APP-123. This session has no YouTrack tool, and the shell was denied.\n\n- **Shell:** my first Bash call was denied under the current \"don't ask\" permission mode, so I couldn't look in the project for a YouTrack config or CLI.\n- **YouTrack tools:** a ToolSearch for YouTrack/work-item tools returned nothing relevant, and a direct lookup of likely YouTrack work-item tool names found no match.\n\nTo log it, one of these would work:\n1. Enable a YouTrack MCP server in this session, then I can add the work item (APP-123, 1h 30m, today, 2026-11-21).\n2. Allow Bash so I can check the project for a YouTrack CLI or API token and call it directly.\n3. Log it yourself in YouTrack: Issue APP-123 → Spent time → `1h 30m`, date 2026-11-21, type \"Meeting\" if you use work types.\n\nI haven't changed anything in the project."
+    }
+  ]
+}

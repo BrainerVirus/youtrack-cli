@@ -1,0 +1,120 @@
+{
+  "case": "create-stdin",
+  "model": "claude-haiku-5-5",
+  "key": "1-cdae0a9d4c001827-48ccf401f04fcecd-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 496,
+        "cacheCreation": 9650,
+        "cacheRead": 47467
+      },
+      "costUSD": 0.0026532699999999997,
+      "durationMs": 6923,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -1 | ytrack issue create -p APP -s 'Files in the export folder' --description-file -"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Files in the export folder",
+            "--description-file",
+            "-"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Created **APP-130**, \"Files in the export folder\": https://acme.youtrack.cloud/issue/APP-130\n\nThe description is the output of `ls -1`, piped straight into `ytrack issue create --description-file -`. I ran `ls -1` in the project root (`\u003cworld\u003e/project`), since that's the working directory I was given. If you meant the export folder specifically, tell me its path and I'll create a follow-up issue or edit this description."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 766,
+        "cacheCreation": 10383,
+        "cacheRead": 68080
+      },
+      "costUSD": 0.0031412,
+      "durationMs": 8523,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -d */ 2\u003e/dev/null; ls -la | head -50; ytrack auth status 2\u003e\u00261; echo \"exit=$?\"",
+        "ls -1 export | ytrack issue create -p APP -s 'Files in the export folder' --description-file -; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Files in the export folder",
+            "--description-file",
+            "-"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I created APP-130 with the summary \"Files in the export folder\": https://acme.youtrack.cloud/issue/APP-130\n\nI read \"the export folder\" as `export/` under the project directory, since that is the only such folder there. The description is the output of `ls -1 export`, piped straight into `ytrack issue create --description-file -`, so nothing was copied by hand. I did not open the issue afterwards to check how the description rendered."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 525,
+        "cacheCreation": 9663,
+        "cacheRead": 47484
+      },
+      "costUSD": 0.00267054,
+      "durationMs": 7079,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -1 | ytrack issue create -p APP -s 'Files in the export folder' --description-file -"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Files in the export folder",
+            "--description-file",
+            "-"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Created **APP-130**, \"Files in the export folder\": https://acme.youtrack.cloud/issue/APP-130\n\nThe description is the piped output of `ls -1` run in the project directory (`\u003cworld\u003e/project`), not a folder named `export`. The summary says \"export folder,\" so if you meant `ls -1` on an export directory, tell me the path and I'll create a replacement issue or edit this one."
+    }
+  ]
+}

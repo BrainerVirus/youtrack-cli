@@ -1,7 +1,7 @@
 {
   "case": "attach",
   "model": "claude-haiku-5-5",
-  "key": "1-133f5d0cea49e03d-6b892570bf541ef3-claude-haiku-5-5",
+  "key": "1-133f5d0cea49e03d-48ccf401f04fcecd-claude-haiku-5-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -9,19 +9,20 @@
     {
       "run": 1,
       "status": "pass",
-      "turns": 5,
+      "turns": 6,
       "tokens": {
         "input": 8,
-        "output": 492,
-        "cacheCreation": 9885,
-        "cacheRead": 67591
+        "output": 649,
+        "cacheCreation": 10190,
+        "cacheRead": 68296
       },
-      "costUSD": 0.0028997100000000002,
-      "durationMs": 7167,
+      "costUSD": 0.0030462600000000003,
+      "durationMs": 7122,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log",
+        "ls -la \u003cworld\u003e/project",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log",
         "ytrack issue attachments APP-123"
       ],
       "calls": [
@@ -43,7 +44,7 @@
           "exit": 0
         }
       ],
-      "answer": "I attached `crash.log` to APP-123. Listing the issue's attachments shows `crash.log` there at 68 bytes, which matches the local file."
+      "answer": "`crash.log` is now attached to APP-123. `ytrack issue attachments APP-123` lists `crash.log` with a size of 68 bytes, which matches the local file. I ran the attach command once, so there's no duplicate upload."
     },
     {
       "run": 2,
@@ -51,38 +52,38 @@
       "turns": 5,
       "tokens": {
         "input": 8,
-        "output": 445,
-        "cacheCreation": 9851,
-        "cacheRead": 67592
+        "output": 390,
+        "cacheCreation": 10267,
+        "cacheRead": 68101
       },
-      "costUSD": 0.00286942,
-      "durationMs": 6678,
+      "costUSD": 0.0029302100000000004,
+      "durationMs": 6491,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log",
-        "ytrack issue attachments APP-123"
+        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack issue attach --help",
+        "ytrack issue attach APP-123 crash.log"
       ],
       "calls": [
         {
           "argv": [
             "issue",
             "attach",
-            "APP-123",
-            "\u003cworld\u003e/project/crash.log"
+            "--help"
           ],
           "exit": 0
         },
         {
           "argv": [
             "issue",
-            "attachments",
-            "APP-123"
+            "attach",
+            "APP-123",
+            "crash.log"
           ],
           "exit": 0
         }
       ],
-      "answer": "I attached `crash.log` to APP-123. The attachment list now shows `crash.log` on the issue (68 bytes)."
+      "answer": "I attached `crash.log` (68 bytes) to APP-123. The command printed `crash.log  8-120`, which is the attachment name and its ID."
     },
     {
       "run": 3,
@@ -90,12 +91,12 @@
       "turns": 5,
       "tokens": {
         "input": 8,
-        "output": 426,
-        "cacheCreation": 9814,
-        "cacheRead": 67567
+        "output": 481,
+        "cacheCreation": 9914,
+        "cacheRead": 67744
       },
-      "costUSD": 0.00285227,
-      "durationMs": 6676,
+      "costUSD": 0.0029015400000000006,
+      "durationMs": 6917,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -121,7 +122,7 @@
           "exit": 0
         }
       ],
-      "answer": "I attached `crash.log` to APP-123. The attachments list for the issue now shows `crash.log` (68 bytes)."
+      "answer": "I attached `crash.log` (68 bytes) to APP-123.\n\nThe attach command printed `crash.log\t8-120` with no explicit success message. `ytrack issue attachments APP-123` then listed `crash.log` at 68 bytes, so the upload is confirmed."
     }
   ]
 }

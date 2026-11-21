@@ -1,7 +1,7 @@
 {
   "case": "search-query",
   "model": "claude-haiku-5-5",
-  "key": "1-618b93a1905fddff-a71ba559bfc37c35-claude-haiku-5-5",
+  "key": "1-618b93a1905fddff-48ccf401f04fcecd-claude-haiku-5-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -13,11 +13,11 @@
       "tokens": {
         "input": 6,
         "output": 275,
-        "cacheCreation": 9560,
-        "cacheRead": 47362
+        "cacheCreation": 9629,
+        "cacheRead": 47427
       },
-      "costUSD": 0.00252372,
-      "durationMs": 4278,
+      "costUSD": 0.0025381700000000006,
+      "durationMs": 4902,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -46,12 +46,12 @@
       "turns": 4,
       "tokens": {
         "input": 6,
-        "output": 246,
-        "cacheCreation": 9553,
-        "cacheRead": 47349
+        "output": 284,
+        "cacheCreation": 9629,
+        "cacheRead": 47427
       },
-      "costUSD": 0.0025076900000000004,
-      "durationMs": 4311,
+      "costUSD": 0.0025426700000000003,
+      "durationMs": 5121,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -72,7 +72,7 @@
           "exit": 0
         }
       ],
-      "answer": "The unresolved issues in project APP tagged `regression` are:\n\n- APP-201\n- APP-207"
+      "answer": "There are two unresolved issues in project APP tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with `--limit 0` so all matches came back."
     },
     {
       "run": 3,
@@ -80,12 +80,12 @@
       "turns": 4,
       "tokens": {
         "input": 6,
-        "output": 275,
-        "cacheCreation": 9560,
-        "cacheRead": 47362
+        "output": 293,
+        "cacheCreation": 9629,
+        "cacheRead": 47427
       },
-      "costUSD": 0.00252372,
-      "durationMs": 4585,
+      "costUSD": 0.0025471700000000005,
+      "durationMs": 5234,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -106,7 +106,7 @@
           "exit": 0
         }
       ],
-      "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with no result limit."
+      "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI ran `ytrack issue list -q 'project: APP tag: regression #Unresolved'` with no result limit, so this is the full set."
     }
   ]
 }

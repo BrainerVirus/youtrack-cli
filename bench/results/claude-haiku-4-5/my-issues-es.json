@@ -1,7 +1,7 @@
 {
   "case": "my-issues-es",
   "model": "claude-haiku-4-5",
-  "key": "1-a4b5b672465539c6-6b892570bf541ef3-claude-haiku-4-5",
+  "key": "1-a4b5b672465539c6-48ccf401f04fcecd-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,16 +12,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 640,
-        "cacheCreation": 10041,
-        "cacheRead": 54801
+        "output": 495,
+        "cacheCreation": 10071,
+        "cacheRead": 54827
       },
-      "costUSD": 0.0287901,
-      "durationMs": 8754,
+      "costUSD": 0.028127700000000002,
+      "durationMs": 6711,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue list -q 'project: APP assignee: me #Unresolved'"
+        "ytrack issue list -q 'project: APP assignee: me #Unresolved' --json idReadable,summary,state,assignee"
       ],
       "calls": [
         {
@@ -29,12 +29,14 @@
             "issue",
             "list",
             "-q",
-            "project: APP assignee: me #Unresolved"
+            "project: APP assignee: me #Unresolved",
+            "--json",
+            "idReadable,summary,state,assignee"
           ],
           "exit": 0
         }
       ],
-      "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| Issue | Estado | Resumen |\n|-------|--------|---------|\n| **APP-310** | Open | Export to CSV drops the header |\n| **APP-315** | In Progress | Dark mode contrast on buttons |\n\nWould you like me to view details on any of these issues, or perform any actions on them?"
+      "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| Issue | Summary | State |\n|-------|---------|-------|\n| **APP-310** | Export to CSV drops the header | Open |\n| **APP-315** | Dark mode contrast on buttons | In Progress |\n\nWould you like to view details on any of these issues, update their status, or add work items (time tracking)?"
     },
     {
       "run": 2,
@@ -42,48 +44,53 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 1042,
-        "cacheCreation": 10544,
-        "cacheRead": 54831
+        "output": 628,
+        "cacheCreation": 10131,
+        "cacheRead": 54844
       },
-      "costUSD": 0.0318091,
-      "durationMs": 13104,
+      "costUSD": 0.0289144,
+      "durationMs": 8056,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue list -q 'project: APP Assignee: me #Unresolved' --json idReadable,summary,state,assignee"
+        "ytrack issue list --project APP --assignee me --all --json idReadable,summary,state"
       ],
       "calls": [
         {
           "argv": [
             "issue",
             "list",
-            "-q",
-            "project: APP Assignee: me #Unresolved",
+            "--project",
+            "APP",
+            "--assignee",
+            "me",
+            "--all",
             "--json",
-            "idReadable,summary,state,assignee"
+            "idReadable,summary,state"
           ],
           "exit": 0
         }
       ],
-      "answer": "You have **2 unresolved issues** assigned to you in the APP project:\n\n| Issue | Summary | State |\n|-------|---------|-------|\n| **APP-310** | Export to CSV drops the header | Open |\n| **APP-315** | Dark mode contrast on buttons | In Progress |\n\nWould you like to view details on any of these, add work time, or make changes?"
+      "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| Issue | Summary | State |\n|-------|---------|-------|\n| **APP-310** | Export to CSV drops the header | Open |\n| **APP-315** | Dark mode contrast on buttons | In Progress |\n\nWould you like to view details on any of these issues, update their status, or search with different criteria?"
     },
     {
       "run": 3,
       "status": "pass",
-      "turns": 4,
+      "turns": 6,
       "tokens": {
-        "input": 28,
-        "output": 602,
-        "cacheCreation": 10008,
-        "cacheRead": 54721
+        "input": 44,
+        "output": 977,
+        "cacheCreation": 11426,
+        "cacheRead": 101641
       },
-      "costUSD": 0.028526100000000002,
-      "durationMs": 8607,
+      "costUSD": 0.0379451,
+      "durationMs": 13995,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue list --project APP --assignee me --state Unresolved"
+        "ytrack issue list --project APP --assignee me --state Unresolved --format table",
+        "ytrack issue list --help",
+        "ytrack issue list --project APP --assignee me"
       ],
       "calls": [
         {
@@ -95,12 +102,33 @@
             "--assignee",
             "me",
             "--state",
-            "Unresolved"
+            "Unresolved",
+            "--format",
+            "table"
+          ],
+          "exit": 1
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "--help"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "--project",
+            "APP",
+            "--assignee",
+            "me"
           ],
           "exit": 0
         }
       ],
-      "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| ID | State | Summary |\n|---|---|---|\n| APP-310 | Open | Export to CSV drops the header |\n| APP-315 | In Progress | Dark mode contrast on buttons |\n\nWould you like to view details on any of these issues, or perform any actions on them?"
+      "answer": "You have **2 unresolved issues** assigned to you in project APP:\n\n| Issue | State | Summary |\n|-------|-------|---------|\n| APP-310 | Open | Export to CSV drops the header |\n| APP-315 | In Progress | Dark mode contrast on buttons |\n\nWould you like me to view details on any of these issues or take any actions on them?"
     }
   ]
 }

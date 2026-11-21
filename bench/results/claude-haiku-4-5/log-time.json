@@ -1,7 +1,7 @@
 {
   "case": "log-time",
   "model": "claude-haiku-4-5",
-  "key": "1-fd654376b92f2d39-6b892570bf541ef3-claude-haiku-4-5",
+  "key": "1-fd654376b92f2d39-48ccf401f04fcecd-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,12 +12,45 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 727,
-        "cacheCreation": 10187,
-        "cacheRead": 54717
+        "output": 680,
+        "cacheCreation": 10240,
+        "cacheRead": 54885
       },
-      "costUSD": 0.0295087,
-      "durationMs": 9070,
+      "costUSD": 0.0293965,
+      "durationMs": 9470,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1.5h --text \"Code review\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1.5h",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done! Logged 1.5 hours of code review time to APP-123. The work item ID is 115-3."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 575,
+        "cacheCreation": 10109,
+        "cacheRead": 54772
+      },
+      "costUSD": 0.028598200000000004,
+      "durationMs": 7324,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -37,40 +70,7 @@
           "exit": 0
         }
       ],
-      "answer": "Done! I've logged 1 hour 30 minutes of code review time on APP-123 for today. The work item (ID: 115-3) is now recorded."
-    },
-    {
-      "run": 2,
-      "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 28,
-        "output": 489,
-        "cacheCreation": 9969,
-        "cacheRead": 54706
-      },
-      "costUSD": 0.0278816,
-      "durationMs": 7489,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack work-item add APP-123 --duration 90m --text 'Code review'"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "work-item",
-            "add",
-            "APP-123",
-            "--duration",
-            "90m",
-            "--text",
-            "Code review"
-          ],
-          "exit": 0
-        }
-      ],
-      "answer": "Done! Logged 90 minutes of code review time on APP-123 for today."
+      "answer": "Done. I've logged 1 hour 30 minutes of code review time on APP-123 for today (work item 115-3)."
     },
     {
       "run": 3,
@@ -78,16 +78,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 432,
-        "cacheCreation": 9916,
-        "cacheRead": 54711
+        "output": 440,
+        "cacheCreation": 9984,
+        "cacheRead": 54783
       },
-      "costUSD": 0.0274911,
-      "durationMs": 6954,
+      "costUSD": 0.027674300000000002,
+      "durationMs": 7008,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack work-item add APP-123 --duration 90m --text 'Code review'"
+        "ytrack work-item add APP-123 --duration 1h30m --text 'Code review'"
       ],
       "calls": [
         {
@@ -96,14 +96,14 @@
             "add",
             "APP-123",
             "--duration",
-            "90m",
+            "1h30m",
             "--text",
             "Code review"
           ],
           "exit": 0
         }
       ],
-      "answer": "Done. I've logged 90 minutes of code review time on APP-123 for today."
+      "answer": "Done! I've logged 1h30m of code review time on APP-123 (work item 115-3). The time is now recorded for today."
     }
   ]
 }

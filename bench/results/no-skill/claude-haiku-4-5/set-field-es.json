@@ -1,0 +1,32 @@
+{
+  "case": "set-field-es",
+  "model": "claude-haiku-4-5",
+  "key": "1-01c86e605c442e01-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue edit --field Priority=Critical",
+      "failures": [
+        "require: issue edit --field Priority=Critical"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 349,
+        "cacheCreation": 6985,
+        "cacheRead": 12670
+      },
+      "costUSD": 0.016992,
+      "durationMs": 5588,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need a few details to update the YouTrack issue:\n\n1. **YouTrack instance URL** — What's the hostname? (e.g., `https://youtrack.example.com`)\n2. **Authentication** — How should I authenticate? Do you have an API token, or should I use credentials?\n\nOnce you provide these, I can use the YouTrack API to set the Priority of issue APP-123 to Critical."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "case": "set-field-es",
   "model": "claude-haiku-4-5",
-  "key": "1-01c86e605c442e01-a71ba559bfc37c35-claude-haiku-4-5",
+  "key": "1-01c86e605c442e01-48ccf401f04fcecd-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,12 +12,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 635,
-        "cacheCreation": 10102,
-        "cacheRead": 54750
+        "output": 609,
+        "cacheCreation": 10136,
+        "cacheRead": 54922
       },
-      "costUSD": 0.028882,
-      "durationMs": 9999,
+      "costUSD": 0.0288372,
+      "durationMs": 9347,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -35,7 +35,7 @@
           "exit": 0
         }
       ],
-      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical. The issue has been updated on the YouTrack instance."
+      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical. The issue is now updated: https://acme.youtrack.cloud/issue/APP-123"
     },
     {
       "run": 2,
@@ -43,12 +43,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 730,
-        "cacheCreation": 10173,
-        "cacheRead": 54698
+        "output": 775,
+        "cacheCreation": 10310,
+        "cacheRead": 54758
       },
-      "costUSD": 0.0294938,
-      "durationMs": 10649,
+      "costUSD": 0.0299988,
+      "durationMs": 10871,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -66,7 +66,7 @@
           "exit": 0
         }
       ],
-      "answer": "Done! I've successfully set the Priority of APP-123 to Critical in your YouTrack instance. The issue has been updated: https://acme.youtrack.cloud/issue/APP-123"
+      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical. The ytrack CLI handled the Spanish localization automatically."
     },
     {
       "run": 3,
@@ -74,12 +74,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 672,
-        "cacheCreation": 10150,
-        "cacheRead": 54764
+        "output": 580,
+        "cacheCreation": 10101,
+        "cacheRead": 54835
       },
-      "costUSD": 0.029164399999999997,
-      "durationMs": 10261,
+      "costUSD": 0.0286135,
+      "durationMs": 9194,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -97,7 +97,7 @@
           "exit": 0
         }
       ],
-      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical. You can view the updated issue at https://acme.youtrack.cloud/issue/APP-123."
+      "answer": "Done! I've successfully set the Priority of issue APP-123 to Critical in your YouTrack instance."
     }
   ]
 }

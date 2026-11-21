@@ -1,0 +1,32 @@
+{
+  "case": "link-es",
+  "model": "claude-haiku-4-5",
+  "key": "1-173ab6d51aff04a9-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue link with the subtask phrase",
+      "failures": [
+        "require: issue link with the subtask phrase"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 569,
+        "cacheCreation": 6986,
+        "cacheRead": 12670
+      },
+      "costUSD": 0.018094,
+      "durationMs": 6572,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I'd be happy to help you make APP-7 a subtask of APP-3 in YouTrack. To do this, I need a bit more information:\n\n1. **YouTrack instance URL** — What's the URL of your YouTrack instance? (e.g., `https://youtrack.yourcompany.com`)\n2. **Authentication** — Do you have API access credentials (a token or username/password) I can use, or would you prefer to authenticate through another method?\n\nAlternatively, if you'd prefer to do this through the UI, the steps would typically be:\n1. Open the APP-7 issue\n2. Find the \"Subtask of\" or \"Parent issue\" field (may be labeled differently in Spanish: \"Subtarea de\" or \"Problema principal\")\n3. Link it to APP-3\n\nLet me know how you'd like to proceed!"
+    }
+  ]
+}

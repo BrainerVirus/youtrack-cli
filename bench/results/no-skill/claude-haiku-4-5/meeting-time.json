@@ -1,0 +1,32 @@
+{
+  "case": "meeting-time",
+  "model": "claude-haiku-4-5",
+  "key": "1-8bac3951df2f0587-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 1,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: work-item add --meeting 1h 30m",
+      "failures": [
+        "require: work-item add --meeting 1h 30m"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 505,
+        "cacheCreation": 6985,
+        "cacheRead": 12670
+      },
+      "costUSD": 0.017772,
+      "durationMs": 6744,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I can help you log time on that YouTrack issue. To do this, I'll need a bit more information:\n\n1. **YouTrack API token or credentials**: Do you have a YouTrack API token already set up, or should I use a different authentication method?\n2. **YouTrack instance URL**: What's the URL of your YouTrack instance (e.g., `https://youtrack.company.com`)?\n3. **Activity description** (optional): Would you like to add a description for this time entry (e.g., \"Meeting with team\")?\n\nOnce you provide these details, I can log the 1h 30m time entry on APP-123 for today."
+    }
+  ]
+}
