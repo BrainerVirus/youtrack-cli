@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-21
+
+### Added
+
+- `issue link` and `issue unlink` add, list (`--list`) and remove links between issues by the link type's own phrase (`--type 'depends on'`), the same in every UI language, so agents no longer need the localized `issue command 'link …'`; `issue link --list-types` lists each type's phrases (#48).
+
+### Changed
+
+- Dependencies updated: spf13/pflag 1.1.0, sigstore timestamp-authority 2.2.1 and rekor 1.6.1 (stricter release-signature verification), x/crypto 0.59.0, grpc 1.85.0; release tooling goreleaser 2.20.2 and cosign-installer 4.1.3. Help now shows bool flags as `--flag[=true|false]`, and a bad typed flag value says e.g. `must be an integer`.
+- A usage error names the flag you were probably after: an unknown flag suggests close ones (`--limt` -> `did you mean --limit?`, `--limit` on `issue view` -> `--comments-limit`), and a number after a flag that takes no value says so (`--comments 12` -> `for a number use --comments-limit 12`). Found with the skill bench: weak models guess flags.
+- `work-item add` and `work-item edit` take a work item type's id in `--type` as well as its name, so the same command works on instances in any language; an unknown type lists each valid name with its id (#53).
+- `--jq` or `--template` without `--json` now uses every `--json` field instead of failing, as `ytrack api --jq` already did (#53).
+- The agent skill's SKILL.md is 34% smaller and leads with "never guess a flag, run --help first"; rare host and attachment detail moved to references. Measured with a new local weak-model bench (`go run ./bench`, never in CI): Haiku 4.5 and Haiku 5.5 now pass all 10 cases (from 87% and 93%) with about 7% fewer input tokens.
+
 ### Fixed
 
 - `ytrack skill sync` keeps a copy installed by a newer ytrack (reported as `kept`) instead of downgrading it; `--force` rewrites it at this version (#53).
@@ -16,18 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A command YouTrack rejects with HTTP 400 in `ytrack issue command` now says nothing was changed and prints the `--dry-run` line that shows how YouTrack parses each part (#53).
 - `--field` on `issue create` and `issue edit` refuses a value for a version, build, enum or owned field whose bundle has no values yet, naming the field, instead of sending it and showing YouTrack's raw localized HTTP 400 (#50).
 - `ytrack api` refuses `-f`/`-F` without `-X` when every parameter only reads (`query`, `fields`, `customFields`, `$top`, `$skip`) instead of sending a POST, which on `/issues` creates an issue; add `-X GET` to read or `-X POST` to send the POST (#51).
-
-### Changed
-
-- Dependencies updated: spf13/pflag 1.1.0, sigstore timestamp-authority 2.2.1 and rekor 1.6.1 (stricter release-signature verification), x/crypto 0.59.0, grpc 1.85.0; release tooling goreleaser 2.20.2 and cosign-installer 4.1.3. Help now shows bool flags as `--flag[=true|false]`, and a bad typed flag value says e.g. `must be an integer`.
-- A usage error names the flag you were probably after: an unknown flag suggests close ones (`--limt` -> `did you mean --limit?`, `--limit` on `issue view` -> `--comments-limit`), and a number after a flag that takes no value says so (`--comments 12` -> `for a number use --comments-limit 12`). Found with the skill bench: weak models guess flags.
-- `work-item add` and `work-item edit` take a work item type's id in `--type` as well as its name, so the same command works on instances in any language; an unknown type lists each valid name with its id (#53).
-- `--jq` or `--template` without `--json` now uses every `--json` field instead of failing, as `ytrack api --jq` already did (#53).
-- The agent skill's SKILL.md is 36% smaller and leads with "never guess a flag, run --help first"; rare host and attachment detail moved to references. Measured with a new local weak-model bench (`go run ./bench`, never in CI): Haiku 4.5 and Haiku 5.5 now pass all 10 cases (from 87% and 93%) with about 7% fewer input tokens.
-
-### Added
-
-- `issue link` and `issue unlink` add, list (`--list`) and remove links between issues by the link type's own phrase (`--type 'depends on'`), the same in every UI language, so agents no longer need the localized `issue command 'link …'`; `issue link --list-types` lists each type's phrases (#48).
 
 ## [0.6.2] - 2026-11-19
 
