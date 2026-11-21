@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `issue link` names a missing target issue (`issue DEMO-999 not found on <host>`) instead of YouTrack's raw HTTP 400 in the instance's language (#62).
 - `ytrack api` says on stderr when YouTrack returned only `$type` and `id` because the request named no `--fields`, instead of printing an empty `--jq` result silently (#53).
 - A command YouTrack rejects with HTTP 400 in `ytrack issue command` now says nothing was changed and prints the `--dry-run` line that shows how YouTrack parses each part (#53).
 - `--field` on `issue create` and `issue edit` refuses a value for a version, build, enum or owned field whose bundle has no values yet, naming the field, instead of sending it and showing YouTrack's raw localized HTTP 400 (#50).
