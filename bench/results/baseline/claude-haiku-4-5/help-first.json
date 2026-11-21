@@ -1,0 +1,147 @@
+{
+  "case": "help-first",
+  "model": "claude-haiku-4-5",
+  "key": "1-a364b9763a75704e-4c7c930f04322467-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue view --help before the first comments call",
+      "failures": [
+        "require: issue view --help before the first comments call",
+        "require: issue view with 12 comments"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 1387,
+        "cacheCreation": 11713,
+        "cacheRead": 55965
+      },
+      "costUSD": 0.035985500000000004,
+      "durationMs": 14598,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --comments"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--comments"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Here are the last 10 comments on APP-123 (there are 10 total, not 12):\n\n1. **Min Lee** (2026-10-05) — SameSite=None is missing on the cookie.\n2. **Jane Doe** (2026-10-06) — Patch in review: sets SameSite and Secure.\n3. **Min Lee** (2026-10-07) — Review: also needs the logout cookie.\n4. **Jane Doe** (2026-10-08) — Updated the patch for logout.\n5. **Min Lee** (2026-10-09) — QA: login works on Safari 18.1 with the patch.\n6. **Jane Doe** (2026-10-10) — QA: Safari 19 beta still fails on the second login.\n7. **Min Lee** (2026-10-11) — Second login fails because of a stale CSRF token.\n8. **Jane Doe** (2026-10-12) — Fix for the CSRF token refresh pushed.\n9. **Min Lee** (2026-10-13) — QA: Safari 19 passes now.\n10. **Jane Doe** (2026-10-14) — Waiting for the release train 2026.3.\n\n**Summary:** The Safari login issue has been fully resolved with fixes for the SameSite cookie, logout cookie, and CSRF token refresh—all QA tests pass on Safari 19. The fix is complete and awaiting deployment in the 2026.3 release."
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: issue view --help before the first comments call",
+      "failures": [
+        "require: issue view --help before the first comments call",
+        "require: issue view with 12 comments"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 1142,
+        "cacheCreation": 11478,
+        "cacheRead": 55962
+      },
+      "costUSD": 0.0342902,
+      "durationMs": 12471,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --comments"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--comments"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "## Last 10 Comments on APP-123\n\nHere are the recent comments on the issue (showing the 10 most recent):\n\n1. **Min Lee** (2026-10-05): SameSite=None is missing on the cookie.\n2. **Jane Doe** (2026-10-06): Patch in review: sets SameSite and Secure.\n3. **Min Lee** (2026-10-07): Review: also needs the logout cookie.\n4. **Jane Doe** (2026-10-08): Updated the patch for logout.\n5. **Min Lee** (2026-10-09): QA: login works on Safari 18.1 with the patch.\n6. **Jane Doe** (2026-10-10): QA: Safari 19 beta still fails on the second login.\n7. **Min Lee** (2026-10-11): Second login fails because of a stale CSRF token.\n8. **Jane Doe** (2026-10-12): Fix for the CSRF token refresh pushed.\n9. **Min Lee** (2026-10-13): QA: Safari 19 passes now.\n10. **Jane Doe** (2026-10-14): Waiting for the release train 2026.3.\n\n## Fix Status Summary\n\nThe Safari login issue has been successfully fixed through iterative patches addressing SameSite cookie settings, logout cookie handling, and CSRF token refresh; it is now passing QA on Safari 19 and awaiting deployment in release 2026.3."
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: issue view --help before the first comments call",
+      "failures": [
+        "require: issue view --help before the first comments call"
+      ],
+      "turns": 7,
+      "tokens": {
+        "input": 52,
+        "output": 1485,
+        "cacheCreation": 13135,
+        "cacheRead": 130245
+      },
+      "costUSD": 0.046771499999999994,
+      "durationMs": 17820,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --comments",
+        "ytrack issue view APP-123 --json comments | head -50",
+        "ytrack issue view APP-123 --json comments | jq '.comments | length'",
+        "ytrack issue view APP-123 --json comments | jq '.comments[-12:] | .[] | \"\\(.author.fullName) (\\(.created)):\\n\\(.text)\\n\"' -r"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--comments"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "comments"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "comments"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "comments"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "## Last 12 Comments on APP-123\n\n**Min Lee** (2026-10-03): Reproduced on Safari 18.1.\n\n**Jane Doe** (2026-10-04): Looks like the session cookie is dropped.\n\n**Min Lee** (2026-10-05): SameSite=None is missing on the cookie.\n\n**Jane Doe** (2026-10-06): Patch in review: sets SameSite and Secure.\n\n**Min Lee** (2026-10-07): Review: also needs the logout cookie.\n\n**Jane Doe** (2026-10-08): Updated the patch for logout.\n\n**Min Lee** (2026-10-09): QA: login works on Safari 18.1 with the patch.\n\n**Jane Doe** (2026-10-10): QA: Safari 19 beta still fails on the second login.\n\n**Min Lee** (2026-10-11): Second login fails because of a stale CSRF token.\n\n**Jane Doe** (2026-10-12): Fix for the CSRF token refresh pushed.\n\n**Min Lee** (2026-10-13): QA: Safari 19 passes now.\n\n**Jane Doe** (2026-10-14): Waiting for the release train 2026.3.\n\n---\n\n**Summary:** The fix for the Safari login issue has been completed, with cookie attributes (SameSite and Secure) added for both login and logout, and a CSRF token refresh fix deployed to handle second-login failures on Safari 19. The fix is now fully tested and passing QA, but awaiting release in the 2026.3 release train."
+    }
+  ]
+}

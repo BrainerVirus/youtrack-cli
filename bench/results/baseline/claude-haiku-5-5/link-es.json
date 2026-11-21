@@ -1,0 +1,179 @@
+{
+  "case": "link-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-173ab6d51aff04a9-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 817,
+        "cacheCreation": 11862,
+        "cacheRead": 92877
+      },
+      "costUSD": 0.00371067,
+      "durationMs": 7247,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status \u0026\u0026 ytrack issue link --list-types",
+        "ytrack issue link APP-7 APP-3 --type 'subtask of' \u0026\u0026 ytrack issue link APP-3 --list --json phrase,issues",
+        "ytrack issue link APP-7 --list --json phrase,issues; ytrack issue view APP-7 --json summary,links 2\u003e/dev/null || ytrack issue view APP-7"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-7",
+            "APP-3",
+            "--type",
+            "subtask of"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "--list",
+            "--json",
+            "phrase,issues"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-7",
+            "--list",
+            "--json",
+            "phrase,issues"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-7",
+            "--json",
+            "summary,links"
+          ],
+          "exit": 1
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-7"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-7 is now a subtask of APP-3. The link command reported success, and APP-7's link list shows \"subtask of\" → APP-3.\n\nThe check from APP-3's side returned \"APP-3 has no links.\" That is inconsistent with the APP-7 result, so I'd recheck APP-3 in YouTrack's web UI before relying on it.\n\nThe Spanish instance wasn't a problem: I used the link phrases from `ytrack issue link --list-types`, which are not localized, rather than a command-language keyword."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 516,
+        "cacheCreation": 11197,
+        "cacheRead": 48878
+      },
+      "costUSD": 0.0029867799999999996,
+      "durationMs": 5387,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link APP-3 APP-7 --type 'parent for'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "APP-7",
+            "--type",
+            "parent for"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-7 is now a subtask of APP-3. ytrack confirmed the link with `✓ APP-3 parent for APP-7`.\n\nI used the link phrase `parent for` rather than a command like `Subtask of`, because the phrases are not localized and the Spanish instance would reject the command form."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 795,
+        "cacheCreation": 11702,
+        "cacheRead": 71102
+      },
+      "costUSD": 0.0034497200000000003,
+      "durationMs": 6600,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status \u0026\u0026 ytrack issue link --list-types",
+        "ytrack issue link APP-7 APP-3 --type 'subtask of'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-7",
+            "APP-3",
+            "--type",
+            "subtask of"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-7 is now a subtask of APP-3 on acme.youtrack.cloud. ytrack confirmed it with \"✓ APP-7 subtask of APP-3\".\n\nI used the `subtask of` link type, which is the inward phrase of YouTrack's Subtask type. Since the instance is in Spanish, I didn't use the `command` keyword (`subtask of APP-3`), because command keywords are localized. The link command uses the English phrases on every locale."
+    }
+  ]
+}

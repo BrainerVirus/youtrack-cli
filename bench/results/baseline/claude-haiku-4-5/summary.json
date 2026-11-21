@@ -1,0 +1,165 @@
+{
+  "model": "claude-haiku-4-5",
+  "skillHash": "4c7c930f04322467",
+  "skillBytes": 18977,
+  "cases": [
+    {
+      "case": "api-read",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 67395.7,
+      "sdTotalInput": 196.9,
+      "meanOutput": 690.7,
+      "meanDurationMs": 9267,
+      "costUSD": 0.0954
+    },
+    {
+      "case": "attach",
+      "pass": true,
+      "passes": 2,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "require: issue attach crash.log"
+      ],
+      "meanTurns": 5,
+      "meanTotalInput": 88273.7,
+      "sdTotalInput": 405.5,
+      "meanOutput": 846,
+      "meanDurationMs": 11110.7,
+      "costUSD": 0.106
+    },
+    {
+      "case": "comment",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 67256.3,
+      "sdTotalInput": 169.5,
+      "meanOutput": 552,
+      "meanDurationMs": 7736,
+      "costUSD": 0.0926
+    },
+    {
+      "case": "help-first",
+      "pass": false,
+      "passes": 0,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "require: issue view --help before the first comments call",
+        "require: issue view --help before the first comments call",
+        "require: issue view --help before the first comments call"
+      ],
+      "meanTurns": 5,
+      "meanTotalInput": 92868.7,
+      "sdTotalInput": 43789.3,
+      "meanOutput": 1338,
+      "meanDurationMs": 14963,
+      "costUSD": 0.117
+    },
+    {
+      "case": "link-es",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4.7,
+      "meanTotalInput": 83756,
+      "sdTotalInput": 14399,
+      "meanOutput": 897.7,
+      "meanDurationMs": 11915.3,
+      "costUSD": 0.1051
+    },
+    {
+      "case": "log-time",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 67338.7,
+      "sdTotalInput": 57.1,
+      "meanOutput": 644.7,
+      "meanDurationMs": 9140,
+      "costUSD": 0.0945
+    },
+    {
+      "case": "my-issues-es",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 67595,
+      "sdTotalInput": 599.6,
+      "meanOutput": 1012,
+      "meanDurationMs": 13146.7,
+      "costUSD": 0.1017
+    },
+    {
+      "case": "search-query",
+      "pass": true,
+      "passes": 2,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "require: issue list with a tag query on APP"
+      ],
+      "meanTurns": 6,
+      "meanTotalInput": 88514.7,
+      "sdTotalInput": 36533.6,
+      "meanOutput": 1452.7,
+      "meanDurationMs": 18325.3,
+      "costUSD": 0.1307
+    },
+    {
+      "case": "set-field-es",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 67418.3,
+      "sdTotalInput": 221.8,
+      "meanOutput": 804.7,
+      "meanDurationMs": 10879,
+      "costUSD": 0.0977
+    },
+    {
+      "case": "view-json",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 67461.7,
+      "sdTotalInput": 157.2,
+      "meanOutput": 769.7,
+      "meanDurationMs": 10287.3,
+      "costUSD": 0.0972
+    }
+  ],
+  "totals": {
+    "cases": 10,
+    "casesPassed": 9,
+    "runs": 30,
+    "graded": 30,
+    "passes": 25,
+    "passRate": 0.8333,
+    "tokens": {
+      "input": 924,
+      "output": 27024,
+      "cacheCreation": 354974,
+      "cacheRead": 1917738
+    },
+    "totalInput": 2273636,
+    "meanTotalInputPerRun": 75787.9,
+    "costUSD": 1.0378
+  }
+}

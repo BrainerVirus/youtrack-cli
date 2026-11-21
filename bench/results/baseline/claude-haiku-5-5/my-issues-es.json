@@ -1,0 +1,136 @@
+{
+  "case": "my-issues-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-a4b5b672465539c6-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 2,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "forbid: the localized for: me keyword",
+      "failures": [
+        "forbid: the localized for: me keyword"
+      ],
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 828,
+        "cacheCreation": 11692,
+        "cacheRead": 70752
+      },
+      "costUSD": 0.00346072,
+      "durationMs": 7230,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP for: me #Unresolved' --json idReadable,summary,state,priority --limit 0",
+        "ytrack auth status; echo \"---\"; ytrack issue list -q 'project: APP Assignee: me #Unresolved' --json idReadable,summary,state,priority --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP for: me #Unresolved",
+            "--json",
+            "idReadable,summary,state,priority",
+            "--limit",
+            "0"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved",
+            "--json",
+            "idReadable,summary,state,priority",
+            "--limit",
+            "0"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Hay 2 issues sin resolver asignados a ti en el proyecto APP (host `acme.youtrack.cloud`):\n\n| ID | Resumen | Estado | Prioridad |\n|---|---|---|---|\n| APP-310 | Export to CSV drops the header | Open | — |\n| APP-315 | Dark mode contrast on buttons | In Progress | — |\n\nNinguno tiene prioridad asignada. Usé `Assignee: me` en la consulta; la variante `for: me` no devolvió nada."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 462,
+        "cacheCreation": 11263,
+        "cacheRead": 48970
+      },
+      "costUSD": 0.0029739000000000002,
+      "durationMs": 5179,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack auth status 2\u003e\u00261; echo \"---\"; ytrack issue list -q 'project: APP Assignee: me #Unresolved' 2\u003e\u00261"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Tienes 2 incidencias sin resolver asignadas a ti en el proyecto APP (instancia `acme.youtrack.cloud`):\n\n| ID | Estado | Resumen |\n|---|---|---|\n| APP-310 | Open | Export to CSV drops the header |\n| APP-315 | In Progress | Dark mode contrast on buttons |"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 750,
+        "cacheCreation": 11365,
+        "cacheRead": 48982
+      },
+      "costUSD": 0.00313842,
+      "durationMs": 6409,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP Assignee: me #Unresolved' 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Hay 2 issues sin resolver asignados a ti en el proyecto APP:\n\n| ID | Estado | Asignado | Resumen |\n|---|---|---|---|\n| APP-310 | Open | Jane Doe | Export to CSV drops the header |\n| APP-315 | In Progress | Jane Doe | Dark mode contrast on buttons |\n\nLa salida de `ytrack` no trae encabezados, así que asumo que las columnas son ID, estado, asignado y resumen. Los valores se muestran tal como los devuelve YouTrack, incluidos los resúmenes en inglés."
+    }
+  ]
+}

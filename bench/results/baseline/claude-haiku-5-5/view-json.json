@@ -1,0 +1,103 @@
+{
+  "case": "view-json",
+  "model": "claude-haiku-5-5",
+  "key": "1-fdb7b965f8966f6e-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 306,
+        "cacheCreation": 11220,
+        "cacheRead": 48995
+      },
+      "costUSD": 0.0028875500000000004,
+      "durationMs": 4346,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json idReadable,summary,state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,summary,state,assignee"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-123 (\"Login fails on Safari\") is **In Progress** and assigned to **Jane Doe** (`jdoe`)."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 225,
+        "cacheCreation": 11091,
+        "cacheRead": 48910
+      },
+      "costUSD": 0.0028204,
+      "durationMs": 4004,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-123 is **In Progress** and assigned to **Jane Doe** (login `jdoe`)."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 268,
+        "cacheCreation": 11151,
+        "cacheRead": 48970
+      },
+      "costUSD": 0.0028545,
+      "durationMs": 4148,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-123 is **In Progress** and assigned to **Jane Doe** (login `jdoe`)."
+    }
+  ]
+}
