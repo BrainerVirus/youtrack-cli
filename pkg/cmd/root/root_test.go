@@ -55,6 +55,7 @@ func TestUsageErrorsNameTheIntendedFlag(t *testing.T) {
 		"a number after a flag that takes no value": {[]string{"issue", "view", "APP-1", "--comments", "12"}, "--comments takes no value; for a number use --comments-limit 12"},
 		"a number given with =":                     {[]string{"issue", "view", "APP-1", "--comments=12"}, "--comments takes no value; for a number use --comments-limit 12"},
 		"a short prefix":                            {[]string{"issue", "list", "--li", "5"}, "did you mean --limit?"},
+		"two swapped letters":                       {[]string{"issue", "view", "APP-1", "--hots", "x"}, "did you mean --host?"},
 	} {
 		t.Run("given "+name+", it names the flag", func(t *testing.T) {
 			env := cmdtest.New(t)
