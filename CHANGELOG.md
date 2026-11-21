@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A usage error names the flag you were probably after: an unknown flag suggests close ones (`--limt` -> `did you mean --limit?`, `--limit` on `issue view` -> `--comments-limit`), and a number after a flag that takes no value says so (`--comments 12` -> `for a number use --comments-limit 12`). Found with the skill bench: weak models guess flags.
 - `work-item add` and `work-item edit` take a work item type's id in `--type` as well as its name, so the same command works on instances in any language; an unknown type lists each valid name with its id (#53).
 - `--jq` or `--template` without `--json` now uses every `--json` field instead of failing, as `ytrack api --jq` already did (#53).
 - The agent skill's SKILL.md is 36% smaller and leads with "never guess a flag, run --help first"; rare host and attachment detail moved to references. Measured with a new local weak-model bench (`go run ./bench`, never in CI): Haiku 4.5 and Haiku 5.5 now pass all 10 cases (from 87% and 93%) with about 7% fewer input tokens.
