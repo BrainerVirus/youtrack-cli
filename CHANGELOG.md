@@ -13,9 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A command YouTrack rejects with HTTP 400 in `ytrack issue command` now says nothing was changed and prints the `--dry-run` line that shows how YouTrack parses each part (#53).
 - `--field` on `issue create` and `issue edit` refuses a value for a version, build, enum or owned field whose bundle has no values yet, naming the field, instead of sending it and showing YouTrack's raw localized HTTP 400 (#50).
 - `ytrack api` refuses `-f`/`-F` without `-X` when every parameter only reads (`query`, `fields`, `customFields`, `$top`, `$skip`) instead of sending a POST, which on `/issues` creates an issue; add `-X GET` to read or `-X POST` to send the POST (#51).
+
 ### Changed
 
 - `--jq` or `--template` without `--json` now uses every `--json` field instead of failing, as `ytrack api --jq` already did (#53).
+
+### Added
+
+- `issue link` and `issue unlink` add, list (`--list`) and remove links between issues by the link type's own phrase (`--type 'depends on'`), the same in every UI language, so agents no longer need the localized `issue command 'link …'`; `issue link --list-types` lists each type's phrases (#48).
+
 ## [0.6.2] - 2026-11-19
 
 ### Fixed
