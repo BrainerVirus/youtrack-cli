@@ -35,7 +35,8 @@ func NewCmdEdit(f *cmdutil.Factory) *cobra.Command {
 not pass stay as they are; --text '' clears the text. ytrack refuses unless
 the work item belongs to the issue you named.
 
---duration and --date take the same values as in ` + "`work-item add`" + `.
+--duration, --date and --type take the same values as in ` + "`work-item add`" + `:
+--type is a type name or its id (ids do not change with the UI language).
 ` + shared.DateHelp + `
 
 JSON fields:

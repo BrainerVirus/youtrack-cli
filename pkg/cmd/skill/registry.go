@@ -139,7 +139,8 @@ func listHints(f *cmdutil.Factory, copies []skill.Copy) {
 }
 
 func newCmdSync(f *cmdutil.Factory) *cobra.Command {
-	return &cobra.Command{
+	var force bool
+	cmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Update every installed copy of the skill now",
 		Long: `Rewrite every copy of the skill in your home directory (UPDATES auto in
@@ -147,10 +148,13 @@ ytrack skill list) at this ytrack's version, and forget every copy that is
 missing; a missing copy is not re-created. A copy in a repository is left
 for ytrack skill install --dir.
 
+A copy a newer ytrack installed is kept (it is not downgraded); --force
+rewrites it at this version too.
+
 ytrack does this by itself the first time a newer release runs; run it after
 installing ytrack by other means, or to bring copies back to this version.
 
-Prints one line per recorded directory: the action (updated, dropped,
+Prints one line per recorded directory: the action (updated, kept, dropped,
 manual or failed), the skill directory and the version it holds. Exits 1
 when a copy could not be rewritten.`,
 		Example: `  $ ytrack skill sync`,
@@ -166,7 +170,11 @@ when a copy could not be rewritten.`,
 				return nil
 			}
 			before := reg.Clone()
-			results, _ := reg.Sync(build.Version)
+			sync := reg.Sync
+			if force {
+				sync = reg.SyncForce
+			}
+			results, _ := sync(build.Version)
 			if !reg.Equal(before) {
 				if err := reg.Save(); err != nil {
 					fmt.Fprintf(f.IOStreams.ErrOut, "warning: could not save the list of skill copies: %s\n", output.SanitizeText(err.Error()))
@@ -186,6 +194,8 @@ when a copy could not be rewritten.`,
 			return failed
 		},
 	}
+	cmd.Flags().BoolVar(&force, "force", false, "Also rewrite copies a newer ytrack installed")
+	return cmd
 }
 
 func newCmdUninstall(f *cmdutil.Factory) *cobra.Command {

@@ -121,6 +121,28 @@ func TestSkillList(t *testing.T) {
 }
 
 func TestSkillSync(t *testing.T) {
+	t.Run("given a copy from a newer ytrack, it keeps it unless --force", func(t *testing.T) {
+		c := setupCopies(t)
+		if _, err := skill.Install(c.agents, "9.0.0"); err != nil {
+			t.Fatal(err)
+		}
+		if code := c.e.Run("skill", "sync"); code != 0 {
+			t.Fatalf("exit %d: %s", code, c.e.Stderr)
+		}
+		if want := "kept\t" + filepath.Join(c.agents, "ytrack") + "\t9.0.0"; !strings.Contains(c.e.Stdout.String(), want) {
+			t.Errorf("stdout %q lacks %q", c.e.Stdout, want)
+		}
+		if v := skill.Inspect(c.agents, "1.2.3").Version; v != "9.0.0" {
+			t.Errorf("the newer copy was rewritten to %s", v)
+		}
+		c.e.Reset()
+		if code := c.e.Run("skill", "sync", "--force"); code != 0 {
+			t.Fatalf("exit %d: %s", code, c.e.Stderr)
+		}
+		if v := skill.Inspect(c.agents, "1.2.3").Version; v != "1.2.3" {
+			t.Errorf("--force left %s", v)
+		}
+	})
 	t.Run("given stale, missing and repository copies, it rewrites the home ones, drops the missing and leaves the repository", func(t *testing.T) {
 		c := setupCopies(t)
 		if code := c.e.Run("skill", "sync"); code != 0 {

@@ -333,6 +333,20 @@ func TestWorkItemAddType(t *testing.T) {
 		}
 	})
 
+	t.Run("given a value that is one type's exact name and another's id, the name wins", func(t *testing.T) {
+		env, yt := loggedIn(t)
+		settings := yt.TimeTracking["0-12"]
+		settings["workItemTypes"] = []any{
+			map[string]any{"$type": "WorkItemType", "id": "117-1", "name": "Testing"},
+			map[string]any{"$type": "WorkItemType", "id": "117-0", "name": "117-1"},
+		}
+		mustRun(t, env, "work-item", "add", "NSR-40", "--duration", "1h", "--type", "117-1")
+		ty, _ := lastBody(t, yt, "POST", "/timeTracking/workItems")["type"].(map[string]any)
+		if ty["id"] != "117-0" {
+			t.Errorf("type = %v, want the type named 117-1 (id 117-0)", ty)
+		}
+	})
+
 	t.Run("given an unknown type, it lists the valid ones and posts nothing", func(t *testing.T) {
 		env, yt := loggedIn(t)
 		if code := env.Run("work-item", "add", "NSR-40", "--duration", "1h", "--type", "Coding"); code != 1 {

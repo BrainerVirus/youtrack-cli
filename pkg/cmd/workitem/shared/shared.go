@@ -184,17 +184,24 @@ func ResolveType(ctx context.Context, c *transport.Client, p adapter.IssueProjec
 	if !s.Enabled {
 		return "", fmt.Errorf("time tracking is not enabled in project %s", project)
 	}
-	var folded string
+	// An exact name wins, then an ID (the same in every UI language, #53),
+	// then a name in any case.
+	var byID, folded string
 	names := make([]string, 0, len(s.Types))
 	for _, t := range s.Types {
-		// The ID works in every UI language; names are translated (#53).
-		if t.Name == name || t.ID == name {
+		if t.Name == name {
 			return t.ID, nil
+		}
+		if byID == "" && t.ID == name {
+			byID = t.ID
 		}
 		if folded == "" && strings.EqualFold(t.Name, name) {
 			folded = t.ID
 		}
 		names = append(names, t.Name+" ("+t.ID+")")
+	}
+	if byID != "" {
+		return byID, nil
 	}
 	if folded != "" {
 		return folded, nil
