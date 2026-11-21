@@ -1,0 +1,109 @@
+{
+  "case": "log-time",
+  "model": "claude-haiku-4-5",
+  "key": "1-fd654376b92f2d39-6b892570bf541ef3-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 727,
+        "cacheCreation": 10187,
+        "cacheRead": 54717
+      },
+      "costUSD": 0.0295087,
+      "durationMs": 9070,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 1h30m --text 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "1h30m",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done! I've logged 1 hour 30 minutes of code review time on APP-123 for today. The work item (ID: 115-3) is now recorded."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 489,
+        "cacheCreation": 9969,
+        "cacheRead": 54706
+      },
+      "costUSD": 0.0278816,
+      "durationMs": 7489,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 90m --text 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "90m",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done! Logged 90 minutes of code review time on APP-123 for today."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 432,
+        "cacheCreation": 9916,
+        "cacheRead": 54711
+      },
+      "costUSD": 0.0274911,
+      "durationMs": 6954,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item add APP-123 --duration 90m --text 'Code review'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "add",
+            "APP-123",
+            "--duration",
+            "90m",
+            "--text",
+            "Code review"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done. I've logged 90 minutes of code review time on APP-123 for today."
+    }
+  ]
+}

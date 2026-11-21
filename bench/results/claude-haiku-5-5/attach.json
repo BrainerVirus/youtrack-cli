@@ -1,0 +1,127 @@
+{
+  "case": "attach",
+  "model": "claude-haiku-5-5",
+  "key": "1-133f5d0cea49e03d-6b892570bf541ef3-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 492,
+        "cacheCreation": 9885,
+        "cacheRead": 67591
+      },
+      "costUSD": 0.0028997100000000002,
+      "durationMs": 7167,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log",
+        "ytrack issue attachments APP-123"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "attachments",
+            "APP-123"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I attached `crash.log` to APP-123. Listing the issue's attachments shows `crash.log` there at 68 bytes, which matches the local file."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 445,
+        "cacheCreation": 9851,
+        "cacheRead": 67592
+      },
+      "costUSD": 0.00286942,
+      "durationMs": 6678,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log",
+        "ytrack issue attachments APP-123"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "attachments",
+            "APP-123"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I attached `crash.log` to APP-123. The attachment list now shows `crash.log` on the issue (68 bytes)."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 426,
+        "cacheCreation": 9814,
+        "cacheRead": 67567
+      },
+      "costUSD": 0.00285227,
+      "durationMs": 6676,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/crash.log \u0026\u0026 ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log",
+        "ytrack issue attachments APP-123"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "attachments",
+            "APP-123"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I attached `crash.log` to APP-123. The attachments list for the issue now shows `crash.log` (68 bytes)."
+    }
+  ]
+}

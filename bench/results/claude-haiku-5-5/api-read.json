@@ -1,0 +1,115 @@
+{
+  "case": "api-read",
+  "model": "claude-haiku-5-5",
+  "key": "1-5625d45472a83f63-6b892570bf541ef3-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 316,
+        "cacheCreation": 9583,
+        "cacheRead": 47349
+      },
+      "costUSD": 0.00254869,
+      "durationMs": 5102,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack api -X GET /issues -f query='project: APP timeout' --fields idReadable,summary --paginate"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "api",
+            "-X",
+            "GET",
+            "/issues",
+            "-f",
+            "query=project: APP timeout",
+            "--fields",
+            "idReadable,summary",
+            "--paginate"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Two issues in project APP match `timeout`:\n\n| idReadable | Summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nI used `ytrack api -X GET /issues` with the query `project: APP timeout` and `--fields idReadable,summary`, with pagination on."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 295,
+        "cacheCreation": 9584,
+        "cacheRead": 47350
+      },
+      "costUSD": 0.0025384000000000006,
+      "durationMs": 5084,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack api -X GET /issues -f query='project: APP timeout' --fields idReadable,summary --paginate"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "api",
+            "-X",
+            "GET",
+            "/issues",
+            "-f",
+            "query=project: APP timeout",
+            "--fields",
+            "idReadable,summary",
+            "--paginate"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I ran the query `project: APP timeout` through `ytrack api` (REST passthrough, not `issue list`). It matched 2 issues:\n\n| idReadable | Summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 286,
+        "cacheCreation": 9580,
+        "cacheRead": 47346
+      },
+      "costUSD": 0.00253306,
+      "durationMs": 4918,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack api /issues -X GET -f query='project: APP timeout' --fields idReadable,summary --paginate"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "api",
+            "/issues",
+            "-X",
+            "GET",
+            "-f",
+            "query=project: APP timeout",
+            "--fields",
+            "idReadable,summary",
+            "--paginate"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "I ran the query through the REST API passthrough (`ytrack api /issues`). It matched two issues:\n\n| idReadable | Summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |"
+    }
+  ]
+}

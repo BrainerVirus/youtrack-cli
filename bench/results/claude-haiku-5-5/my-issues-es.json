@@ -1,0 +1,114 @@
+{
+  "case": "my-issues-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-a4b5b672465539c6-6b892570bf541ef3-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 409,
+        "cacheCreation": 9598,
+        "cacheRead": 47320
+      },
+      "costUSD": 0.0025979,
+      "durationMs": 5609,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP Assignee: me #Unresolved' --limit 0 --json idReadable,summary,state,priority"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved",
+            "--limit",
+            "0",
+            "--json",
+            "idReadable,summary,state,priority"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "You have 2 unresolved issues assigned to you in project APP:\n\n| Issue | Summary | State |\n|---|---|---|\n| APP-310 | Export to CSV drops the header | Open |\n| APP-315 | Dark mode contrast on buttons | In Progress |\n\nNeither issue has a priority set. I used the query `project: APP Assignee: me #Unresolved`, which works on the Spanish instance because the keywords are not localized."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 377,
+        "cacheCreation": 9578,
+        "cacheRead": 47312
+      },
+      "costUSD": 0.00257782,
+      "durationMs": 5196,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list --project APP --assignee me --limit 0 --json idReadable,summary,state,priority"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "--project",
+            "APP",
+            "--assignee",
+            "me",
+            "--limit",
+            "0",
+            "--json",
+            "idReadable,summary,state,priority"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "You have 2 unresolved issues assigned to you in project APP:\n\n| Issue | Summary | State |\n|---|---|---|\n| APP-310 | Export to CSV drops the header | Open |\n| APP-315 | Dark mode contrast on buttons | In Progress |\n\nThe filter was `--project APP --assignee me`, which excludes resolved issues by default."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 469,
+        "cacheCreation": 9741,
+        "cacheRead": 47429
+      },
+      "costUSD": 0.0026575900000000005,
+      "durationMs": 5650,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP Assignee: me #Unresolved' --json idReadable,summary,state,priority --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP Assignee: me #Unresolved",
+            "--json",
+            "idReadable,summary,state,priority",
+            "--limit",
+            "0"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Tienes 2 incidencias sin resolver asignadas a ti en el proyecto APP:\n\n| ID | Resumen | Estado |\n|---|---|---|\n| APP-310 | Export to CSV drops the header | Open |\n| APP-315 | Dark mode contrast on buttons | In Progress |\n\nEl resumen está en inglés tal como lo devolvió YouTrack. Los valores de estado se muestran tal cual los devuelve la instancia. La prioridad no tiene valor en ninguna de las dos."
+    }
+  ]
+}

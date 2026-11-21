@@ -1,0 +1,192 @@
+{
+  "case": "link-es",
+  "model": "claude-haiku-5-5",
+  "key": "1-173ab6d51aff04a9-6b892570bf541ef3-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 693,
+        "cacheCreation": 10130,
+        "cacheRead": 88076
+      },
+      "costUSD": 0.00325426,
+      "durationMs": 7029,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link APP-3 APP-7 --type 'parent for'",
+        "ytrack issue view APP-7 --json idReadable,summary,links 2\u003e\u00261 | head -50",
+        "ytrack issue link APP-3 --list --json phrase,issues 2\u003e\u00261"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "APP-7",
+            "--type",
+            "parent for"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-7",
+            "--json",
+            "idReadable,summary,links"
+          ],
+          "exit": 1
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "--list",
+            "--json",
+            "phrase,issues"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-7 is now a subtask of APP-3. The link ran as `ytrack issue link APP-3 APP-7 --type 'parent for'`, and listing APP-3's links shows APP-7 under \"parent for\".\n\nThe link phrases are not localized, so the Spanish setting did not affect this command."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 755,
+        "cacheCreation": 10271,
+        "cacheRead": 88205
+      },
+      "costUSD": 0.00331475,
+      "durationMs": 7437,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link --list-types",
+        "ytrack issue link APP-3 APP-7 --type 'parent for'; echo \"exit=$?\"; ytrack issue view APP-7 --json summary,links 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack issue link APP-3 --list --json phrase,issues 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "APP-7",
+            "--type",
+            "parent for"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-7",
+            "--json",
+            "summary,links"
+          ],
+          "exit": 1
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "--list",
+            "--json",
+            "phrase,issues"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-7 is now a subtask of APP-3. I created the link as \"APP-3 parent for APP-7\", and reading APP-3 back shows APP-7 under \"parent for\".\n\nThe instance is in Spanish, but the link type names are not localized, so `--type 'parent for'` worked as-is."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 7,
+      "tokens": {
+        "input": 12,
+        "output": 781,
+        "cacheCreation": 10372,
+        "cacheRead": 108939
+      },
+      "costUSD": 0.0035554899999999997,
+      "durationMs": 8093,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link --list-types",
+        "ytrack issue link APP-3 APP-7 --type 'parent for'",
+        "ytrack issue view APP-7 --json idReadable,summary,links 2\u003e\u00261 | head -50",
+        "ytrack issue link APP-3 --list --json phrase,issues 2\u003e\u00261"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "APP-7",
+            "--type",
+            "parent for"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-7",
+            "--json",
+            "idReadable,summary,links"
+          ],
+          "exit": 1
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "--list",
+            "--json",
+            "phrase,issues"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-7 is now a subtask of APP-3. I ran `ytrack issue link APP-3 APP-7 --type 'parent for'`, and reading back APP-3's links shows \"parent for\" → APP-7.\n\nThe instance's Spanish locale didn't affect this, since the link phrases come from YouTrack's link types, not localized command keywords."
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "case": "view-json",
+  "model": "claude-haiku-4-5",
+  "key": "1-fdb7b965f8966f6e-6b892570bf541ef3-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 519,
+        "cacheCreation": 9997,
+        "cacheRead": 54763
+      },
+      "costUSD": 0.0280933,
+      "durationMs": 7804,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "**APP-123 Status:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 667,
+        "cacheCreation": 10154,
+        "cacheRead": 54747
+      },
+      "costUSD": 0.0291457,
+      "durationMs": 8281,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "**APP-123 Status:**\n- **State:** In Progress\n- **Assignee:** Jane Doe (jdoe)"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 614,
+        "cacheCreation": 10101,
+        "cacheRead": 54827
+      },
+      "costUSD": 0.0287827,
+      "durationMs": 9433,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json idReadable,state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,state,assignee"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "**APP-123 Status:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+    }
+  ]
+}

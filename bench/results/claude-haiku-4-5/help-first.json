@@ -1,0 +1,127 @@
+{
+  "case": "help-first",
+  "model": "claude-haiku-4-5",
+  "key": "1-a364b9763a75704e-6b892570bf541ef3-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue view --help before the first comments call",
+      "failures": [
+        "require: issue view --help before the first comments call",
+        "require: issue view with 12 comments"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 679,
+        "cacheCreation": 10214,
+        "cacheRead": 54720
+      },
+      "costUSD": 0.029323000000000002,
+      "durationMs": 10627,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --comments"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--comments"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "**Summary:** The Safari login issue has been resolved through iterative fixes addressing the SameSite cookie attribute and CSRF token refresh problems, with QA validation complete across Safari 18.1 and 19. The fix is awaiting deployment in the upcoming release 2026.3."
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: issue view --help before the first comments call",
+      "failures": [
+        "require: issue view --help before the first comments call",
+        "require: issue view with 12 comments"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 1128,
+        "cacheCreation": 10317,
+        "cacheRead": 54711
+      },
+      "costUSD": 0.0317731,
+      "durationMs": 13174,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --comments"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--comments"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "## Latest 12 Comments on APP-123\n\n**Issue:** Login fails on Safari  \n**State:** In Progress | **Assignee:** Jane Doe | **Priority:** Major\n\n| Date | Author | Comment |\n|------|--------|---------|\n| 2026-10-05 | Min Lee | SameSite=None is missing on the cookie. |\n| 2026-10-06 | Jane Doe | Patch in review: sets SameSite and Secure. |\n| 2026-10-07 | Min Lee | Review: also needs the logout cookie. |\n| 2026-10-08 | Jane Doe | Updated the patch for logout. |\n| 2026-10-09 | Min Lee | QA: login works on Safari 18.1 with the patch. |\n| 2026-10-10 | Jane Doe | QA: Safari 19 beta still fails on the second login. |\n| 2026-10-11 | Min Lee | Second login fails because of a stale CSRF token. |\n| 2026-10-12 | Jane Doe | Fix for the CSRF token refresh pushed. |\n| 2026-10-13 | Min Lee | QA: Safari 19 passes now. |\n| 2026-10-14 | Jane Doe | Waiting for the release train 2026.3. |\n\n## Fix Status Summary\n\nThe fix for the Safari login issue is complete and verified—QA has confirmed it works on both Safari 18.1 and Safari 19 beta after the CSRF token refresh fix was deployed. The code is now waiting for release in the 2026.3 release train."
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: issue view --help before the first comments call",
+      "failures": [
+        "require: issue view --help before the first comments call",
+        "require: issue view with 12 comments"
+      ],
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 1349,
+        "cacheCreation": 10739,
+        "cacheRead": 77603
+      },
+      "costUSD": 0.036019300000000004,
+      "durationMs": 16349,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --comments --limit 12",
+        "ytrack issue view APP-123 --comments"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--comments",
+            "--limit",
+            "12"
+          ],
+          "exit": 1
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--comments"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Here are the last 11 comments on APP-123 (all available comments):\n\n1. **Min Lee** (2026-10-05): SameSite=None is missing on the cookie.\n2. **Jane Doe** (2026-10-06): Patch in review: sets SameSite and Secure.\n3. **Min Lee** (2026-10-07): Review: also needs the logout cookie.\n4. **Jane Doe** (2026-10-08): Updated the patch for logout.\n5. **Min Lee** (2026-10-09): QA: login works on Safari 18.1 with the patch.\n6. **Jane Doe** (2026-10-10): QA: Safari 19 beta still fails on the second login.\n7. **Min Lee** (2026-10-11): Second login fails because of a stale CSRF token.\n8. **Jane Doe** (2026-10-12): Fix for the CSRF token refresh pushed.\n9. **Min Lee** (2026-10-13): QA: Safari 19 passes now.\n10. **Jane Doe** (2026-10-14): Waiting for the release train 2026.3.\n\n**Fix Status Summary:**\nThe Safari login issue has been fully fixed and verified by QA across both Safari 18.1 and 19; the solution addressed cookie SameSite/Secure flags, logout cookie handling, and CSRF token refresh. The fix is complete and pending release in version 2026.3."
+    }
+  ]
+}
