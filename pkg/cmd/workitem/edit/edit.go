@@ -35,7 +35,8 @@ func NewCmdEdit(f *cmdutil.Factory) *cobra.Command {
 not pass stay as they are; --text '' clears the text. ytrack refuses unless
 the work item belongs to the issue you named.
 
---duration and --date take the same values as in ` + "`work-item add`" + `.
+--duration, --date and --type take the same values as in ` + "`work-item add`" + `:
+--type is a type name or its id (ids do not change with the UI language).
 ` + shared.DateHelp + `
 
 JSON fields:
@@ -68,7 +69,7 @@ JSON fields:
 				ch.Text = &opts.text
 			}
 			if fl.Changed("type") && opts.typeName == "" {
-				return clierr.FlagErrorf("`--type` needs a work item type name")
+				return clierr.FlagErrorf("`--type` needs a work item type name or id")
 			}
 			if fl.Changed("date") && opts.date == "" {
 				return clierr.FlagErrorf("`--date` needs auto or a YYYY-MM-DD day")
@@ -89,7 +90,7 @@ JSON fields:
 	fl := cmd.Flags()
 	fl.StringVarP(&opts.duration, "duration", "d", "", "New time spent, e.g. 1h30m, 90m or 1.5h")
 	fl.StringVar(&opts.date, "date", "", "New day: auto (today) or YYYY-MM-DD")
-	fl.StringVar(&opts.typeName, "type", "", "New work item type `name`")
+	fl.StringVar(&opts.typeName, "type", "", "New work item type `name` or id")
 	fl.StringVar(&opts.text, "text", "", "New description")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, shared.Fields)
 	return cmd

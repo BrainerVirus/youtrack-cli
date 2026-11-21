@@ -47,7 +47,8 @@ func newCmdList(f *cmdutil.Factory) *cobra.Command {
 		Long: `List the skills directories ytrack installed the skill into, with the
 version each copy holds and its state:
   current  the version of this ytrack
-  stale    another version
+  stale    an older version
+  newer    a newer ytrack's version; this ytrack leaves it alone
   missing  deleted, or replaced by something that is not the ytrack skill
 
 UPDATES says how a copy is kept at ytrack's version: auto for a copy in your
@@ -63,7 +64,7 @@ JSON fields (--json), an array:
   dir      the skills directory, e.g. /home/me/.claude/skills
   path     the skill directory, dir/ytrack
   version  metadata.version of its SKILL.md; empty when missing
-  state    current, stale or missing
+  state    current, stale, newer or missing
   managed  true when ytrack keeps it up to date (UPDATES auto)`,
 		Example: `  $ ytrack skill list
   $ ytrack skill list --json`,
@@ -111,11 +112,13 @@ JSON fields (--json), an array:
 // listHints tells how to bring stale and missing copies in line.
 func listHints(f *cmdutil.Factory, copies []skill.Copy) {
 	w := f.IOStreams.ErrOut
-	staleAuto, missing := false, false
+	staleAuto, missing, newer := false, false, ""
 	for _, c := range copies {
 		switch {
 		case c.State == skill.StateMissing:
 			missing = true
+		case c.State == skill.StateNewer:
+			newer = c.Version
 		case c.State == skill.StateStale && !c.Managed:
 			fmt.Fprintf(w, "%s is in a repository and holds the skill %s; update it with `ytrack skill install --dir %s`\n",
 				output.SanitizeText(c.Dir), output.SanitizeText(c.Version), output.SanitizeText(c.Dir))
@@ -126,13 +129,18 @@ func listHints(f *cmdutil.Factory, copies []skill.Copy) {
 	if staleAuto {
 		fmt.Fprintln(w, "Run `ytrack skill sync` to update the stale copies in your home directory now.")
 	}
+	if newer != "" {
+		fmt.Fprintf(w, "A newer ytrack (%s) installed some copies; this ytrack (%s) leaves them alone. Upgrade with `ytrack upgrade`.\n",
+			output.SanitizeText(newer), output.SanitizeText(build.Version))
+	}
 	if missing {
 		fmt.Fprintln(w, "`ytrack skill sync` forgets the missing copies; `ytrack skill install --dir <dir>` puts one back.")
 	}
 }
 
 func newCmdSync(f *cmdutil.Factory) *cobra.Command {
-	return &cobra.Command{
+	var force bool
+	cmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Update every installed copy of the skill now",
 		Long: `Rewrite every copy of the skill in your home directory (UPDATES auto in
@@ -140,10 +148,13 @@ ytrack skill list) at this ytrack's version, and forget every copy that is
 missing; a missing copy is not re-created. A copy in a repository is left
 for ytrack skill install --dir.
 
+A copy a newer ytrack installed is kept (it is not downgraded); --force
+rewrites it at this version too.
+
 ytrack does this by itself the first time a newer release runs; run it after
 installing ytrack by other means, or to bring copies back to this version.
 
-Prints one line per recorded directory: the action (updated, dropped,
+Prints one line per recorded directory: the action (updated, kept, dropped,
 manual or failed), the skill directory and the version it holds. Exits 1
 when a copy could not be rewritten.`,
 		Example: `  $ ytrack skill sync`,
@@ -159,7 +170,11 @@ when a copy could not be rewritten.`,
 				return nil
 			}
 			before := reg.Clone()
-			results, _ := reg.Sync(build.Version)
+			sync := reg.Sync
+			if force {
+				sync = reg.SyncForce
+			}
+			results, _ := sync(build.Version)
 			if !reg.Equal(before) {
 				if err := reg.Save(); err != nil {
 					fmt.Fprintf(f.IOStreams.ErrOut, "warning: could not save the list of skill copies: %s\n", output.SanitizeText(err.Error()))
@@ -179,6 +194,8 @@ when a copy could not be rewritten.`,
 			return failed
 		},
 	}
+	cmd.Flags().BoolVar(&force, "force", false, "Also rewrite copies a newer ytrack installed")
+	return cmd
 }
 
 func newCmdUninstall(f *cmdutil.Factory) *cobra.Command {

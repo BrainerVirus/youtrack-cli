@@ -46,7 +46,8 @@ not accepted because their length depends on the YouTrack work schedule.
 ` + shared.DateHelp + `
 
 --type takes a work item type name from the project's time tracking
-settings (case is ignored); an unknown name lists the valid ones.
+settings (case is ignored) or its id; names follow the instance's language,
+ids do not. An unknown value lists the valid names with their ids.
 
 --meeting logs meeting time: the text defaults to "Meetings", as in workit.
 Any --text or --type you give still applies.
@@ -81,7 +82,7 @@ JSON fields:
 	fl := cmd.Flags()
 	fl.StringVarP(&opts.duration, "duration", "d", "", "Time spent, e.g. 1h30m, 90m or 1.5h")
 	fl.StringVar(&opts.date, "date", "auto", "Day of the work: auto (today) or YYYY-MM-DD")
-	fl.StringVar(&opts.typeName, "type", "", "Work item type `name`, e.g. Development")
+	fl.StringVar(&opts.typeName, "type", "", "Work item type `name` or id, e.g. Development or 117-0")
 	fl.StringVar(&opts.text, "text", "", "Description of the work")
 	fl.BoolVar(&opts.meeting, "meeting", false, "Log meeting time (text defaults to \""+MeetingText+"\")")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, shared.Fields)

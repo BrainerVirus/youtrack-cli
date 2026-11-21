@@ -202,7 +202,8 @@ func copyID(dir string) (id string, link bool) {
 // Copy states.
 const (
 	StateCurrent = "current" // holds the skill at the running version
-	StateStale   = "stale"   // holds the skill at another version
+	StateStale   = "stale"   // holds the skill at an older (or unparsable) version
+	StateNewer   = "newer"   // holds the skill from a newer ytrack, left alone by this one
 	StateMissing = "missing" // holds no ytrack skill (deleted or replaced)
 )
 
@@ -211,7 +212,7 @@ type Copy struct {
 	Dir     string // the skills directory
 	Path    string // Dir/ytrack
 	Version string // metadata.version of its SKILL.md; empty when missing
-	State   string // StateCurrent, StateStale or StateMissing
+	State   string // StateCurrent, StateStale, StateNewer or StateMissing
 	// Managed reports whether ytrack keeps the copy at its version (see
 	// Managed); a copy in a repository is updated by hand.
 	Managed bool
@@ -234,9 +235,13 @@ func Inspect(dir, version string) Copy {
 		return c
 	}
 	c.Version = m.Metadata["version"]
-	c.State = StateStale
-	if c.Version == version {
+	switch {
+	case c.Version == version:
 		c.State = StateCurrent
+	case update.Newer(c.Version, version):
+		c.State = StateNewer
+	default:
+		c.State = StateStale
 	}
 	return c
 }
@@ -293,6 +298,7 @@ const (
 	SyncUpdated = "updated" // rewritten at the version
 	SyncDropped = "dropped" // missing or replaced by something else; forgotten
 	SyncManual  = "manual"  // a repository copy; left as it is
+	SyncKept    = "kept"    // a newer ytrack's copy; left as it is (SyncForce rewrites it)
 	SyncFailed  = "failed"  // could not be rewritten; still recorded
 )
 
@@ -310,17 +316,23 @@ type SyncResult struct {
 // per directory, and whether it all succeeded. The caller saves the
 // registry.
 func (r *Registry) Sync(version string) ([]SyncResult, bool) {
-	return r.sync(version, Install)
+	return r.sync(version, Install, false)
+}
+
+// SyncForce is Sync that also rewrites copies a newer ytrack installed,
+// bringing them back to version.
+func (r *Registry) SyncForce(version string) ([]SyncResult, bool) {
+	return r.sync(version, Install, true)
 }
 
 // SyncNoWait is Sync for the background refresh: a copy another install is
 // updating is skipped (SyncFailed with ErrBusy, so Synced stays and the next
 // run retries) instead of waited for.
 func (r *Registry) SyncNoWait(version string) ([]SyncResult, bool) {
-	return r.sync(version, InstallNoWait)
+	return r.sync(version, InstallNoWait, false)
 }
 
-func (r *Registry) sync(version string, install func(root, version string) (string, error)) ([]SyncResult, bool) {
+func (r *Registry) sync(version string, install func(root, version string) (string, error), force bool) ([]SyncResult, bool) {
 	var results []SyncResult
 	ok := true
 	keep := r.Dirs[:0:0]
@@ -335,6 +347,8 @@ func (r *Registry) sync(version string, install func(root, version string) (stri
 			continue
 		case !c.Managed:
 			res.Action = SyncManual
+		case c.State == StateNewer && !force:
+			res.Action = SyncKept
 		default:
 			id, _ := copyID(d)
 			if !done[id] {
