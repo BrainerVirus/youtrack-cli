@@ -31,7 +31,8 @@ go run ./bench compare bench/results/baseline/claude-haiku-4-5 bench/results/cla
 - `regrade <dir>` grades the stored runs of a results dir again with the
   current cases, without a model (after fixing a rule).
 - `compare <before> <after>` prints each case's passes and mean input tokens
-  per run side by side, and exits 1 when a case's pass rate dropped. Keep the
+  per run side by side, the input per model turn (the context size apart from
+  how many turns a run took), and exits 1 when a case's pass rate dropped. Keep the
   results of the skill before a change in `bench/results/baseline/<model>/`
   to compare against.
 

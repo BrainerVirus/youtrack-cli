@@ -245,7 +245,23 @@ func compare(w io.Writer, before, after Summary) bool {
 	fmt.Fprintf(w, "%-22s %4d/%-4d %4d/%-4d %12.0f %12.0f %+7.1f%%\n", "total", bt.Passes, bt.Graded, at.Passes, at.Graded,
 		bt.MeanTotalInput, at.MeanTotalInput, pct(bt.MeanTotalInput, at.MeanTotalInput))
 	fmt.Fprintf(w, "pass rate %.1f%% -> %.1f%%, cost $%.4f -> $%.4f\n", 100*bt.PassRate, 100*at.PassRate, bt.CostUSD, at.CostUSD)
+	bp, ap := perTurn(before), perTurn(after)
+	fmt.Fprintf(w, "input per turn %.0f -> %.0f (%+.1f%%)\n", bp, ap, pct(bp, ap))
 	return dropped
+}
+
+// perTurn is the mean prompt tokens per model turn over the graded runs: the
+// per-request size of the context, apart from how many turns a run took.
+func perTurn(s Summary) float64 {
+	var input, turns float64
+	for _, c := range s.Cases {
+		input += c.MeanTotalInput * float64(c.Graded)
+		turns += c.MeanTurns * float64(c.Graded)
+	}
+	if turns == 0 {
+		return 0
+	}
+	return input / turns
 }
 
 func rate(p, n int) float64 {
