@@ -61,7 +61,7 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 		"attach":   {calls("issue attach APP-123 crash.log"), calls("issue comment APP-123 --body log --attach crash.log"), ""},
 		"api-read": {[]Call{{Argv: []string{"api", "/issues", "-X", "GET", "-f", "query=project: APP timeout", "--fields", "idReadable,summary"}}}, calls("issue list -q timeout"), "APP-401 APP-405"},
 		"help-first": {
-			calls("issue view --help", "issue view APP-123 --comments --comments-limit 12"),
+			calls("issue view APP-123 --comments --help", "issue view APP-123 --comments --comments-limit 12"),
 			calls("issue view APP-123 --comments --limit 12", "issue view --help", "issue view APP-123 --comments --comments-limit 12"), "",
 		},
 	} {

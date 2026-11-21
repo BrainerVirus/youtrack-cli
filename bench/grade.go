@@ -59,7 +59,9 @@ func required(r Rule, calls []Call, commands []string) bool {
 	// before the help is still a guess.
 	all := lines(r, calls, commands, false)
 	first := firstMatch(r, all)
-	after := firstMatch(Rule{Match: r.Before}, all)
+	// A line that matches the rule itself (help on a command line that also
+	// names the flag) is not the guess.
+	after := firstMatch(Rule{Match: r.Before, Not: r.Match}, all)
 	return after < 0 || first < after
 }
 

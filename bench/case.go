@@ -38,7 +38,7 @@ type Rule struct {
 	Match []string `json:"match"`
 	Not   []string `json:"not,omitempty"`
 	// Before (require only): the first matching line comes before the first
-	// line matching every Before pattern.
+	// other line matching every Before pattern.
 	Before []string `json:"before,omitempty"`
 	// Times (forbid only): the rule breaks at this many matching lines
 	// (default 1); 2 catches a write that was repeated.

@@ -28,6 +28,8 @@ go run ./bench compare bench/results/baseline/claude-haiku-4-5 bench/results/cla
   case; `--force` re-runs anyway.
 - Exit 1 when a case fails, a run hits a harness error or runs were left over
   the budget.
+- `regrade <dir>` grades the stored runs of a results dir again with the
+  current cases, without a model (after fixing a rule).
 - `compare <before> <after>` prints each case's passes and mean input tokens
   per run side by side, and exits 1 when a case's pass rate dropped. Keep the
   results of the skill before a change in `bench/results/baseline/<model>/`
@@ -104,8 +106,8 @@ as argv words joined by spaces, `--flag=value` written `--flag value`, no
 shell quoting) or `commands` (each Bash command as the model wrote it). A
 line matches when every `match` regex and no `not` regex matches. A
 `require` rule needs one matching line, and for calls one that exited 0;
-with `before`, its first match must come before the first line matching every
-`before` regex (help read before the first guess). A `forbid` rule breaks on
+with `before`, its first match must come before the first other line
+matching every `before` regex (help read before the first guess). A `forbid` rule breaks on
 `times` matching lines (default 1; 2 catches a repeated write).
 
 | Case | What it checks |

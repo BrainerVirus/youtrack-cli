@@ -4,11 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"math"
 	"os"
+	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -261,4 +264,60 @@ func pct(before, after float64) float64 {
 
 func resultKey(c *Case, skillHash, model string) string {
 	return strings.Join([]string{benchVersion, c.hash, skillHash, model}, "-")
+}
+
+// writeSummary sums up every case of casesDir whose stored result was made
+// with this skill and model, and writes summary.json.
+func writeSummary(casesDir, out, model, skillHash string, skillBytes int) (Summary, error) {
+	cases, err := loadCases(casesDir, nil)
+	if err != nil {
+		return Summary{}, err
+	}
+	var results []CaseResult
+	for _, c := range cases {
+		cr, err := readCaseResult(filepath.Join(out, c.ID+".json"))
+		if err == nil && cr.Key == resultKey(c, skillHash, model) {
+			results = append(results, cr)
+		}
+	}
+	s := summarize(model, skillHash, skillBytes, results)
+	return s, writeJSON(filepath.Join(out, "summary.json"), s)
+}
+
+// regrade grades every stored pass or fail again with the current rules.
+func regrade(casesDir, dir string) error {
+	cases, err := loadCases(casesDir, nil)
+	if err != nil {
+		return err
+	}
+	for _, c := range cases {
+		path := filepath.Join(dir, c.ID+".json")
+		cr, err := readCaseResult(path)
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		for i, r := range cr.Runs {
+			if !graded(r) {
+				continue
+			}
+			failures := Grade(c, r.Calls, r.Commands, r.Answer)
+			if slices.Contains(r.Failures, "max turns") {
+				failures = append(failures, "max turns")
+			}
+			r.Failures, r.Failed, r.Status = failures, "", "pass"
+			if len(failures) > 0 {
+				r.Failed, r.Status = failures[0], "fail"
+			}
+			cr.Runs[i] = r
+		}
+		key := cr.Key
+		cr = newCaseResult(c, cr.Model, key, cr.Runs)
+		if err := writeJSON(path, cr); err != nil {
+			return err
+		}
+	}
+	return nil
 }

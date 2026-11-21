@@ -27,6 +27,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "compare" {
 		os.Exit(compareMain(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "regrade" {
+		os.Exit(regradeMain(os.Args[2:]))
+	}
 	os.Exit(runMain(os.Args[1:]))
 }
 
@@ -48,6 +51,30 @@ func compareMain(args []string) int {
 	}
 	fmt.Fprintln(os.Stderr, "bench:", err)
 	return 1
+}
+
+// regradeMain grades the stored runs of a results dir again with the current
+// cases, without a model: for a grading fix.
+func regradeMain(args []string) int {
+	fl := flag.NewFlagSet("regrade", flag.ContinueOnError)
+	casesDir := fl.String("cases", "bench/cases", "directory of case files")
+	if err := fl.Parse(args); err != nil || fl.NArg() != 1 {
+		fmt.Fprintln(os.Stderr, "usage: go run ./bench regrade [--cases dir] <results dir>")
+		return 1
+	}
+	dir := fl.Arg(0)
+	old, err := readSummary(dir)
+	if err == nil {
+		err = regrade(*casesDir, dir)
+	}
+	if err == nil {
+		_, err = writeSummary(*casesDir, dir, old.Model, old.SkillHash, old.SkillBytes)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "bench:", err)
+		return 1
+	}
+	return 0
 }
 
 type task struct {
@@ -163,7 +190,6 @@ func runMain(args []string) int {
 	close(work)
 	wg.Wait()
 
-	var results []CaseResult
 	failed := false
 	for _, c := range cases {
 		cr := newCaseResult(c, *model, resultKey(c, skillHash, *model), runs[c.ID])
@@ -172,10 +198,9 @@ func runMain(args []string) int {
 			return 1
 		}
 		failed = failed || !cr.Pass
-		results = append(results, cr)
 	}
-	s := summarize(*model, skillHash, skillBytes, results)
-	if err := writeJSON(filepath.Join(*out, "summary.json"), s); err != nil {
+	s, err := writeSummary(*casesDir, *out, *model, skillHash, skillBytes)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "bench:", err)
 		return 1
 	}
