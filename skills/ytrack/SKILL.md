@@ -157,7 +157,7 @@ ytrack work-item delete APP-123 115-3 --yes
 ## JSON output
 
 - `--json <fields>` prints JSON with those fields; `--help` lists them.
-  `--jq <expr>` filters it and needs `--json`.
+  `--jq <expr>` filters it; without `--json` it gets every field.
 - Spell out `--jq`: in `ytrack issue list`, `-q` is `--query`.
 
 ```sh

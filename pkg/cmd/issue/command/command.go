@@ -166,6 +166,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		if apiErr, ok := errors.AsType[*transport.APIError](err); ok && opts.silent && apiErr.StatusCode == http.StatusForbidden {
 			return fmt.Errorf("%w\n`--silent` needs the Apply Commands Silently permission in the project; retry without --silent (the change then notifies watchers)", err)
 		}
+		if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusBadRequest {
+			return fmt.Errorf("%w\nnothing was changed; `ytrack issue command %s %s --dry-run` shows how YouTrack parses each part (command words follow the instance's language)", err, strings.Join(ids, " "), shellQuote(opts.query))
+		}
 		return shared.NotFound(err, idList, host)
 	}
 
@@ -217,4 +220,9 @@ var htmlTag = regexp.MustCompile(`</?[A-Za-z][^<>]*>`)
 // as "&#27;" decode to. --json keeps the description as YouTrack sent it.
 func plainText(s string) string {
 	return html.UnescapeString(htmlTag.ReplaceAllString(s, ""))
+}
+
+// shellQuote single-quotes s for a copyable command line.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }

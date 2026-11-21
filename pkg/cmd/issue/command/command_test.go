@@ -77,3 +77,17 @@ func TestCommandDryRunHTML(t *testing.T) {
 		}
 	})
 }
+
+func TestCommandRejected(t *testing.T) {
+	t.Run("given a command YouTrack rejects with 400, it says nothing changed and gives the --dry-run line to see how it parses", func(t *testing.T) {
+		env, _ := htmlPreview(t)
+		code := env.Run("issue", "command", "NSR-40", "tag No Such Tag")
+		if code == 0 {
+			t.Fatalf("exit 0; stdout %s", env.Stdout)
+		}
+		want := "`ytrack issue command NSR-40 'tag No Such Tag' --dry-run`"
+		if !strings.Contains(env.Stderr.String(), "nothing was changed") || !strings.Contains(env.Stderr.String(), want) {
+			t.Errorf("stderr = %s", env.Stderr)
+		}
+	})
+}

@@ -29,8 +29,9 @@ func WithoutJQShorthand() JSONOption {
 
 // AddJSONFlags adds --json <fields>, --jq and --template to cmd. After flag
 // parsing, *target is nil unless --json was given, in which case it holds an
-// exporter limited to the requested fields. Requesting a field outside
-// fields, or --jq/--template without --json, is a usage error.
+// exporter limited to the requested fields. --jq or --template without
+// --json exports every field, as `ytrack api --jq` needs no --json either.
+// Requesting a field outside fields is a usage error.
 func AddJSONFlags(cmd *cobra.Command, target **output.Exporter, fields []string, opts ...JSONOption) {
 	o := jsonOptions{jqShorthand: "q"}
 	for _, opt := range opts {
@@ -65,7 +66,7 @@ func AddJSONFlags(cmd *cobra.Command, target **output.Exporter, fields []string,
 				return err
 			}
 		}
-		e, err := checkJSONFlags(c.Flags())
+		e, err := checkJSONFlags(c.Flags(), sorted)
 		if err != nil {
 			return err
 		}
@@ -93,7 +94,7 @@ func AddJSONFlags(cmd *cobra.Command, target **output.Exporter, fields []string,
 	cmd.Annotations["help:json-fields"] = strings.Join(sorted, ",")
 }
 
-func checkJSONFlags(f *pflag.FlagSet) (*output.Exporter, error) {
+func checkJSONFlags(f *pflag.FlagSet, all []string) (*output.Exporter, error) {
 	jsonFlag, jqFlag, tplFlag := f.Lookup("json"), f.Lookup("jq"), f.Lookup("template")
 	switch {
 	case jsonFlag.Changed:
@@ -108,10 +109,13 @@ func checkJSONFlags(f *pflag.FlagSet) (*output.Exporter, error) {
 			Fields: fields,
 			Format: output.Format{JQ: jqFlag.Value.String(), Template: tplFlag.Value.String()},
 		}, nil
-	case jqFlag.Changed:
-		return nil, clierr.FlagErrorf("cannot use `--jq` without specifying `--json`")
-	case tplFlag.Changed:
-		return nil, clierr.FlagErrorf("cannot use `--template` without specifying `--json`")
+	case jqFlag.Changed && tplFlag.Changed:
+		return nil, clierr.FlagErrorf("cannot use `--jq` and `--template` together")
+	case jqFlag.Changed || tplFlag.Changed:
+		return &output.Exporter{
+			Fields: slices.Clone(all),
+			Format: output.Format{JQ: jqFlag.Value.String(), Template: tplFlag.Value.String()},
+		}, nil
 	}
 	return nil, nil
 }

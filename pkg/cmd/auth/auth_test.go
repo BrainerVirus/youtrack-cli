@@ -388,9 +388,9 @@ func TestStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("given --jq without --json, it is a usage error", func(t *testing.T) {
+	t.Run("given --jq and --template without --json, it is a usage error", func(t *testing.T) {
 		env := cmdtest.New(t)
-		if code := env.Run("auth", "status", "--jq", ".[]"); !env.IsUsageError(code) {
+		if code := env.Run("auth", "status", "--jq", ".[]", "--template", "{{.}}"); !env.IsUsageError(code) {
 			t.Fatalf("exit %d, want a usage error (1); stderr: %s", code, env.Stderr)
 		}
 	})
