@@ -48,13 +48,12 @@
     {
       "case": "help-first",
       "pass": false,
-      "passes": 0,
+      "passes": 1,
       "graded": 3,
       "skillLoaded": 3,
       "failed": [
-        "require: issue view --help before the first comments call",
-        "require: issue view --help before the first comments call",
-        "require: issue view --help before the first comments call"
+        "require: issue view with 12 comments",
+        "require: issue view with 12 comments"
       ],
       "meanTurns": 5,
       "meanTotalInput": 92868.7,
@@ -150,8 +149,8 @@
     "casesPassed": 9,
     "runs": 30,
     "graded": 30,
-    "passes": 25,
-    "passRate": 0.8333,
+    "passes": 26,
+    "passRate": 0.8667,
     "tokens": {
       "input": 924,
       "output": 27024,

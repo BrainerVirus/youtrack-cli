@@ -1,0 +1,115 @@
+{
+  "model": "claude-haiku-4-5",
+  "skillHash": "a71ba559bfc37c35",
+  "skillBytes": 18189,
+  "cases": [
+    {
+      "case": "api-read",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 1,
+      "meanTurns": 4,
+      "meanTotalInput": 64832,
+      "sdTotalInput": 0,
+      "meanOutput": 555,
+      "meanDurationMs": 11125,
+      "costUSD": 0.0284
+    },
+    {
+      "case": "attach",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 1,
+      "meanTurns": 5,
+      "meanTotalInput": 65215,
+      "sdTotalInput": 0,
+      "meanOutput": 644,
+      "meanDurationMs": 11265,
+      "costUSD": 0.0291
+    },
+    {
+      "case": "comment",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 1,
+      "meanTurns": 4,
+      "meanTotalInput": 64726,
+      "sdTotalInput": 0,
+      "meanOutput": 495,
+      "meanDurationMs": 11510,
+      "costUSD": 0.0279
+    },
+    {
+      "case": "link-es",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 1,
+      "meanTurns": 5,
+      "meanTotalInput": 87792,
+      "sdTotalInput": 0,
+      "meanOutput": 688,
+      "meanDurationMs": 8575,
+      "costUSD": 0.0319
+    },
+    {
+      "case": "log-time",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 1,
+      "meanTurns": 4,
+      "meanTotalInput": 65018,
+      "sdTotalInput": 0,
+      "meanOutput": 659,
+      "meanDurationMs": 9626,
+      "costUSD": 0.0292
+    },
+    {
+      "case": "my-issues-es",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 1,
+      "meanTurns": 5,
+      "meanTotalInput": 88170,
+      "sdTotalInput": 0,
+      "meanOutput": 930,
+      "meanDurationMs": 12896,
+      "costUSD": 0.0334
+    },
+    {
+      "case": "view-json",
+      "pass": true,
+      "passes": 1,
+      "graded": 1,
+      "skillLoaded": 1,
+      "meanTurns": 4,
+      "meanTotalInput": 65089,
+      "sdTotalInput": 0,
+      "meanOutput": 699,
+      "meanDurationMs": 10637,
+      "costUSD": 0.0293
+    }
+  ],
+  "totals": {
+    "cases": 7,
+    "casesPassed": 7,
+    "runs": 7,
+    "graded": 7,
+    "passes": 7,
+    "passRate": 1,
+    "tokens": {
+      "input": 212,
+      "output": 4670,
+      "cacheCreation": 71345,
+      "cacheRead": 429285
+    },
+    "totalInput": 500842,
+    "meanTotalInputPerRun": 71548.9,
+    "costUSD": 0.2092
+  }
+}

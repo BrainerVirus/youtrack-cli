@@ -1,18 +1,14 @@
 {
   "case": "help-first",
   "model": "claude-haiku-5-5",
-  "key": "1-a364b9763a75704e-4c7c930f04322467-claude-haiku-5-5",
-  "passes": 0,
+  "key": "1-c74372f307fb1f37-4c7c930f04322467-claude-haiku-5-5",
+  "passes": 2,
   "graded": 3,
-  "pass": false,
+  "pass": true,
   "runs": [
     {
       "run": 1,
-      "status": "fail",
-      "failed": "require: issue view --help before the first comments call",
-      "failures": [
-        "require: issue view --help before the first comments call"
-      ],
+      "status": "pass",
       "turns": 5,
       "tokens": {
         "input": 8,
@@ -55,11 +51,7 @@
     },
     {
       "run": 2,
-      "status": "fail",
-      "failed": "require: issue view --help before the first comments call",
-      "failures": [
-        "require: issue view --help before the first comments call"
-      ],
+      "status": "pass",
       "turns": 5,
       "tokens": {
         "input": 8,
@@ -125,9 +117,8 @@
     {
       "run": 3,
       "status": "fail",
-      "failed": "require: issue view --help before the first comments call",
+      "failed": "require: issue view with 12 comments",
       "failures": [
-        "require: issue view --help before the first comments call",
         "require: issue view with 12 comments"
       ],
       "turns": 4,

@@ -1,7 +1,7 @@
 {
   "case": "set-field-es",
   "model": "claude-haiku-5-5",
-  "key": "1-01c86e605c442e01-6b892570bf541ef3-claude-haiku-5-5",
+  "key": "1-01c86e605c442e01-a71ba559bfc37c35-claude-haiku-5-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,119 +12,12 @@
       "turns": 6,
       "tokens": {
         "input": 10,
-        "output": 786,
-        "cacheCreation": 10565,
-        "cacheRead": 88679
+        "output": 787,
+        "cacheCreation": 10387,
+        "cacheRead": 88762
       },
-      "costUSD": 0.0033937900000000003,
-      "durationMs": 7535,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue view APP-123 --json idReadable,summary,customFields",
-        "ytrack issue edit APP-123 --field 'Priority=Critical'",
-        "ytrack issue view APP-123 --json idReadable,customFields --jq '.customFields[] | select(.name==\"Priority\")'"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--json",
-            "idReadable,summary,customFields"
-          ],
-          "exit": 0
-        },
-        {
-          "argv": [
-            "issue",
-            "edit",
-            "APP-123",
-            "--field",
-            "Priority=Critical"
-          ],
-          "exit": 0
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--json",
-            "idReadable,customFields",
-            "--jq",
-            ".customFields[] | select(.name==\"Priority\")"
-          ],
-          "exit": 0
-        }
-      ],
-      "answer": "APP-123's Priority is now Critical, changed from Major. I confirmed it by reading the issue back.\n\nI used the English value name \"Critical\" and it worked, so the Spanish display name wasn't needed. The read-back shows the stored value as \"Critical\", which suggests the field value is stored under its English name."
-    },
-    {
-      "run": 2,
-      "status": "pass",
-      "turns": 5,
-      "tokens": {
-        "input": 8,
-        "output": 593,
-        "cacheCreation": 10344,
-        "cacheRead": 67892
-      },
-      "costUSD": 0.0030450200000000007,
-      "durationMs": 6046,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue view APP-123 --json idReadable,summary,customFields",
-        "ytrack issue edit APP-123 --field 'Priority=Critical'; echo \"exit=$?\"; ytrack issue view APP-123 --json customFields"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--json",
-            "idReadable,summary,customFields"
-          ],
-          "exit": 0
-        },
-        {
-          "argv": [
-            "issue",
-            "edit",
-            "APP-123",
-            "--field",
-            "Priority=Critical"
-          ],
-          "exit": 0
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--json",
-            "customFields"
-          ],
-          "exit": 0
-        }
-      ],
-      "answer": "APP-123's Priority is now Critical, changed from Major. I read the field back after the update and it shows \"Critical\".\n\nThe edit used the English value `Critical` directly, and YouTrack accepted it. I didn't need the Spanish label for this instance."
-    },
-    {
-      "run": 3,
-      "status": "pass",
-      "turns": 6,
-      "tokens": {
-        "input": 10,
-        "output": 665,
-        "cacheCreation": 10426,
-        "cacheRead": 88452
-      },
-      "costUSD": 0.00330322,
-      "durationMs": 6855,
+      "costUSD": 0.00335952,
+      "durationMs": 8687,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -166,7 +59,104 @@
           "exit": 0
         }
       ],
-      "answer": "APP-123's Priority is now Critical. It was Major before.\n\nI read the issue first to confirm the current value, then set it with `ytrack issue edit`. A second read confirmed the change. Nothing else on the issue was modified."
+      "answer": "APP-123's Priority is now Critical, changed from Major. I read it back from YouTrack to confirm.\n\nThe instance is in Spanish, but the field values come back in English, and `Critical` was accepted as the value name, so I didn't need to look up a localized name."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 734,
+        "cacheCreation": 10483,
+        "cacheRead": 88627
+      },
+      "costUSD": 0.00335087,
+      "durationMs": 7311,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json customFields",
+        "ytrack issue edit APP-123 --field 'Priority=Critical'",
+        "ytrack issue view APP-123 --json customFields"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "customFields"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "customFields"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-123's Priority is now Critical, changed from Major. I read it back from YouTrack to confirm.\n\nI set the value with `ytrack issue edit APP-123 --field 'Priority=Critical'`, which the CLI accepted without a Spanish name. The other fields (State, Type, Assignee) were not changed."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 733,
+        "cacheCreation": 10032,
+        "cacheRead": 67996
+      },
+      "costUSD": 0.0030536600000000006,
+      "durationMs": 7019,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --field 'Priority=Critical'",
+        "ytrack issue view APP-123 --json customFields --jq '.customFields[] | select(.name==\"Priority\")'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--field",
+            "Priority=Critical"
+          ],
+          "exit": 0
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "customFields",
+            "--jq",
+            ".customFields[] | select(.name==\"Priority\")"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "APP-123's Priority is now Critical. I ran `ytrack issue edit APP-123 --field 'Priority=Critical'`, and a read-back confirms the stored value is \"Critical\".\n\nBecause the instance runs in Spanish, I checked that the value name was accepted as typed rather than assuming it. If your instance uses a localized name such as \"Crítica\", the setter would have failed, and it didn't."
     }
   ]
 }

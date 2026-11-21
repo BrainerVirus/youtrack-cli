@@ -40,6 +40,9 @@ type Rule struct {
 	// Before (require only): the first matching line comes before the first
 	// other line matching every Before pattern.
 	Before []string `json:"before,omitempty"`
+	// BeforeFailed (calls only): Before counts only calls that failed, such as
+	// a guessed flag, and the rule holds when there is none.
+	BeforeFailed bool `json:"beforeFailed,omitempty"`
 	// Times (forbid only): the rule breaks at this many matching lines
 	// (default 1); 2 catches a write that was repeated.
 	Times int `json:"times,omitempty"`

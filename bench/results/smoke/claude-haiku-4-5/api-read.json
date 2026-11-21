@@ -1,0 +1,45 @@
+{
+  "case": "api-read",
+  "model": "claude-haiku-4-5",
+  "key": "1-5625d45472a83f63-a71ba559bfc37c35-claude-haiku-4-5",
+  "passes": 1,
+  "graded": 1,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 555,
+        "cacheCreation": 10063,
+        "cacheRead": 54741
+      },
+      "costUSD": 0.0284031,
+      "durationMs": 11125,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack api /issues -X GET -f query='project: APP timeout' --fields idReadable,summary --paginate"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "api",
+            "/issues",
+            "-X",
+            "GET",
+            "-f",
+            "query=project: APP timeout",
+            "--fields",
+            "idReadable,summary",
+            "--paginate"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Here are the YouTrack issues matching the query `project: APP timeout`:\n\n| ID | Summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |"
+    }
+  ]
+}

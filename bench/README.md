@@ -109,7 +109,9 @@ shell quoting) or `commands` (each Bash command as the model wrote it). A
 line matches when every `match` regex and no `not` regex matches. A
 `require` rule needs one matching line, and for calls one that exited 0;
 with `before`, its first match must come before the first other line
-matching every `before` regex (help read before the first guess). A `forbid` rule breaks on
+matching every `before` regex (help read before the first guess). With
+`beforeFailed`, only failed calls count as that line (a guessed flag), and the
+rule holds when no call failed. A `forbid` rule breaks on
 `times` matching lines (default 1; 2 catches a repeated write).
 
 | Case | What it checks |
@@ -123,7 +125,7 @@ matching every `before` regex (help read before the first guess). A `forbid` rul
 | `link-es` | localized trap: `issue link --type 'subtask of'`, not `issue command` |
 | `attach` | `issue attach` with a local file |
 | `api-read` | `ytrack api` read with `-X GET`, a query and `--fields` |
-| `help-first` | `issue view --help` before guessing `--comments-limit` |
+| `help-first` | 12 comments: `--help` before any guessed flag (`--comments-limit`), or `--json comments` |
 
 A new case gets a row in `TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap`
 (`bench/bench_test.go`): the calls the skill teaches must pass and the trap

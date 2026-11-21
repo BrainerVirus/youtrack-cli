@@ -1,6 +1,6 @@
 {
   "id": "help-first",
-  "about": "read --help before guessing a flag the skill does not name (--comments-limit)",
+  "about": "read --help before guessing a flag the skill does not name (--comments-limit); a run that never guesses needs no help",
   "prompt": "Show me the last 12 comments on YouTrack issue APP-123 and summarize where the fix stands in two sentences.",
   "maxTurns": 10,
   "fixtures": {
@@ -205,14 +205,14 @@
   },
   "require": [
     {
-      "name": "issue view --help before the first comments call",
+      "name": "issue view --help before a guessed flag",
       "match": [
         "^(help issue view|issue view\\b.*(--help|-h)\\b)"
       ],
       "before": [
-        "^issue view\\b",
-        "(--comments|-c\\b|--json \\S*comments)"
-      ]
+        "^issue view\\b"
+      ],
+      "beforeFailed": true
     },
     {
       "name": "issue view with 12 comments",

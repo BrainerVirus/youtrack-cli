@@ -1,0 +1,56 @@
+{
+  "case": "my-issues-es",
+  "model": "claude-haiku-4-5",
+  "key": "1-a4b5b672465539c6-a71ba559bfc37c35-claude-haiku-4-5",
+  "passes": 1,
+  "graded": 1,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 930,
+        "cacheCreation": 10469,
+        "cacheRead": 77665
+      },
+      "costUSD": 0.033390500000000004,
+      "durationMs": 12896,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list --project APP --assignee me --format table",
+        "ytrack issue list --project APP --assignee me"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "--project",
+            "APP",
+            "--assignee",
+            "me",
+            "--format",
+            "table"
+          ],
+          "exit": 1
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "--project",
+            "APP",
+            "--assignee",
+            "me"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Here are your unresolved issues in project APP:\n\n| Issue | State | Summary |\n|-------|-------|---------|\n| APP-310 | Open | Export to CSV drops the header |\n| APP-315 | In Progress | Dark mode contrast on buttons |\n\nYou have 2 unresolved issues assigned to you. Would you like to view details on any of them or perform any actions?"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "case": "attach",
+  "model": "claude-haiku-4-5",
+  "key": "1-133f5d0cea49e03d-a71ba559bfc37c35-claude-haiku-4-5",
+  "passes": 1,
+  "graded": 1,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 28,
+        "output": 644,
+        "cacheCreation": 10195,
+        "cacheRead": 54992
+      },
+      "costUSD": 0.0291372,
+      "durationMs": 11265,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ls -la \u003cworld\u003e/project/crash.log 2\u003e\u00261",
+        "ytrack issue attach APP-123 \u003cworld\u003e/project/crash.log"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "attach",
+            "APP-123",
+            "\u003cworld\u003e/project/crash.log"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done! I've successfully attached the crash.log file to YouTrack issue APP-123. The file has been uploaded and is now accessible on the issue."
+    }
+  ]
+}

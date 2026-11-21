@@ -1,7 +1,7 @@
 {
   "case": "search-query",
   "model": "claude-haiku-5-5",
-  "key": "1-618b93a1905fddff-6b892570bf541ef3-claude-haiku-5-5",
+  "key": "1-618b93a1905fddff-a71ba559bfc37c35-claude-haiku-5-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,46 +12,12 @@
       "turns": 4,
       "tokens": {
         "input": 6,
-        "output": 299,
-        "cacheCreation": 9549,
-        "cacheRead": 47347
-      },
-      "costUSD": 0.00253337,
-      "durationMs": 4496,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --limit 0"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "list",
-            "-q",
-            "project: APP tag: regression #Unresolved",
-            "--json",
-            "idReadable",
-            "--limit",
-            "0"
-          ],
-          "exit": 0
-        }
-      ],
-      "answer": "The unresolved issues in project APP tagged `regression` are:\n\n- APP-201\n- APP-207\n\nI ran `ytrack issue list -q 'project: APP tag: regression #Unresolved'` with no result limit, so this is the full set the query returns."
-    },
-    {
-      "run": 2,
-      "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 6,
         "output": 275,
-        "cacheCreation": 9543,
-        "cacheRead": 47341
+        "cacheCreation": 9560,
+        "cacheRead": 47362
       },
-      "costUSD": 0.0025201100000000003,
-      "durationMs": 4546,
+      "costUSD": 0.00252372,
+      "durationMs": 4278,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -75,17 +41,17 @@
       "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with no result limit."
     },
     {
-      "run": 3,
+      "run": 2,
       "status": "pass",
       "turns": 4,
       "tokens": {
         "input": 6,
-        "output": 314,
-        "cacheCreation": 9568,
-        "cacheRead": 47368
+        "output": 246,
+        "cacheCreation": 9553,
+        "cacheRead": 47349
       },
-      "costUSD": 0.0025448800000000002,
-      "durationMs": 4677,
+      "costUSD": 0.0025076900000000004,
+      "durationMs": 4311,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -106,7 +72,41 @@
           "exit": 0
         }
       ],
-      "answer": "Two unresolved issues in project APP are tagged regression:\n\n- APP-201\n- APP-207\n\nI ran `ytrack issue list -q 'project: APP tag: regression #Unresolved'` with no result limit."
+      "answer": "The unresolved issues in project APP tagged `regression` are:\n\n- APP-201\n- APP-207"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 275,
+        "cacheCreation": 9560,
+        "cacheRead": 47362
+      },
+      "costUSD": 0.00252372,
+      "durationMs": 4585,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP tag: regression #Unresolved' --json idReadable --limit 0"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression #Unresolved",
+            "--json",
+            "idReadable",
+            "--limit",
+            "0"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Two unresolved issues in project APP are tagged `regression`:\n\n- APP-201\n- APP-207\n\nI used the query `project: APP tag: regression #Unresolved` with no result limit."
     }
   ]
 }

@@ -48,6 +48,23 @@ func Grade(c *Case, calls []Call, commands []string, answer string) []string {
 }
 
 func required(r Rule, calls []Call, commands []string) bool {
+	all := lines(r, calls, commands, false)
+	if r.BeforeFailed {
+		// Needed only before a call that failed (a guessed flag): a run that
+		// never guessed needs no help.
+		failed := make([]string, len(calls))
+		for i, c := range calls {
+			if c.Exit != 0 {
+				failed[i] = c.Line()
+			}
+		}
+		guess := firstMatch(Rule{Match: r.Before, Not: r.Match}, failed)
+		if guess < 0 {
+			return true
+		}
+		first := firstMatch(r, all)
+		return first >= 0 && first < guess
+	}
 	i := firstMatch(r, lines(r, calls, commands, true))
 	if i < 0 {
 		return false
@@ -56,11 +73,9 @@ func required(r Rule, calls []Call, commands []string) bool {
 		return true
 	}
 	// Order is judged on every line, successful or not: a failed guess
-	// before the help is still a guess.
-	all := lines(r, calls, commands, false)
+	// before the help is still a guess. A line that matches the rule itself
+	// (help on a command line that also names the flag) is not the guess.
 	first := firstMatch(r, all)
-	// A line that matches the rule itself (help on a command line that also
-	// names the flag) is not the guess.
 	after := firstMatch(Rule{Match: r.Before, Not: r.Match}, all)
 	return after < 0 || first < after
 }

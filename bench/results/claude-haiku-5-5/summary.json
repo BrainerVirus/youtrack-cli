@@ -1,10 +1,11 @@
 {
   "model": "claude-haiku-5-5",
-  "skillHash": "6b892570bf541ef3",
-  "skillBytes": 18158,
+  "skillHash": "a71ba559bfc37c35",
+  "skillBytes": 18189,
   "cases": [
     {
       "case": "api-read",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -18,6 +19,7 @@
     },
     {
       "case": "attach",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -31,6 +33,7 @@
     },
     {
       "case": "comment",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -44,24 +47,20 @@
     },
     {
       "case": "help-first",
-      "pass": false,
-      "passes": 0,
+      "pass": true,
+      "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "failed": [
-        "require: issue view --help before the first comments call",
-        "require: issue view --help before the first comments call",
-        "require: issue view --help before the first comments call"
-      ],
       "meanTurns": 4,
-      "meanTotalInput": 58249,
-      "sdTotalInput": 46.1,
-      "meanOutput": 905,
-      "meanDurationMs": 6284.3,
-      "costUSD": 0.0093
+      "meanTotalInput": 58228.3,
+      "sdTotalInput": 38.4,
+      "meanOutput": 961.7,
+      "meanDurationMs": 9905.3,
+      "costUSD": 0.0094
     },
     {
       "case": "link-es",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -75,6 +74,7 @@
     },
     {
       "case": "log-time",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -88,6 +88,7 @@
     },
     {
       "case": "my-issues-es",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -106,10 +107,10 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 56911.3,
-      "sdTotalInput": 27.2,
-      "meanOutput": 296,
-      "meanDurationMs": 4573,
+      "meanTotalInput": 56921.3,
+      "sdTotalInput": 11.5,
+      "meanOutput": 265.3,
+      "meanDurationMs": 4391.3,
       "costUSD": 0.0076
     },
     {
@@ -119,14 +120,15 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 5.7,
-      "meanTotalInput": 92128.7,
-      "sdTotalInput": 12025.9,
-      "meanOutput": 681.3,
-      "meanDurationMs": 6812,
-      "costUSD": 0.0097
+      "meanTotalInput": 92105,
+      "sdTotalInput": 12184.1,
+      "meanOutput": 751.3,
+      "meanDurationMs": 7672.3,
+      "costUSD": 0.0098
     },
     {
       "case": "view-json",
+      "stale": true,
       "pass": true,
       "passes": 3,
       "graded": 3,
@@ -141,19 +143,19 @@
   ],
   "totals": {
     "cases": 10,
-    "casesPassed": 9,
+    "casesPassed": 10,
     "runs": 30,
     "graded": 30,
-    "passes": 27,
-    "passRate": 0.9,
+    "passes": 30,
+    "passRate": 1,
     "tokens": {
       "input": 210,
-      "output": 13951,
-      "cacheCreation": 296735,
-      "cacheRead": 1727785
+      "output": 14239,
+      "cacheCreation": 296299,
+      "cacheRead": 1728118
     },
-    "totalInput": 2024730,
-    "meanTotalInputPerRun": 67491,
-    "costUSD": 0.0836
+    "totalInput": 2024627,
+    "meanTotalInputPerRun": 67487.6,
+    "costUSD": 0.0837
   }
 }

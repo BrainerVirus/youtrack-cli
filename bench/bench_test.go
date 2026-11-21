@@ -62,7 +62,7 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 		"api-read": {[]Call{{Argv: []string{"api", "/issues", "-X", "GET", "-f", "query=project: APP timeout", "--fields", "idReadable,summary"}}}, calls("issue list -q timeout"), "APP-401 APP-405"},
 		"help-first": {
 			calls("issue view APP-123 --comments --help", "issue view APP-123 --comments --comments-limit 12"),
-			calls("issue view APP-123 --comments --limit 12", "issue view --help", "issue view APP-123 --comments --comments-limit 12"), "",
+			[]Call{{Argv: strings.Fields("issue view APP-123 --comments --limit 12"), Exit: 1}, {Argv: strings.Fields("issue view --help")}, {Argv: strings.Fields("issue view APP-123 --comments --comments-limit 12")}}, "",
 		},
 	} {
 		c := cases[id]
@@ -80,6 +80,16 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 	}
 	if len(cases) != 10 {
 		t.Errorf("%d cases, the table covers 10", len(cases))
+	}
+}
+
+func TestGivenHelpFirstARunThatNeverGuessedNeedsNoHelp(t *testing.T) {
+	c := loadAll(t)["help-first"]
+	if f := Grade(c, calls("issue view APP-123 --json summary,comments"), nil, ""); len(f) != 0 {
+		t.Errorf("no guess, all comments: %v", f)
+	}
+	if f := Grade(c, calls("issue view APP-123 --comments"), nil, ""); len(f) != 1 || f[0] != "require: issue view with 12 comments" {
+		t.Errorf("no guess, only the default 10: %v", f)
 	}
 }
 

@@ -1,0 +1,41 @@
+{
+  "case": "view-json",
+  "model": "claude-haiku-4-5",
+  "key": "1-fdb7b965f8966f6e-a71ba559bfc37c35-claude-haiku-4-5",
+  "passes": 1,
+  "graded": 1,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 699,
+        "cacheCreation": 10162,
+        "cacheRead": 54899
+      },
+      "costUSD": 0.029336900000000003,
+      "durationMs": 10637,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json summary,state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "summary,state,assignee"
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "**APP-123 is currently:**\n- **Summary**: Login fails on Safari\n- **State**: In Progress\n- **Assigned to**: Jane Doe (@jdoe)"
+    }
+  ]
+}

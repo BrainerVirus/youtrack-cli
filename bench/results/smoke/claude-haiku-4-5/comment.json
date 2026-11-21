@@ -1,0 +1,41 @@
+{
+  "case": "comment",
+  "model": "claude-haiku-4-5",
+  "key": "1-69ffb72ae5ff141c-a71ba559bfc37c35-claude-haiku-4-5",
+  "passes": 1,
+  "graded": 1,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 495,
+        "cacheCreation": 9959,
+        "cacheRead": 54739
+      },
+      "costUSD": 0.0278949,
+      "durationMs": 11510,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0
+        }
+      ],
+      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to issue APP-123. The comment is now visible at: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
+    }
+  ]
+}

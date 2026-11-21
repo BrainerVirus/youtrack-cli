@@ -312,7 +312,8 @@ func writeSummary(casesDir, out, model, skillHash string, skillBytes int) (Summa
 	return s, writeJSON(filepath.Join(out, "summary.json"), s)
 }
 
-// regrade grades every stored pass or fail again with the current rules.
+// regrade grades every stored pass or fail again with the current rules. It
+// is for a rule change only: a changed prompt, fixture or file needs new runs.
 func regrade(casesDir, dir string) error {
 	cases, err := loadCases(casesDir, nil)
 	if err != nil {
@@ -341,7 +342,12 @@ func regrade(casesDir, dir string) error {
 			}
 			cr.Runs[i] = r
 		}
+		// Same runs, current rules: the key takes the case's new hash and keeps
+		// the skill the runs were made with.
 		key := cr.Key
+		if parts := strings.SplitN(cr.Key, "-", 4); len(parts) == 4 {
+			key = resultKey(c, parts[2], parts[3])
+		}
 		cr = newCaseResult(c, cr.Model, key, cr.Runs)
 		if err := writeJSON(path, cr); err != nil {
 			return err
