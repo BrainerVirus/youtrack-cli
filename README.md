@@ -404,6 +404,10 @@ prefixed `ytrack-it`, works on them and deletes them, and refuses hosts other
 than `*.youtrack.cloud` unless you allow one. See [docs/integration-tests.md](docs/integration-tests.md) before
 running it.
 
+`go run ./bench --model claude-haiku-4-5 --repeat 3` measures the agent skill
+on a real model with a fake `ytrack` (pass rate and tokens per task); it needs
+a Claude Code login and never runs in CI. See [bench/README.md](bench/README.md).
+
 Releases: from an up-to-date `main`, run `make release VERSION=v0.1.0`. It
 runs the tests, tags `main` and pushes the tag; the `Release` workflow then
 builds the archives with goreleaser, signs the checksums file with cosign

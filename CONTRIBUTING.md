@@ -29,7 +29,10 @@ with `go tool -modfile=tools/go.mod <name>`; no separate install needed.
    check every request against it.
 4. A new or renamed command or flag is reflected in the agent skill under
    `skills/ytrack/` (a test fails when the skill names something that does not
-   exist) and in the README or `docs/`.
+   exist) and in the README or `docs/`. A change to the skill's text is
+   measured with the skill bench before and after
+   (`go run ./bench --model claude-haiku-4-5 --repeat 3`, then
+   `go run ./bench compare`); see [bench/README.md](bench/README.md).
 5. Verify:
 
    ```sh
