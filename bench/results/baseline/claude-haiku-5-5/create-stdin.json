@@ -1,7 +1,7 @@
 {
   "case": "create-stdin",
   "model": "claude-haiku-5-5",
-  "key": "1-134b0ab2b8a00c6c-4c7c930f04322467-claude-haiku-5-5",
+  "key": "1-45bb42465b883e9f-4c7c930f04322467-claude-haiku-5-5",
   "passes": 2,
   "graded": 3,
   "pass": true,

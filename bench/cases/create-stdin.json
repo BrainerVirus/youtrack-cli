@@ -221,7 +221,7 @@
       "name": "the description piped from ls",
       "on": "commands",
       "match": [
-        "\\bls\\b[^|\\n]*\\|[^\\n]*\\bytrack\\b[^\\n]*\\bissue create\\b"
+        "\\bls\\b[^|;&\\n]*\\|[^|;&\\n]*\\bytrack\\b[^\\n]*\\bissue create\\b"
       ]
     }
   ],

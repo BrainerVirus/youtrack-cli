@@ -108,8 +108,14 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 	t.Run("create-stdin needs the ls output piped in", func(t *testing.T) {
 		c := cases["create-stdin"]
 		call := []Call{{Argv: strings.Fields("issue create -p APP -s Files --description-file -")}}
-		if f := Grade(c, call, []string{"echo hi | ytrack issue create -p APP -s Files --description-file -"}, ""); len(f) == 0 {
-			t.Error("a description that is not the ls output passes")
+		for _, cmd := range []string{
+			"echo hi | ytrack issue create -p APP -s Files --description-file -",
+			"ls; echo hi | ytrack issue create -p APP -s Files --description-file -",
+			"ls && echo hi | ytrack issue create -p APP -s Files --description-file -",
+		} {
+			if f := Grade(c, call, []string{cmd}, ""); len(f) == 0 {
+				t.Errorf("a description that is not the ls output passes: %s", cmd)
+			}
 		}
 	})
 	if len(cases) != 12 {
