@@ -1,17 +1,18 @@
 name: CI
 
-# Docs-only changes skip CI (README.md and skills/ stay in: tests read them).
+# Changes only to the spec, AGENTS.md, LICENSE or NOTICE skip CI; README.md,
+# the other docs/ pages and skills/ stay in: tests read them.
 on:
   push:
     branches: [main]
     paths-ignore:
-      - "docs/**"
+      - "docs/YT_CLI_SPEC.md"
       - "AGENTS.md"
       - "LICENSE"
       - "NOTICE"
   pull_request:
     paths-ignore:
-      - "docs/**"
+      - "docs/YT_CLI_SPEC.md"
       - "AGENTS.md"
       - "LICENSE"
       - "NOTICE"
