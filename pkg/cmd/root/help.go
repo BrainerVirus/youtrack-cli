@@ -23,8 +23,9 @@ func helpFunc(ios *iostreams.IOStreams) func(*cobra.Command, []string) {
 var (
 	// A heading inside Long text: "Environment:", "Exit codes:", "JSON fields:".
 	longHeading = regexp.MustCompile(`^[A-Z][A-Za-z ]*:$`)
-	// A pflag usage line: indent, optional "-x, ", "--name", optional type.
-	flagLine = regexp.MustCompile(`^(\s+)((?:-[^-\s], )?--[A-Za-z0-9][\w-]*)( [^\s]+)?(\s{2,}.*)?$`)
+	// A pflag usage line: indent, optional "-x, ", "--name", optional type
+	// (" string") or bool value syntax ("[=true|false]").
+	flagLine = regexp.MustCompile(`^(\s+)((?:-[^-\s], )?--[A-Za-z0-9][\w-]*)(\[=[^\]\s]*\]| [^\s]+)?(\s{2,}.*)?$`)
 	// An example line: indent, "$ ", the command, an optional "  # comment"
 	// (a "#" inside the command, as in a query, has no space after it).
 	exampleLine = regexp.MustCompile(`^(\s*)\$ (.*?)(\s+# .*)?$`)

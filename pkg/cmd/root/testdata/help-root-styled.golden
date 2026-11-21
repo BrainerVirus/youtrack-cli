@@ -36,10 +36,10 @@ An unofficial command-line interface for JetBrains YouTrack.
   <accent>work-item  </> Track time spent on issues
 
 <bold>Flags:</>
-      <accent>--debug</>       Log HTTP requests to stderr with credentials redacted
-  <accent>-h, --help</>        help for ytrack
-      <accent>--host</><dim> host</>   YouTrack host or service URL to use
-      <accent>--no-color</>    Disable color output
-  <accent>-v, --version</>     version for ytrack
+      <accent>--debug</><dim>[=true|false]</>      Log HTTP requests to stderr with credentials redacted
+  <accent>-h, --help</><dim>[=true|false]</>       help for ytrack
+      <accent>--host</><dim> host</>               YouTrack host or service URL to use
+      <accent>--no-color</><dim>[=true|false]</>   Disable color output
+  <accent>-v, --version</><dim>[=true|false]</>    version for ytrack
 
 <dim>Use "ytrack [command] --help" for more information about a command.</>

@@ -35,17 +35,17 @@ Any --text or --type you give still applies.
   <dim>$</> <accent>ytrack work-item add APP-123 --duration 1.5h --json id,date,duration</>
 
 <bold>Flags:</>
-      <accent>--date</><dim> string</>         Day of the work: auto (today) or YYYY-MM-DD (default "auto")
-  <accent>-d, --duration</><dim> string</>     Time spent, e.g. 1h30m, 90m or 1.5h
-  <accent>-h, --help</>                help for add
-  <accent>-q, --jq</><dim> expression</>       Filter JSON output using a jq expression
-      <accent>--json</><dim> fields</>         Output JSON with the specified fields
-      <accent>--meeting</>             Log meeting time (text defaults to "Meetings")
-  <accent>-t, --template</><dim> template</>   Format JSON output using a Go template
-      <accent>--text</><dim> string</>         Description of the work
-      <accent>--type</><dim> name</>           Work item type name or id, e.g. Development or 117-0
+      <accent>--date</><dim> string</>            Day of the work: auto (today) or YYYY-MM-DD (default "auto")
+  <accent>-d, --duration</><dim> string</>        Time spent, e.g. 1h30m, 90m or 1.5h
+  <accent>-h, --help</><dim>[=true|false]</>      help for add
+  <accent>-q, --jq</><dim> expression</>          Filter JSON output using a jq expression
+      <accent>--json</><dim> fields</>            Output JSON with the specified fields
+      <accent>--meeting</><dim>[=true|false]</>   Log meeting time (text defaults to "Meetings")
+  <accent>-t, --template</><dim> template</>      Format JSON output using a Go template
+      <accent>--text</><dim> string</>            Description of the work
+      <accent>--type</><dim> name</>              Work item type name or id, e.g. Development or 117-0
 
 <bold>Global Flags:</>
-      <accent>--debug</>       Log HTTP requests to stderr with credentials redacted
-      <accent>--host</><dim> host</>   YouTrack host or service URL to use
-      <accent>--no-color</>    Disable color output
+      <accent>--debug</><dim>[=true|false]</>      Log HTTP requests to stderr with credentials redacted
+      <accent>--host</><dim> host</>               YouTrack host or service URL to use
+      <accent>--no-color</><dim>[=true|false]</>   Disable color output
