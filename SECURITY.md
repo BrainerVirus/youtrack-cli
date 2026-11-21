@@ -1,7 +1,8 @@
 # Security policy
 
-ytrack stores YouTrack credentials and replaces its own binary on
-`ytrack upgrade`, so security reports are taken seriously.
+ytrack stores YouTrack credentials and replaces its own binary, on
+`ytrack upgrade` and in the background, so security reports are taken
+seriously.
 
 ## Supported versions
 
@@ -22,10 +23,13 @@ the advisory is published with credit, unless you prefer otherwise.
 - Every release's checksums file is signed with
   [cosign](https://docs.sigstore.dev/) keyless by this repository's release
   workflow, and the signature is recorded in Sigstore's public transparency log.
-- `ytrack upgrade` always verifies that signature, pinned to the workflow
-  `BrainerVirus/youtrack-cli/.github/workflows/release.yml` run for a release
-  tag, then checks the archive's SHA-256 before replacing anything. Its
-  downloads are https only, including every redirect.
+- `ytrack upgrade` and the background upgrade always verify that signature,
+  pinned to the workflow `BrainerVirus/youtrack-cli/.github/workflows/release.yml`
+  run for a release tag, then check the archive's SHA-256 and run the new
+  binary's `ytrack version` before replacing anything. Their downloads are
+  https only, including every redirect. The background upgrade waits until a
+  release is a day old, so a bad release can be pulled first; turn it off
+  with `auto_upgrade: false` or `YTRACK_NO_AUTO_UPGRADE=1`.
 - `install.sh` and `install.ps1` always check the SHA-256, and check the
   signature too when `cosign` is installed.
 - GitHub Actions are pinned to full commit SHAs, and dependencies are updated
@@ -46,5 +50,8 @@ sha256sum --check --ignore-missing ytrack_X.Y.Z_checksums.txt
 `ytrack auth login` stores the token in the operating system's keyring
 (macOS Keychain, Windows Credential Manager, Secret Service on Linux). With no
 keyring, login fails unless you pass `--insecure-storage`, which writes a
-`credentials.yml` readable only by your account. `--debug` and `YTRACK_DEBUG=1` redact credentials from the
-HTTP log; still review debug output before sharing it.
+`credentials.yml` readable only by your account. A token is never accepted as
+a command-line argument and is sent only to the host it belongs to: redirects
+to other hosts and from https to http are refused. `--debug` and
+`YTRACK_DEBUG=1` redact credentials from the HTTP log; still review debug
+output before sharing it.

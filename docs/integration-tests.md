@@ -77,8 +77,9 @@ with `--host`, so other logged-in hosts are not contacted):
    `Assignee: <your login>`, never the `for: me` keyword, which a
    non-English instance does not know (it matches nothing there).
 8. `issue view <P>-999999999` fails with a not-found that names the target
-   host and suggests no other host (`try --host` appears only for a key whose
-   project another logged-in host owns, and never with `--host`).
+   host and suggests no other host (`try --host` appears only when two or
+   more other logged-in hosts own the key's project, and never with
+   `--host`).
 9. `work-item add` (30m), `list`, `edit` (45m) and `delete`.
 
 The run id is a UTC timestamp plus random hex, e.g. `20261104-153000-a1b2c3`.

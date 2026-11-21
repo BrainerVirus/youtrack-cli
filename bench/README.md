@@ -29,6 +29,9 @@ go run ./bench --model claude-haiku-4-5 --no-skill      # control: the same worl
   case; `--force` re-runs anyway.
 - Exit 1 when a case fails, a run hits a harness error or runs were left over
   the budget.
+- `--timeout` (default 6m) limits each run; `--keep` keeps each world under
+  the temp dir for inspection. `--cases`, `--skill`, `--out` and `--claude`
+  point at another cases dir, skill dir, results dir or `claude` binary.
 - `--no-skill` runs the same worlds without `.claude/skills/ytrack/`, into
   `bench/results/no-skill/<model>/`: the control that shows what the skill
   adds (`compare` it against a with-skill dir).
