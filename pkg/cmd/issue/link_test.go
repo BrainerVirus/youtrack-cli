@@ -88,7 +88,9 @@ func TestIssueLink(t *testing.T) {
 
 	t.Run("given an unknown target, it names the issues and stops", func(t *testing.T) {
 		env, _ := loggedIn(t, "")
-		if code := env.Run("issue", "link", "NSR-40", "NSR-99", "--type", "depends on"); code != 1 || !strings.Contains(env.Stderr.String(), "NSR-99") {
+		code := env.Run("issue", "link", "NSR-40", "NSR-99", "--type", "depends on")
+		// YouTrack's 400 is localized; ytrack names the missing issue in its own words (#62).
+		if code != 1 || !strings.Contains(env.Stderr.String(), "issue NSR-99 not found") || strings.Contains(env.Stderr.String(), "no puede localizar") {
 			t.Fatalf("exit %d: %s", code, env.Stderr)
 		}
 	})

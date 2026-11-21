@@ -4,7 +4,9 @@ package link
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
+	"github.com/BrainerVirus/youtrack-cli/internal/hosts"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
@@ -288,7 +291,7 @@ func add(ctx context.Context, f *cmdutil.Factory, opts *options, refs []shared.R
 	res := Result{Issue: issue, IssueLink: adapter.IssueLink{LinkEnd: end, Issues: []string{}}}
 	for _, t := range refs[1:] {
 		if err := adapter.AddLink(ctx, client, issue, end.LinkID, t.ID); err != nil {
-			return shared.NotFound(err, issue+" or "+t.ID, host)
+			return addError(ctx, client, err, issue, t.ID, host)
 		}
 		res.Issues = append(res.Issues, t.ID)
 	}
@@ -361,4 +364,18 @@ func listTypes(ctx context.Context, f *cmdutil.Factory, opts *options) error {
 		)
 	}
 	return tbl.Render()
+}
+
+// addError explains a failed add. YouTrack answers an unknown target with a
+// 400 in the instance's language, not a 404, so on a 400 the target is looked
+// up and a missing one is named in ytrack's own words (#62).
+func addError(ctx context.Context, client *transport.Client, err error, issue, target string, host hosts.Host) error {
+	if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusBadRequest {
+		_, lookErr := adapter.GetIssue(ctx, client, target, []string{"idReadable"})
+		if lookAPI, ok := errors.AsType[*transport.APIError](lookErr); ok && lookAPI.StatusCode == http.StatusNotFound {
+			return shared.NotFound(lookErr, target, host)
+		}
+		return err
+	}
+	return shared.NotFound(err, issue+" or "+target, host)
 }

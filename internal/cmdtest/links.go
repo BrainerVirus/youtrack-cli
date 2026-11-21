@@ -31,7 +31,7 @@ var defaultLinkTypes = []map[string]any{
 //	                                                 (INWARD) for a directed one
 //	GET    /api/issues/{id}/links/{link}/issues      the issues on that end, paged
 //	POST   /api/issues/{id}/links/{link}/issues      adds {"idReadable"} or {"id"} (no
-//	                                                 duplicates); 404 for an unknown issue
+//	                                                 duplicates); 400 (localized) for an unknown target
 //	DELETE /api/issues/{id}/links/{link}/issues/{issue}  removes the issue with that
 //	                                                 database ID; a readable ID or an issue
 //	                                                 not on that end is a 404, as on YouTrack
@@ -81,7 +81,9 @@ func (yt *FakeYouTrack) linkRoutes(mux *http.ServeMux) {
 		}
 		target, ok := yt.issue(ref)
 		if !ok {
-			notFound(w, ref)
+			// YouTrack answers an unknown target with 400 in the instance's
+			// language (measured on Cloud 2026.2, Spanish), not 404.
+			writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "YouTrack no puede localizar una entidad de tipo Issue con el ID especificado"})
 			return
 		}
 		l := end.link(is, target["idReadable"].(string))
