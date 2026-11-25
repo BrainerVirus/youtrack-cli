@@ -1,6 +1,6 @@
 {
   "id": "command-assist",
-  "about": "a state the user only half names: preview with --assist (or --dry-run, or read project fields) before applying one command to both issues",
+  "about": "a state the user only half names: find the full value (--assist or --dry-run preview, project fields or --query-assist) before applying one command to both issues",
   "prompt": "In YouTrack, move APP-3 and APP-7 to the state whose name starts with \"Ver\" (I don't remember the rest). Use a single YouTrack command for both issues.",
   "maxTurns": 10,
   "fixtures": {
@@ -57,9 +57,9 @@
   },
   "require": [
     {
-      "name": "a preview before the first applied command",
+      "name": "the value looked up before the first applied command",
       "match": [
-        "^issue command\\b.*(--dry-run|--assist)"
+        "^(issue command\\b.*(--dry-run|--assist)|project fields (APP|Application)\\b|issue list\\b.*--query-assist)"
       ],
       "before": [
         "^issue command\\b"

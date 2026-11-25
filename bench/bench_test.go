@@ -373,6 +373,10 @@ func TestGivenTheNewCommandsTheFakeAnswersLikeYtrack(t *testing.T) {
 	if _, code := run(c, "issue", "command", "APP-3", "APP-7", "State Verify on staging"); code != 0 {
 		t.Error("the state from the completions fails")
 	}
+	looked := []Call{{Argv: strings.Fields("project fields APP")}, {Argv: []string{"issue", "command", "APP-3", "APP-7", "State Verify on staging"}}}
+	if f := Grade(c, looked, nil, ""); len(f) != 0 {
+		t.Errorf("command-assist with the value from project fields: %v", f)
+	}
 	if out, code := run(cases["count-open"], "issue", "count", "project: APP #Unresolved", "--json", "count", "--jq", ".count"); code != 0 || strings.TrimSpace(out) != "137" {
 		t.Errorf("count --jq = %d %s", code, out)
 	}

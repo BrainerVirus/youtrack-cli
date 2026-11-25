@@ -93,7 +93,7 @@ parsed call is answered from the case's `fixtures.rules` (regex on the argv
 line, first match wins), then from built-in replies (issues and lists from
 `fixtures.issues` and `fixtures.list`, a success line for writes, the
 `ytrack api` refusal of read parameters without `-X GET`, link phrases, the
-work item duration rules). Its HTTP transport fails every request, and it
+work item duration rules, comment list and delete, tag list and create). Its HTTP transport fails every request, and it
 reads no config. Each call is appended to `calls.jsonl` with its exit code.
 
 A run where the model ran `ytrack` but the fake logged nothing is a harness
@@ -108,7 +108,7 @@ error (a real `ytrack` was first on `PATH`).
 | `prompt` | the user message |
 | `maxTurns` | `--max-turns` (default 10) |
 | `files` | files written into the project |
-| `fixtures` | `issues` (by ID), `list` (what `issue list` returns), `rules` (`match`, `stdout`, `stderr`, `exit`) |
+| `fixtures` | `issues` (by ID), `list` (what `issue list` returns), `tags` (the tags that exist: `--tag` and `--add-tag` refuse others until `tag create`), `rules` (`match`, `stdout`, `stderr`, `exit`) |
 | `require` | rules that must hold |
 | `forbid` | rules that must not hold |
 | `answer` | regex the final message must match (case-insensitive) |
@@ -138,6 +138,12 @@ rule holds when no call failed. A `forbid` rule breaks on
 | `help-first` | 12 comments in a text view: `issue view --comments-limit 12` or `issue comment list --limit 12`, with `--help` before any guessed flag |
 | `meeting-time` | `work-item add --meeting` with a `1h 30m` duration, today |
 | `create-stdin` | `issue create --description-file -` with the description piped in |
+| `comment-delete` | the comment the user names: its ID from `issue comment list`, then `issue comment delete --yes`; never `issue delete` |
+| `time-report` | my time this week: one `work-item report --since`, with the total in the answer |
+| `count-open` | `issue count` with a `project:` and `#Unresolved` query, the number in the answer |
+| `create-field` | a value the prompt does not name: `project fields` before `issue create --field Severity=Show-stopper`, created once |
+| `tag-create` | a missing tag: `tag create`, then `issue edit --add-tag`; never a tag command |
+| `command-assist` | a half-named state: the value from `--assist`, `--dry-run`, `project fields` or `--query-assist` before one `issue command` on both issues, never a guess |
 
 A new case gets a row in `TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap`
 (`bench/bench_test.go`): the calls the skill teaches must pass and the trap
