@@ -11,9 +11,10 @@ ytrack api /issues/APP-123 --fields 'idReadable,summary,customFields(name,value(
 ytrack api /issues -X GET -f query='project: APP #Unresolved' --fields idReadable,summary --paginate
 ytrack api /admin/projects --fields shortName,name --paginate
 ytrack api /issues/APP-123/comments -f text='Posted through the API'   # POST: adds a comment
-ytrack api /issues/APP-123/comments/4-17 -X DELETE
 ytrack api /commands --input command.json
 ```
+
+Prefer a command when one exists: `issue delete`, `issue comment list|edit|delete`.
 
 Attach files with `ytrack issue comment --attach` or `ytrack issue attach`,
 not with a multipart request through `ytrack api`.
