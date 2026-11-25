@@ -75,3 +75,55 @@ func TestIssueEditChecksPeriodApplied(t *testing.T) {
 		mustRun(t, env, "issue", "edit", "NSR-40", "--field", "Estimation=1w 2d 4h")
 	})
 }
+
+func TestIssueEditComparesPeriodUnderTheWorkSchedule(t *testing.T) {
+	// reverted sets Estimation to 5d under YouTrack's default schedule, then
+	// gives the instance 6-hour days and 4-day weeks and ignores commands, so
+	// a later 1w (1440 minutes) reads back as the old 5d (2400 minutes).
+	reverted := func(t *testing.T) (*cmdtest.Env, *cmdtest.FakeYouTrack) {
+		t.Helper()
+		env, yt := writable(t)
+		mustRun(t, env, "issue", "edit", "NSR-40", "--field", "Estimation=5d")
+		yt.MinutesADay, yt.DaysAWeek = 360, 4
+		ignoreCommands(yt)
+		env.Reset()
+		return env, yt
+	}
+
+	t.Run("given the schedule is readable and the period did not take, it exits 1 naming the field", func(t *testing.T) {
+		env, yt := reverted(t)
+		if code := env.Run("issue", "edit", "NSR-40", "--field", "Estimation=1w"); code != 1 {
+			t.Fatalf("exit %d, stderr = %q", code, env.Stderr)
+		}
+		if !strings.Contains(env.Stderr.String(), "but Estimation on NSR-40 did not take the new value") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+		reqs := requests(yt, "GET", "/api/admin/timeTrackingSettings/workTimeSettings")
+		if len(reqs) == 0 || query(t, reqs[len(reqs)-1]).Get("fields") != "minutesADay,daysAWeek" {
+			t.Errorf("work schedule requests = %+v", reqs)
+		}
+	})
+
+	t.Run("given the schedule is forbidden, it falls back to the rule for an unknown schedule", func(t *testing.T) {
+		env, yt := reverted(t)
+		yt.ForbidWorkSchedule = true
+		mustRun(t, env, "issue", "edit", "NSR-40", "--field", "Estimation=1w")
+		if len(requests(yt, "GET", "/api/admin/timeTrackingSettings/workTimeSettings")) == 0 {
+			t.Error("the work schedule was not asked for")
+		}
+	})
+
+	t.Run("given weeks of the instance's length, it exits 0", func(t *testing.T) {
+		env, yt := writable(t)
+		yt.MinutesADay, yt.DaysAWeek = 360, 4
+		mustRun(t, env, "issue", "edit", "NSR-40", "--field", "Estimation=1w 1d")
+	})
+
+	t.Run("given no period field, it does not read the schedule", func(t *testing.T) {
+		env, yt := writable(t)
+		mustRun(t, env, "issue", "edit", "NSR-40", "--field", "Type=Task")
+		if n := len(requests(yt, "GET", "/api/admin/timeTrackingSettings/workTimeSettings")); n != 0 {
+			t.Errorf("work schedule requests = %d, want 0", n)
+		}
+	})
+}

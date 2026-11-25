@@ -357,7 +357,9 @@ func Zone(f *cmdutil.Factory) (*time.Location, error) {
 // CheckFieldsApplied reads issue id back and fails, naming the fields, when
 // a custom field written through the REST API (rest) or by command
 // (commands), both from Encode, does not hold the value written: YouTrack can
-// accept a write that a workflow or a permission then leaves unapplied.
+// accept a write that a workflow or a permission then leaves unapplied. A
+// period is compared under the instance's work schedule when ytrack may read
+// it, and by the rule for an unknown schedule otherwise.
 func CheckFieldsApplied(ctx context.Context, c *transport.Client, id string, rest []map[string]any, commands []customfields.Write) error {
 	writes := slices.Clone(commands)
 	for _, m := range rest {
@@ -370,10 +372,15 @@ func CheckFieldsApplied(ctx context.Context, c *transport.Client, id string, res
 	if err != nil {
 		return fmt.Errorf("reading %s back to check its custom fields: %w", id, err)
 	}
+	var schedule customfields.WorkSchedule
+	if slices.ContainsFunc(commands, func(w customfields.Write) bool { return w.Period != "" }) {
+		// Non-admins may not read it; the zero schedule falls back.
+		schedule, _ = adapter.GetWorkSchedule(ctx, c)
+	}
 	var missed []string
 	for _, w := range writes {
 		i := slices.IndexFunc(issue.CustomFields, func(f customfields.Field) bool { return f.Name == w.Name })
-		if i < 0 || !w.Applied(issue.CustomFields[i]) {
+		if i < 0 || !w.AppliedUnder(issue.CustomFields[i], schedule) {
 			missed = append(missed, w.Name)
 		}
 	}

@@ -240,3 +240,35 @@ func TestWriteApplied(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteAppliedUnderSchedule(t *testing.T) {
+	read := func(value string) Field {
+		return Decode([]byte(`{"name":"F","$type":"PeriodIssueCustomField","value":` + value + `}`))
+	}
+	period := func(d string) Write { return Write{Name: "F", Command: "F " + d, Period: d} }
+	sixHourDays := WorkSchedule{MinutesADay: 360, DaysAWeek: 4}
+	tests := []struct {
+		name string
+		w    Write
+		f    Field
+		s    WorkSchedule
+		want bool
+	}{
+		{"given weeks read back in days with the schedule's minutes, it is applied", period("1w"), read(`{"minutes":1440,"presentation":"4d"}`), sixHourDays, true},
+		{"given weeks read back as weeks of another length, it is not applied", period("1w"), read(`{"minutes":2880,"presentation":"1w"}`), sixHourDays, false},
+		{"given weeks read back in days of another count, it is not applied", period("1w"), read(`{"minutes":2400,"presentation":"5d"}`), WorkSchedule{MinutesADay: 480, DaysAWeek: 6}, false},
+		{"given days read back renormalized into weeks, it is applied", period("10d"), read(`{"minutes":4800,"presentation":"2w"}`), WorkSchedule{MinutesADay: 480, DaysAWeek: 5}, true},
+		{"given days, hours and minutes read back with the same minutes, it is applied", period("1w 2d 3h 90m"), read(`{"minutes":2430,"presentation":"1w 2d 4h 30m"}`), sixHourDays, true},
+		{"given hours read back as other minutes, it is not applied", period("5h"), read(`{"minutes":180,"presentation":"3h"}`), sixHourDays, false},
+		{"given a period read back empty, it is not applied", period("1d"), read(`null`), sixHourDays, false},
+		{"given an unknown schedule, it falls back to the conservative rule", period("1w"), read(`{"minutes":2880,"presentation":"1w"}`), WorkSchedule{}, true},
+		{"given a schedule with no days a week, it falls back to the conservative rule", period("1w"), read(`{"minutes":2400,"presentation":"5d"}`), WorkSchedule{MinutesADay: 480}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.w.AppliedUnder(tt.f, tt.s); got != tt.want {
+				t.Errorf("AppliedUnder = %v, want %v (field %+v, schedule %+v)", got, tt.want, tt.f, tt.s)
+			}
+		})
+	}
+}

@@ -79,8 +79,10 @@ the definitions come from the issue (edit) or from an issue in the project
 (create). `issue edit` sends only what you pass. Both read the issue back and
 exit 1 naming any field YouTrack did not change, a period field set by
 command included (`issue create` first prints the new issue's ID and URL).
-A period is compared by its minutes; when the instance's work schedule
-leaves that open (a duration in weeks read back in days), it counts as set.
+A period is compared by its minutes under the instance's work schedule
+(minutes a day, days a week). Reading that schedule can need the
+administrator role; without it, a period that the read-back leaves open (a
+duration in weeks read back in days) counts as set.
 
 `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tag
 names.

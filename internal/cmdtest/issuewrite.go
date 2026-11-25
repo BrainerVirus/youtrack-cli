@@ -121,6 +121,14 @@ func (yt *FakeYouTrack) ProjectLookups() int {
 }
 
 func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/admin/timeTrackingSettings/workTimeSettings", func(w http.ResponseWriter, r *http.Request) {
+		if yt.ForbidWorkSchedule {
+			forbidden(w)
+			return
+		}
+		day, week := yt.schedule()
+		writeProjected(w, r, 200, map[string]any{"$type": "WorkTimeSettings", "id": "work-time-settings", "minutesADay": day, "daysAWeek": week})
+	})
 	mux.HandleFunc("GET /api/admin/projects", func(w http.ResponseWriter, r *http.Request) {
 		yt.mu.Lock()
 		ps := slices.Clone(yt.Projects)
@@ -600,7 +608,7 @@ func (yt *FakeYouTrack) commandPart(kw, value string, defs []map[string]any) com
 			return bad(kw + ": invalid period " + value)
 		}
 		return commandPart{description: kw + ": " + value, html: boldHTML("Set "+kw, value), apply: func(is map[string]any) {
-			setField(is, kw, map[string]any{"$type": "PeriodIssueCustomField", "name": kw, "value": map[string]any{"$type": "PeriodValue", "minutes": periodMinutes(value), "presentation": value}})
+			setField(is, kw, map[string]any{"$type": "PeriodIssueCustomField", "name": kw, "value": map[string]any{"$type": "PeriodValue", "minutes": yt.periodMinutes(value), "presentation": value}})
 		}}
 	}
 	for _, v := range bundleMembers(def, "values", "name") {
@@ -613,10 +621,24 @@ func (yt *FakeYouTrack) commandPart(kw, value string, defs []map[string]any) com
 	return bad(kw + ": unknown value " + value)
 }
 
-// periodMinutes converts a duration like 1w2d3h with YouTrack's default
-// schedule: 5-day weeks of 8-hour days.
-func periodMinutes(v string) int {
-	units := map[byte]int{'w': 5 * 8 * 60, 'd': 8 * 60, 'h': 60, 'm': 1}
+// schedule returns the minutes in a working day and the working days in a
+// week, YouTrack's default (8-hour days, 5-day weeks) unless set.
+func (yt *FakeYouTrack) schedule() (minutesADay, daysAWeek int) {
+	minutesADay, daysAWeek = 8*60, 5
+	if yt.MinutesADay > 0 {
+		minutesADay = yt.MinutesADay
+	}
+	if yt.DaysAWeek > 0 {
+		daysAWeek = yt.DaysAWeek
+	}
+	return minutesADay, daysAWeek
+}
+
+// periodMinutes converts a duration like 1w2d3h with the instance's work
+// schedule.
+func (yt *FakeYouTrack) periodMinutes(v string) int {
+	day, week := yt.schedule()
+	units := map[byte]int{'w': week * day, 'd': day, 'h': 60, 'm': 1}
 	total, n := 0, 0
 	for i := 0; i < len(v); i++ {
 		c := v[i] | 0x20

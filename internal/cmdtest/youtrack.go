@@ -67,6 +67,8 @@ type Request struct {
 //	                                reads, updates (merging the body) or deletes one,
 //	                                found by ID across all issues (any {id})
 //	GET  /api/admin/projects/{id}/timeTrackingSettings   TimeTracking[project id]
+//	GET  /api/admin/timeTrackingSettings/workTimeSettings  the work schedule
+//	                                (MinutesADay, DaysAWeek); 403 with ForbidWorkSchedule
 //	GET  /api/issueLinkTypes, GET /api/issues/{id}/links, and GET|POST|DELETE
 //	                                /api/issues/{id}/links/{link}/issues[/{issue}]
 //	                                read and change Links (see linkRoutes)
@@ -140,6 +142,13 @@ type FakeYouTrack struct {
 	// HubTokenPage makes the instance's token page 404, as on a Server
 	// install with an external Hub.
 	HubTokenPage bool
+	// MinutesADay and DaysAWeek are the instance's work schedule, which
+	// period commands use and workTimeSettings answers; 0 means YouTrack's
+	// default of 480 and 5.
+	MinutesADay, DaysAWeek int
+	// ForbidWorkSchedule answers workTimeSettings with a 403, as YouTrack
+	// does for a user who is not an administrator.
+	ForbidWorkSchedule bool
 	// CommandHTML makes command previews describe each part in HTML, as
 	// YouTrack does: values HTML-escaped inside <span class="bold">.
 	CommandHTML bool

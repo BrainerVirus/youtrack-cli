@@ -448,7 +448,27 @@ func Find(defs []Definition, name, project string) (Definition, error) {
 // midday-UTC instant written (a server normalizing dates to midnight in its
 // own zone). A period set by command is compared by periodApplied.
 func (w Write) Applied(f Field) bool {
+	return w.AppliedUnder(f, WorkSchedule{})
+}
+
+// WorkSchedule is the instance's work schedule, which turns days and weeks
+// into minutes. The zero value means it is unknown.
+type WorkSchedule struct {
+	MinutesADay int
+	DaysAWeek   int
+}
+
+// Known reports whether s can convert days and weeks into minutes.
+func (s WorkSchedule) Known() bool { return s.MinutesADay > 0 && s.DaysAWeek > 0 }
+
+// AppliedUnder is Applied with the instance's work schedule: under a known
+// one, a period set by command is applied exactly when the field read back
+// holds the minutes the duration comes to.
+func (w Write) AppliedUnder(f Field, s WorkSchedule) bool {
 	if w.Period != "" && f.Kind != KindUnknown {
+		if s.Known() {
+			return periodAppliedExactly(w.Period, f.Value, s)
+		}
 		return periodApplied(w.Period, f.Value)
 	}
 	if w.Field == nil || f.Kind == KindUnknown {
@@ -538,9 +558,24 @@ func valueKey(v Value) string {
 
 func numberKey(f float64) string { return strconv.FormatFloat(f, 'f', -1, 64) }
 
+// periodAppliedExactly reports whether got, a period field read back after
+// the command that set it to want, holds the minutes want comes to under s.
+func periodAppliedExactly(want string, got Value, s WorkSchedule) bool {
+	p, ok := got.(Period)
+	if !ok {
+		return false
+	}
+	w, wok := periodUnits(want)
+	if !wok {
+		return true
+	}
+	minutes := (w['w']*s.DaysAWeek+w['d'])*s.MinutesADay + w['h']*60 + w['m']
+	return minutes == p.Minutes
+}
+
 // periodApplied reports whether got, a period field read back after the
-// command that set it to want ("1w2d"), holds that duration. The instance's
-// work schedule, which ytrack does not read, turns days and weeks into
+// command that set it to want ("1w2d"), holds that duration, when the
+// instance's work schedule is unknown. That schedule turns days and weeks into
 // minutes and can rewrite the presentation ("10d" as "2w"), so it is false
 // only when that is certain. The same units always match. Otherwise a want
 // in hours and minutes alone must have the same minutes. The presentation,
