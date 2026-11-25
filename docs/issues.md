@@ -58,7 +58,8 @@ from `--description`, `--description-file` (`-` for standard input) or
 `--editor`.
 
 `--field 'Name=Value'` (repeatable) sets a custom field by its project field
-name. The value is checked against the project's field definitions:
+name. The value is checked against the project's field definitions, which
+`ytrack project fields APP` lists (see [Tags and project fields](#tags-and-project-fields)):
 
 | Field kind | Value |
 | --- | --- |
@@ -85,7 +86,31 @@ administrator role; without it, a period that the read-back leaves open (a
 duration in weeks read back in days) counts as set.
 
 `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tag
-names.
+names; an unknown one is refused, naming `ytrack tag create <name>`.
+
+## Tags and project fields
+
+```sh
+ytrack tag list                                   # id, name, owner
+ytrack tag list --json name --jq '.[].name'
+ytrack tag create 'needs review'                  # then --tag 'needs review' works
+ytrack project fields APP                         # name, type, required, default, values
+ytrack project fields APP --json name,type,bundle,required,default
+```
+
+`tag create` creates a tag you own and prints its name. A tag you can already
+see with that name, ignoring case, is not created again: it exits 1 naming
+it. JSON fields: `id`, `name`, `owner` (a login, or null).
+
+`project fields` lists what `--field` takes: each custom field's `name`, its
+YouTrack `type` (`enum[1]`, `user[1]`, `version[*]`, `period`, `date`, ...;
+`[*]` takes several values), whether it is `required`, its `default` (value
+names, user logins) and its `bundle`, the values it accepts (a group field's
+groups; empty for user fields). `<project>` is a short name or a project
+name. Without permission to read the project settings, the fields come from
+one of the project's issues and `default` is null; a line on stderr says so.
+An unknown `--field` name lists the project's fields and points at this
+command.
 
 ## Delete
 

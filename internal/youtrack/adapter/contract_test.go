@@ -15,6 +15,8 @@ import (
 	commentedit "github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment/edit"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/link"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
+	projectfields "github.com/BrainerVirus/youtrack-cli/pkg/cmd/project/fields"
+	tagshared "github.com/BrainerVirus/youtrack-cli/pkg/cmd/tag/shared"
 	workitem "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/shared"
 )
 
@@ -283,6 +285,9 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"issue", "comment", "edit", "NSR-40", "4-1", "--body", "contract", "--json", strings.Join(commentedit.Fields, ",")},
 		{"issue", "comment", "delete", "NSR-40", "4-2", "--yes"},
 		{"issue", "delete", "NSR-41", "--yes"},
+		{"tag", "list", "--json", strings.Join(tagshared.Fields, ",")},
+		{"tag", "create", "nightly", "--json", strings.Join(tagshared.Fields, ",")},
+		{"project", "fields", "NSR", "--json", strings.Join(projectfields.Fields, ",")},
 	}
 	for _, args := range runs {
 		if code := env.Run(args...); code != 0 {

@@ -1,6 +1,6 @@
 ---
 name: ytrack
-description: Work with JetBrains YouTrack through the ytrack CLI - read, search, create, edit and delete issues, add, list, edit and delete comments, apply YouTrack commands, log and edit spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
+description: Work with JetBrains YouTrack through the ytrack CLI - read, search, create, edit and delete issues, add, list, edit and delete comments, apply YouTrack commands, list and create tags, list a project's custom fields, log and edit spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
 metadata:
   version: "dev"
 ---
@@ -75,9 +75,11 @@ ytrack issue attachments APP-123                    # files on the issue and its
   Without a terminal, `issue create` needs `--project` and `--summary`.
   Never pass `--editor` (it waits for a human).
 - `--field 'Name=Value'` sets a custom field by its project field name
-  (`ytrack issue view APP-123 --json customFields` lists them). `issue edit`
-  exits 1 naming a field YouTrack did not change; then use `issue command`.
-- `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tags.
+  (`ytrack project fields APP` lists names, types, defaults and allowed
+  values). `issue edit` exits 1 naming a field YouTrack did not change; then
+  use `issue command`.
+- `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tags
+  (`ytrack tag list`); `ytrack tag create <name>` adds a missing one.
 - Once a comment is posted, never run the command again, even after a
   warning or exit 1: a rerun posts a duplicate. Fix it with `comment edit`.
 - `issue delete` and `comment delete` cannot be undone: confirm with the

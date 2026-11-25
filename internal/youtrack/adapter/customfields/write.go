@@ -16,6 +16,11 @@ import (
 // user fields, which can be many; UsersProjection fetches them for one field.
 const DefinitionProjection = "id,canBeEmpty,field(name,fieldType(id)),bundle(values(name,archived),groups(name))"
 
+// SettingsProjection is DefinitionProjection with the field's default
+// values (bundle elements and groups by name, users by login), which
+// Definition decodes into Defaults.
+const SettingsProjection = DefinitionProjection + ",defaultValues(name,login)"
+
 // UsersProjection is the fields= projection of one user field's users.
 const UsersProjection = "bundle(aggregatedUsers(login,fullName))"
 
@@ -41,6 +46,9 @@ type Definition struct {
 	// Groups are the user groups a group field accepts; nil when YouTrack
 	// did not send them.
 	Groups []string
+	// Defaults are the names (logins for users) of the values a new issue
+	// gets, when fetched with SettingsProjection.
+	Defaults []string
 	// Users are the users a user field accepts, once SetUsers was called.
 	Users       []User
 	usersLoaded bool
@@ -89,7 +97,7 @@ var fieldTypeKinds = map[string]Kind{
 }
 
 // UnmarshalJSON decodes a wire ProjectCustomField fetched with
-// DefinitionProjection.
+// DefinitionProjection or SettingsProjection.
 func (d *Definition) UnmarshalJSON(b []byte) error {
 	var w struct {
 		ID         string `json:"id"`
@@ -109,6 +117,9 @@ func (d *Definition) UnmarshalJSON(b []byte) error {
 				Name string `json:"name"`
 			} `json:"groups"`
 		} `json:"bundle"`
+		// DefaultValues is an object for a single-value default on some
+		// YouTrack versions and an array otherwise.
+		DefaultValues json.RawMessage `json:"defaultValues"`
 	}
 	if err := json.Unmarshal(b, &w); err != nil {
 		return err
@@ -121,6 +132,7 @@ func (d *Definition) UnmarshalJSON(b []byte) error {
 		kind = KindUnknown
 	}
 	*d = Definition{ID: w.ID, Name: w.Field.Name, FieldType: ft, Kind: kind, Multi: multi, CanBeEmpty: w.CanBeEmpty}
+	d.Defaults = decodeDefaults(w.DefaultValues)
 	if w.Bundle != nil {
 		d.valuesRead = w.Bundle.Values != nil
 		for _, v := range w.Bundle.Values {
@@ -138,6 +150,32 @@ func (d *Definition) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return nil
+}
+
+// decodeDefaults reads defaultValues, an array or a single value, each
+// element named by its name or else its login.
+func decodeDefaults(raw json.RawMessage) []string {
+	type named struct {
+		Name  string `json:"name"`
+		Login string `json:"login"`
+	}
+	var many []named
+	if err := json.Unmarshal(raw, &many); err != nil {
+		var one *named
+		if json.Unmarshal(raw, &one) != nil || one == nil {
+			return nil
+		}
+		many = []named{*one}
+	}
+	var out []string
+	for _, v := range many {
+		if v.Name != "" {
+			out = append(out, v.Name)
+		} else if v.Login != "" {
+			out = append(out, v.Login)
+		}
+	}
+	return out
 }
 
 // issueFieldTypes maps a kind to the IssueCustomField $type for single and
@@ -421,7 +459,8 @@ type UnknownFieldError struct {
 }
 
 func (e *UnknownFieldError) Error() string {
-	return fmt.Sprintf("project %s has no custom field %q; its fields:\n  %s", e.Project, e.Name, strings.Join(e.Valid, "\n  "))
+	return fmt.Sprintf("project %s has no custom field %q (`ytrack project fields %s` shows their types and values); its fields:\n  %s",
+		e.Project, e.Name, e.Project, strings.Join(e.Valid, "\n  "))
 }
 
 // Find returns the definition called name, exactly or else ignoring case.

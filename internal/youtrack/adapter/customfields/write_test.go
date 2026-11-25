@@ -28,6 +28,22 @@ func TestDefinitionDecode(t *testing.T) {
 		}
 	})
 
+	t.Run("given default values, it keeps their names, logins for users", func(t *testing.T) {
+		cases := []struct{ raw, want string }{
+			{`"defaultValues":[{"name":"Normal"},{"name":"Minor"}]`, "Normal,Minor"},
+			{`"defaultValues":[{"login":"jroe","fullName":"Jane Roe"}]`, "jroe"},
+			{`"defaultValues":{"name":"Bug"}`, "Bug"},
+			{`"defaultValues":null`, ""},
+			{`"defaultValues":[]`, ""},
+		}
+		for _, c := range cases {
+			d := definition(t, `{"field":{"name":"F","fieldType":{"id":"enum[1]"}},`+c.raw+`}`)
+			if got := strings.Join(d.Defaults, ","); got != c.want {
+				t.Errorf("%s: defaults = %q, want %q", c.raw, got, c.want)
+			}
+		}
+	})
+
 	t.Run("given a field type ytrack does not know, it is unknown and cannot be encoded", func(t *testing.T) {
 		d := definition(t, `{"field":{"name":"Mood","fieldType":{"id":"hologram[1]"}}}`)
 		if d.Kind != KindUnknown {
