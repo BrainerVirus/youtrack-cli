@@ -2,6 +2,7 @@ package root
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -91,12 +92,16 @@ func syncDue(reg *skill.Registry) bool {
 	return older > 0 || update.IsRelease(reg.Synced)
 }
 
-// gitDescribe matches the suffix `git describe --tags --dirty` adds to a
-// build made between releases (make build), which parses as a prerelease.
-var gitDescribe = regexp.MustCompile(`-[0-9]+-g[0-9a-f]+(-dirty)?$|-dirty$`)
+// devBuild matches the versions of builds made between releases, which
+// parse as semantic versions: the suffix `git describe --tags --dirty` adds
+// (make build), and the Go pseudo-version `go build` or `go install` stamps
+// at a commit (0.7.3-0.20261125120000-de37268abcd1, or
+// 0.0.0-20261125120000-de37268abcd1).
+var devBuild = regexp.MustCompile(`-[0-9]+-g[0-9a-f]+(-dirty)?$|-dirty$|[-.][0-9]{14}-[0-9a-f]{12}$`)
 
-// isReleaseBuild reports whether v is a release version: semantic, and not a
-// development build stamped by git describe.
+// isReleaseBuild reports whether v is a release version: semantic, with no
+// build metadata (Go stamps "+dirty" on a build of a modified checkout), and
+// not a development build (devBuild).
 func isReleaseBuild(v string) bool {
-	return update.IsRelease(v) && !gitDescribe.MatchString(v)
+	return update.IsRelease(v) && !strings.Contains(v, "+") && !devBuild.MatchString(v)
 }

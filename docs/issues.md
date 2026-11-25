@@ -78,16 +78,17 @@ ytrack query list                                       # saved searches: id, na
 - `issue vote` and `issue unvote` apply YouTrack's `vote` and `unvote`
   commands and print the new vote count; YouTrack does not let you vote for
   an issue you reported. `--json` fields: `issue`, `url`, `votes`, `voted`.
-- `issue watch` and `issue unwatch` star and unstar the issue (the `star`
-  and `unstar` commands). Unstarring does not stop notifications that come
+- `issue watch` and `issue unwatch` star and unstar the issue through the
+  REST API (the issue's `watchers.hasStar`), so they work whatever the
+  instance's language. Unstarring does not stop notifications that come
   through a tag or a saved search. `--json` fields: `issue`, `url`,
   `watching`.
-- The REST API marks votes and stars read-only, so these four apply a
-  YouTrack command, then read the issue back. When the vote or star is not
-  what was asked, they exit 1 instead of reporting success: the command word
-  may differ on an instance in another language (and a vote on an issue you
-  reported is refused). The error names the `issue command ... --assist`
-  line that shows how YouTrack parses the word there.
+- The REST API marks votes read-only, so `vote` and `unvote` apply a
+  YouTrack command. All four read the issue back: when the vote or star is
+  not what was asked, they exit 1 instead of reporting success (a vote on an
+  issue you reported is refused). A vote error names the
+  `issue command ... --assist` line that shows how YouTrack parses the
+  command.
 - `query list` lists the saved searches you can see; pass a `query` to
   `issue list -q` or `issue count`. `--json` fields: `id`, `name`, `query`,
   `owner`.

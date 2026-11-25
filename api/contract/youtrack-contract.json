@@ -48,7 +48,7 @@
     {"$comment": "An attachment's signed url (IssueAttachment.url): a path from the server root, service path included, that ytrack fetches as is. It serves the file's bytes and is not part of /api/openapi.json, so the openapi-contract workflow does not check it.", "method": "GET", "path": "/files/{fileId}", "query": ["sign", "updated"], "response": ""}
   ],
   "writes": {
-    "Issue": ["summary", "description", "project", "tags", "customFields"],
+    "Issue": ["summary", "description", "project", "tags", "customFields", "watchers"],
     "IssueComment": ["text"],
     "Tag": ["name"],
     "IssueWorkItem": ["date", "duration", "type", "text"],
@@ -58,7 +58,8 @@
   },
   "readOnlyWrites": {
     "Issue": {
-      "customFields": "JetBrains' REST API docs set custom fields by posting customFields in the issue body (Create an issue, Update an issue), and ytrack issue create/edit --field relies on it; /api/openapi.json (2026.2 and 2026.4) still marks Issue.customFields readOnly."
+      "customFields": "JetBrains' REST API docs set custom fields by posting customFields in the issue body (Create an issue, Update an issue), and ytrack issue create/edit --field relies on it; /api/openapi.json (2026.2 and 2026.4) still marks Issue.customFields readOnly.",
+      "watchers": "ytrack issue watch/unwatch post {\"watchers\":{\"hasStar\":true|false}} to /issues/{id}, which sets the token user's star; /api/openapi.json (2026.4) marks IssueWatchers.hasStar writable but Issue.watchers readOnly. Checked live (November 2026) on a YouTrack Cloud instance in Spanish, where the star command words are not English: the write flips watchers.hasStar both ways and the issue reads it back. The Star folder (a StarWatchFolder) cannot be added as an issue tag instead: POST /issues/{id}/tags answers 400 (it expects a Tag)."
     }
   },
   "subtypes": {

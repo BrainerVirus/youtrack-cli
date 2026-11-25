@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `issue watch` and `issue unwatch` work on instances in any UI language: they set the star through the REST API (`watchers.hasStar`) instead of the English `star`/`unstar` command words, which a Spanish instance rejects; a Go pseudo-version or `+dirty` build (a plain `go build` or `go install` at a commit) no longer counts as a release, so it never rewrites the installed agent skill copies.
 - `issue download` saves names Windows cannot hold under a safe name (`NUL.txt` as `_NUL.txt`, `a. ` as `a__`, `a?b` as `a_b`) (#39).
 - Ctrl-C during `issue download` removes the partly written file and exits 2 (#39).
 - `issue download` refuses an attachment URL outside the service URL's origin or with a user name or password, and a redirect to another host or from https to http (#39).

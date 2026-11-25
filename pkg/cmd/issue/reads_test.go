@@ -79,7 +79,7 @@ func TestIssueVote(t *testing.T) {
 		if code != 1 || env.Stdout.Len() != 0 {
 			t.Fatalf("exit %d, stdout %q", code, env.Stdout)
 		}
-		for _, want := range []string{`accepted the "vote" command, but NSR-40 did not change`, "language", "issue command NSR-40 vote --assist"} {
+		for _, want := range []string{`accepted the "vote" command, but NSR-40 did not change`, "you reported", "issue command NSR-40 vote --assist"} {
 			if !strings.Contains(env.Stderr.String(), want) {
 				t.Errorf("stderr lacks %q: %s", want, env.Stderr)
 			}
@@ -95,12 +95,15 @@ func TestIssueVote(t *testing.T) {
 }
 
 func TestIssueWatch(t *testing.T) {
-	t.Run("given unwatch, it applies unstar and you leave the starred watchers", func(t *testing.T) {
+	t.Run("given unwatch, it writes hasStar false, sends no command, and you leave the starred watchers", func(t *testing.T) {
 		env, yt := withHistory(t)
 		mustRun(t, env, "issue", "unwatch", "NSR-40", "--json", "issue,watching")
-		cmds := requests(yt, http.MethodPost, "/api/commands")
-		if len(cmds) != 1 || !strings.Contains(cmds[0].Body, `"query":"unstar"`) {
-			t.Fatalf("command requests = %+v", cmds)
+		if cmds := requests(yt, http.MethodPost, "/api/commands"); len(cmds) != 0 {
+			t.Fatalf("command requests = %+v; the star must not depend on command words", cmds)
+		}
+		writes := requests(yt, http.MethodPost, "/api/issues/NSR-40")
+		if len(writes) != 1 || writes[0].Body != `{"watchers":{"hasStar":false}}` {
+			t.Fatalf("issue writes = %+v", writes)
 		}
 		if got := decodeJSON[map[string]any](t, env.Stdout.Bytes()); !reflect.DeepEqual(got, map[string]any{"issue": "NSR-40", "watching": false}) {
 			t.Errorf("got %v", got)
@@ -112,18 +115,34 @@ func TestIssueWatch(t *testing.T) {
 		}
 	})
 
-	t.Run("given watch, it stars the issue and prints watching", func(t *testing.T) {
-		env, _ := withHistory(t)
+	t.Run("given watch, it writes hasStar true, stars the issue and prints watching", func(t *testing.T) {
+		env, yt := withHistory(t)
 		mustRun(t, env, "issue", "watch", "NSR-41")
 		if env.Stdout.String() != "NSR-41\twatching\n" {
 			t.Errorf("stdout = %q", env.Stdout)
 		}
+		if writes := requests(yt, http.MethodPost, "/api/issues/NSR-41"); len(writes) != 1 || writes[0].Body != `{"watchers":{"hasStar":true}}` {
+			t.Errorf("issue writes = %+v", writes)
+		}
+		env.Reset()
+		mustRun(t, env, "issue", "watchers", "NSR-41", "--json", "login,starred")
+		if got := decodeJSON[[]map[string]any](t, env.Stdout.Bytes()); !reflect.DeepEqual(got, []map[string]any{{"login": "jdoe", "starred": true}}) {
+			t.Errorf("watchers after watch = %v", got)
+		}
 	})
 
-	t.Run("given YouTrack accepts the command but the star does not change, it exits 1", func(t *testing.T) {
+	t.Run("given YouTrack accepts the write but the star does not change, it exits 1", func(t *testing.T) {
 		env, yt := withHistory(t)
-		ignoreCommands(yt)
-		if code := env.Run("issue", "watch", "NSR-41"); code != 1 || !strings.Contains(env.Stderr.String(), `accepted the "star" command, but NSR-41 did not change`) {
+		yt.IgnoreStarWrites = true
+		code := env.Run("issue", "watch", "NSR-41")
+		if code != 1 || env.Stdout.Len() != 0 || !strings.Contains(env.Stderr.String(), "the star on NSR-41 did not change") {
+			t.Errorf("exit %d, stdout %q, stderr %q", code, env.Stdout, env.Stderr)
+		}
+	})
+
+	t.Run("given an unknown issue, it exits 1 naming it", func(t *testing.T) {
+		env, _ := withHistory(t)
+		if code := env.Run("issue", "unwatch", "NSR-99"); code != 1 || !strings.Contains(env.Stderr.String(), "NSR-99") {
 			t.Errorf("exit %d, stderr %q", code, env.Stderr)
 		}
 	})
