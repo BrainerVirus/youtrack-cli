@@ -1,7 +1,7 @@
 {
   "case": "view-json",
   "model": "claude-haiku-4-5",
-  "key": "1-fdb7b965f8966f6e-4c7c930f04322467-claude-haiku-4-5",
+  "key": "1-fdb7b965f8966f6e-7705a98f0de8646f-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,76 +12,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 833,
-        "cacheCreation": 11529,
-        "cacheRead": 55966
+        "output": 951,
+        "cacheCreation": 11070,
+        "cacheRead": 55632
       },
-      "costUSD": 0.032847600000000005,
-      "durationMs": 11292,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue view APP-123 --json idReadable,state,assignee"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--json",
-            "idReadable,state,assignee"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        }
-      ],
-      "answer": "**APP-123** is currently **In Progress** and assigned to **Jane Doe** (jdoe)."
-    },
-    {
-      "run": 2,
-      "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 28,
-        "output": 937,
-        "cacheCreation": 11630,
-        "cacheRead": 55921
-      },
-      "costUSD": 0.0335651,
-      "durationMs": 12416,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue view APP-123 --json state,assignee 2\u003e\u00261"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--json",
-            "state,assignee"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        }
-      ],
-      "answer": "**APP-123 Status:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
-    },
-    {
-      "run": 3,
-      "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 28,
-        "output": 539,
-        "cacheCreation": 11225,
-        "cacheRead": 56030
-      },
-      "costUSD": 0.030776,
-      "durationMs": 7154,
+      "costUSD": 0.0324862,
+      "durationMs": 12625,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -97,10 +33,74 @@
             "state,assignee"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "**APP-123 Status:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+      "answer": "**APP-123** is currently:\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 533,
+        "cacheCreation": 10642,
+        "cacheRead": 55545
+      },
+      "costUSD": 0.029531500000000002,
+      "durationMs": 8089,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Issue APP-123 is currently **In Progress** and is assigned to **Jane Doe** (login: jdoe)."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 508,
+        "cacheCreation": 10633,
+        "cacheRead": 55529
+      },
+      "costUSD": 0.0293869,
+      "durationMs": 7848,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-123 --json idReadable,state,assignee"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,state,assignee"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "**APP-123 is currently:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
     }
   ]
 }

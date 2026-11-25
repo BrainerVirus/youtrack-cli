@@ -1,193 +1,121 @@
 {
   "case": "help-first",
   "model": "claude-haiku-4-5",
-  "key": "1-74bee6843c8700af-48ccf401f04fcecd-claude-haiku-4-5",
-  "passes": 1,
+  "key": "1-5e956f717c22a5d0-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 3,
   "graded": 3,
-  "pass": false,
+  "pass": true,
   "runs": [
     {
       "run": 1,
-      "status": "fail",
-      "failed": "require: issue view --help before a guessed flag",
-      "failures": [
-        "require: issue view --help before a guessed flag"
-      ],
-      "turns": 8,
-      "tokens": {
-        "input": 60,
-        "output": 1573,
-        "cacheCreation": 11873,
-        "cacheRead": 147766
-      },
-      "costUSD": 0.04644759999999999,
-      "durationMs": 18925,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue view APP-123 --comments 12",
-        "ytrack auth status",
-        "ytrack issue view APP-123 --comments 12",
-        "ytrack issue view --help",
-        "ytrack issue view APP-123 --comments --comments-limit 12"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--comments",
-            "12"
-          ],
-          "exit": 1,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "auth",
-            "status"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--comments",
-            "12"
-          ],
-          "exit": 1,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
-            "--help"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--comments",
-            "--comments-limit",
-            "12"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        }
-      ],
-      "answer": "## Latest 12 comments on APP-123\n\n```\nAPP-123 Login fails on Safari\nState: In Progress  Assignee: Jane Doe  Priority: Major\n\nUsers on Safari cannot log in: the form reloads without an error.\n\nMin Lee (2026-10-03T10:00:00Z):\nReproduced on Safari 18.1.\n\nJane Doe (2026-10-04T10:00:00Z):\nLooks like the session cookie is dropped.\n\nMin Lee (2026-10-05T10:00:00Z):\nSameSite=None is missing on the cookie.\n\nJane Doe (2026-10-06T10:00:00Z):\nPatch in review: sets SameSite and Secure.\n\nMin Lee (2026-10-07T10:00:00Z):\nReview: also needs the logout cookie.\n\nJane Doe (2026-10-08T10:00:00Z):\nUpdated the patch for logout.\n\nMin Lee (2026-10-09T10:00:00Z):\nQA: login works on Safari 18.1 with the patch.\n\nJane Doe (2026-10-10T10:00:00Z):\nQA: Safari 19 beta still fails on the second login.\n\nMin Lee (2026-10-11T10:00:00Z):\nSecond login fails because of a stale CSRF token.\n\nJane Doe (2026-10-12T10:00:00Z):\nFix for the CSRF token refresh pushed.\n\nMin Lee (2026-10-13T10:00:00Z):\nQA: Safari 19 passes now.\n\nJane Doe (2026-10-14T10:00:00Z):\nWaiting for the release train 2026.3.\n```\n\n## Summary\n\nThe fix is complete and QA-tested: cookie handling (SameSite/Secure flags, logout cookie) and CSRF token refresh now allow login on both Safari 18.1 and 19. It's currently waiting to ship in release 2026.3."
-    },
-    {
-      "run": 2,
       "status": "pass",
       "turns": 5,
       "tokens": {
         "input": 36,
-        "output": 1044,
-        "cacheCreation": 11383,
-        "cacheRead": 78239
+        "output": 1148,
+        "cacheCreation": 11230,
+        "cacheRead": 78885
       },
-      "costUSD": 0.0358459,
-      "durationMs": 14493,
+      "costUSD": 0.0361245,
+      "durationMs": 13325,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue view --help",
-        "ytrack issue view APP-123 --comments --comments-limit 12"
+        "ytrack APP-123 comment list --limit 12",
+        "ytrack issue comment list APP-123 --limit 12"
       ],
       "calls": [
         {
           "argv": [
-            "issue",
-            "view",
-            "--help"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
             "APP-123",
-            "--comments",
-            "--comments-limit",
-            "12"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        }
-      ],
-      "answer": "## Summary\n\nThe fix for the Safari login issue is **complete and QA-verified**: the CSRF token refresh problem that broke second logins on Safari 19 has been resolved, and testing confirms both Safari 18.1 and Safari 19 now work correctly. The change is currently awaiting deployment in release 2026.3."
-    },
-    {
-      "run": 3,
-      "status": "fail",
-      "failed": "require: issue view --help before a guessed flag",
-      "failures": [
-        "require: issue view --help before a guessed flag"
-      ],
-      "turns": 6,
-      "tokens": {
-        "input": 44,
-        "output": 1256,
-        "cacheCreation": 11726,
-        "cacheRead": 101765
-      },
-      "costUSD": 0.0399525,
-      "durationMs": 17637,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue view APP-123 --comments --limit 12",
-        "ytrack issue view --help",
-        "ytrack issue view APP-123 --comments --comments-limit 12"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-123",
-            "--comments",
+            "comment",
+            "list",
             "--limit",
             "12"
           ],
           "exit": 1,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         },
         {
           "argv": [
             "issue",
-            "view",
-            "--help"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
+            "comment",
+            "list",
             "APP-123",
-            "--comments",
-            "--comments-limit",
+            "--limit",
             "12"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "## Last 12 Comments on APP-123\n\n**Issue:** Login fails on Safari  \n**State:** In Progress  \n**Assignee:** Jane Doe  \n**Priority:** Major\n\n---\n\nThe conversation above shows the full comment thread. Here's the summary:\n\n**Fix Status:** The Safari login issue has been fully resolved and verified by QA—both the initial cookie SameSite/Secure flags and the CSRF token refresh on second login are fixed and working in Safari 19. The fix is now waiting for deployment in the upcoming 2026.3 release train."
+      "answer": "Here are the last 12 comments on APP-123:\n\n```\n4-3   Min Lee      2026-10-03   Reproduced on Safari 18.1.\n4-4   Jane Doe     2026-10-04   Looks like the session cookie is dropped.\n4-5   Min Lee      2026-10-05   SameSite=None is missing on the cookie.\n4-6   Jane Doe     2026-10-06   Patch in review: sets SameSite and Secure.\n4-7   Min Lee      2026-10-07   Review: also needs the logout cookie.\n4-8   Jane Doe     2026-10-08   Updated the patch for logout.\n4-9   Min Lee      2026-10-09   QA: login works on Safari 18.1 with the patch.\n4-10  Jane Doe     2026-10-10   QA: Safari 19 beta still fails on the second login.\n4-11  Min Lee      2026-10-11   Second login fails because of a stale CSRF token.\n4-12  Jane Doe     2026-10-12   Fix for the CSRF token refresh pushed.\n4-13  Min Lee      2026-10-13   QA: Safari 19 passes now.\n4-14  Jane Doe     2026-10-14   Waiting for the release train 2026.3.\n```\n\n**Fix Status:** The issue has been fully resolved and QA-verified on both Safari 18.1 and 19 beta—the patches addressed the missing SameSite cookie attribute and stale CSRF token refresh. The fix is now awaiting deployment as part of the 2026.3 release train."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 920,
+        "cacheCreation": 10872,
+        "cacheRead": 55547
+      },
+      "costUSD": 0.0319267,
+      "durationMs": 10773,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --limit 12"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--limit",
+            "12"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "**Last 12 Comments on APP-123:**\n\n| ID | Author | Date | Comment |\n|---|---|---|---|\n| 4-3 | Min Lee | 2026-10-03 | Reproduced on Safari 18.1. |\n| 4-4 | Jane Doe | 2026-10-04 | Looks like the session cookie is dropped. |\n| 4-5 | Min Lee | 2026-10-05 | SameSite=None is missing on the cookie. |\n| 4-6 | Jane Doe | 2026-10-06 | Patch in review: sets SameSite and Secure. |\n| 4-7 | Min Lee | 2026-10-07 | Review: also needs the logout cookie. |\n| 4-8 | Jane Doe | 2026-10-08 | Updated the patch for logout. |\n| 4-9 | Min Lee | 2026-10-09 | QA: login works on Safari 18.1 with the patch. |\n| 4-10 | Jane Doe | 2026-10-10 | QA: Safari 19 beta still fails on the second login. |\n| 4-11 | Min Lee | 2026-10-11 | Second login fails because of a stale CSRF token. |\n| 4-12 | Jane Doe | 2026-10-12 | Fix for the CSRF token refresh pushed. |\n| 4-13 | Min Lee | 2026-10-13 | QA: Safari 19 passes now. |\n| 4-14 | Jane Doe | 2026-10-14 | Waiting for the release train 2026.3. |\n\n**Fix Status Summary:**\n\nThe issue has been fully resolved: initial SameSite/Secure cookie fixes were implemented, QA caught a secondary CSRF token refresh bug which was then patched and re-tested successfully. The fix is now awaiting inclusion in the release train 2026.3."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 1206,
+        "cacheCreation": 11111,
+        "cacheRead": 55689
+      },
+      "costUSD": 0.0338489,
+      "durationMs": 14486,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --limit 12"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--limit",
+            "12"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "## Last 12 Comments on APP-123\n\n```\n4-3\tMin Lee\t2026-10-03T10:00:00Z\tReproduced on Safari 18.1.\n4-4\tJane Doe\t2026-10-04T10:00:00Z\tLooks like the session cookie is dropped.\n4-5\tMin Lee\t2026-10-05T10:00:00Z\tSameSite=None is missing on the cookie.\n4-6\tJane Doe\t2026-10-06T10:00:00Z\tPatch in review: sets SameSite and Secure.\n4-7\tMin Lee\t2026-10-07T10:00:00Z\tReview: also needs the logout cookie.\n4-8\tJane Doe\t2026-10-08T10:00:00Z\tUpdated the patch for logout.\n4-9\tMin Lee\t2026-10-09T10:00:00Z\tQA: login works on Safari 18.1 with the patch.\n4-10\tJane Doe\t2026-10-10T10:00:00Z\tQA: Safari 19 beta still fails on the second login.\n4-11\tMin Lee\t2026-10-11T10:00:00Z\tSecond login fails because of a stale CSRF token.\n4-12\tJane Doe\t2026-10-12T10:00:00Z\tFix for the CSRF token refresh pushed.\n4-13\tMin Lee\t2026-10-13T10:00:00Z\tQA: Safari 19 passes now.\n4-14\tJane Doe\t2026-10-14T10:00:00Z\tWaiting for the release train 2026.3.\n```\n\n## Summary\n\nThe fix is complete and QA-verified: the team identified and resolved a multi-part cookie handling issue (SameSite flag, Secure flag, logout cookie, and CSRF token refresh) that was blocking Safari 18.1+ logins. The fix is now awaiting deployment in the 2026.3 release train."
     }
   ]
 }

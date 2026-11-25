@@ -1,0 +1,188 @@
+{
+  "case": "create-field",
+  "model": "claude-haiku-4-5",
+  "key": "1-9639bbea4cfb3bff-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 2,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: project fields before the create",
+      "failures": [
+        "require: project fields before the create",
+        "require: issue create with Severity=Show-stopper"
+      ],
+      "turns": 7,
+      "tokens": {
+        "input": 52,
+        "output": 925,
+        "cacheCreation": 11713,
+        "cacheRead": 126393
+      },
+      "costUSD": 0.0407423,
+      "durationMs": 13731,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue create -p APP -s \"Export times out on large projects\"",
+        "ytrack project fields APP --json name,type,values",
+        "ytrack project fields APP --json name,type,bundle",
+        "ytrack issue edit APP-130 --field \"Severity=Show-stopper\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Export times out on large projects"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP",
+            "--json",
+            "name,type,values"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP",
+            "--json",
+            "name,type,bundle"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-130",
+            "--field",
+            "Severity=Show-stopper"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! I've created YouTrack issue **APP-130** with the title \"Export times out on large projects\" and set its Severity to **Show-stopper**, which is the highest severity level available in the APP project.\n\nhttps://acme.youtrack.cloud/issue/APP-130"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 878,
+        "cacheCreation": 11113,
+        "cacheRead": 79148
+      },
+      "costUSD": 0.0345668,
+      "durationMs": 12639,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack project fields APP",
+        "ytrack issue create -p APP -s \"Export times out on large projects\" --field \"Severity=Show-stopper\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Export times out on large projects",
+            "--field",
+            "Severity=Show-stopper"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! I've created YouTrack issue **APP-130** in project APP with the title \"Export times out on large projects\" and Severity set to \"Show-stopper\" (the highest severity level available).\n\nThe issue is here: https://acme.youtrack.cloud/issue/APP-130"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 44,
+        "output": 888,
+        "cacheCreation": 11532,
+        "cacheRead": 102866
+      },
+      "costUSD": 0.0378346,
+      "durationMs": 12933,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack project fields APP --json name,type,values",
+        "ytrack project fields APP --json name,type,bundle",
+        "ytrack issue create -p APP -s \"Export times out on large projects\" --field \"Severity=Show-stopper\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP",
+            "--json",
+            "name,type,values"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP",
+            "--json",
+            "name,type,bundle"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Export times out on large projects",
+            "--field",
+            "Severity=Show-stopper"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! I created YouTrack issue **APP-130** in project APP with the title \"Export times out on large projects\" and Severity set to **Show-stopper** (the highest severity level available in the project).\n\nThe issue is here: https://acme.youtrack.cloud/issue/APP-130"
+    }
+  ]
+}

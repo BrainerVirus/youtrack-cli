@@ -1,7 +1,7 @@
 {
   "case": "link-es",
   "model": "claude-haiku-4-5",
-  "key": "1-173ab6d51aff04a9-4c7c930f04322467-claude-haiku-4-5",
+  "key": "1-173ab6d51aff04a9-7705a98f0de8646f-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -9,48 +9,15 @@
     {
       "run": 1,
       "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 28,
-        "output": 536,
-        "cacheCreation": 11200,
-        "cacheRead": 55905
-      },
-      "costUSD": 0.0306985,
-      "durationMs": 7928,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue link APP-3 APP-7 --type 'parent for'"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "link",
-            "APP-3",
-            "APP-7",
-            "--type",
-            "parent for"
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
-        }
-      ],
-      "answer": "Done. APP-7 is now a subtask of APP-3."
-    },
-    {
-      "run": 2,
-      "status": "pass",
       "turns": 5,
       "tokens": {
         "input": 36,
-        "output": 959,
-        "cacheCreation": 11756,
-        "cacheRead": 79981
+        "output": 906,
+        "cacheCreation": 11130,
+        "cacheRead": 78983
       },
-      "costUSD": 0.0363411,
-      "durationMs": 12739,
+      "costUSD": 0.0347243,
+      "durationMs": 11308,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -65,7 +32,7 @@
             "--list-types"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         },
         {
           "argv": [
@@ -77,10 +44,53 @@
             "parent for"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Done! APP-7 is now a subtask of APP-3. The link has been created successfully."
+      "answer": "Done! APP-7 is now a subtask of APP-3. The link has been created successfully in your YouTrack instance."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 35,
+        "output": 1105,
+        "cacheCreation": 11319,
+        "cacheRead": 79119
+      },
+      "costUSD": 0.0361099,
+      "durationMs": 13844,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue link --list-types",
+        "ytrack issue link APP-3 APP-7 --type 'parent for'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "link",
+            "--list-types"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "link",
+            "APP-3",
+            "APP-7",
+            "--type",
+            "parent for"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! APP-7 is now a subtask of APP-3."
     },
     {
       "run": 3,
@@ -88,17 +98,17 @@
       "turns": 5,
       "tokens": {
         "input": 36,
-        "output": 1198,
-        "cacheCreation": 11993,
-        "cacheRead": 80333
+        "output": 851,
+        "cacheCreation": 11058,
+        "cacheRead": 78793
       },
-      "costUSD": 0.038045300000000004,
-      "durationMs": 15079,
+      "costUSD": 0.0342863,
+      "durationMs": 11164,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
         "ytrack issue link --list-types",
-        "ytrack issue link APP-7 APP-3 --type 'subtask of'"
+        "ytrack issue link APP-3 APP-7 --type 'parent for'"
       ],
       "calls": [
         {
@@ -108,22 +118,22 @@
             "--list-types"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         },
         {
           "argv": [
             "issue",
             "link",
-            "APP-7",
             "APP-3",
+            "APP-7",
             "--type",
-            "subtask of"
+            "parent for"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Done! APP-7 is now a subtask of APP-3. The link has been created successfully in your Spanish YouTrack instance."
+      "answer": "Done. APP-7 is now a subtask of APP-3."
     }
   ]
 }

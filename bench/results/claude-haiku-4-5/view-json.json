@@ -1,7 +1,7 @@
 {
   "case": "view-json",
   "model": "claude-haiku-4-5",
-  "key": "1-fdb7b965f8966f6e-48ccf401f04fcecd-claude-haiku-4-5",
+  "key": "1-fdb7b965f8966f6e-7705a98f0de8646f-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,12 +12,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 783,
-        "cacheCreation": 10327,
-        "cacheRead": 54935
+        "output": 951,
+        "cacheCreation": 11070,
+        "cacheRead": 55632
       },
-      "costUSD": 0.0300905,
-      "durationMs": 10912,
+      "costUSD": 0.0324862,
+      "durationMs": 12625,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -33,10 +33,10 @@
             "state,assignee"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "**APP-123 is currently:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+      "answer": "**APP-123** is currently:\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
     },
     {
       "run": 2,
@@ -44,12 +44,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 434,
-        "cacheCreation": 9987,
-        "cacheRead": 54791
+        "output": 533,
+        "cacheCreation": 10642,
+        "cacheRead": 55545
       },
-      "costUSD": 0.027651100000000005,
-      "durationMs": 7125,
+      "costUSD": 0.029531500000000002,
+      "durationMs": 8089,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -65,10 +65,10 @@
             "state,assignee"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "**APP-123** is currently:\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
+      "answer": "Issue APP-123 is currently **In Progress** and is assigned to **Jane Doe** (login: jdoe)."
     },
     {
       "run": 3,
@@ -76,16 +76,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 593,
-        "cacheCreation": 10159,
-        "cacheRead": 54892
+        "output": 508,
+        "cacheCreation": 10633,
+        "cacheRead": 55529
       },
-      "costUSD": 0.0288002,
-      "durationMs": 8968,
+      "costUSD": 0.0293869,
+      "durationMs": 7848,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue view APP-123 --json state,assignee"
+        "ytrack issue view APP-123 --json idReadable,state,assignee"
       ],
       "calls": [
         {
@@ -94,13 +94,13 @@
             "view",
             "APP-123",
             "--json",
-            "state,assignee"
+            "idReadable,state,assignee"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "**APP-123** is currently:\n- **State**: In Progress\n- **Assigned to**: Jane Doe (login: jdoe)"
+      "answer": "**APP-123 is currently:**\n- **State:** In Progress\n- **Assigned to:** Jane Doe (jdoe)"
     }
   ]
 }

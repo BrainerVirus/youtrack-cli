@@ -1,27 +1,36 @@
 {
   "case": "comment",
   "model": "claude-haiku-4-5",
-  "key": "1-69ffb72ae5ff141c-4c7c930f04322467-claude-haiku-4-5",
-  "passes": 3,
+  "key": "1-69ffb72ae5ff141c-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 0,
   "graded": 3,
-  "pass": true,
+  "pass": false,
   "runs": [
     {
       "run": 1,
-      "status": "pass",
-      "turns": 4,
+      "status": "fail",
+      "failed": "require: issue comment with the text",
+      "failures": [
+        "require: issue comment with the text",
+        "forbid: the comment posted twice"
+      ],
+      "turns": 8,
       "tokens": {
-        "input": 28,
-        "output": 486,
-        "cacheCreation": 11170,
-        "cacheRead": 55958
+        "input": 60,
+        "output": 1202,
+        "cacheCreation": 12450,
+        "cacheRead": 151113
       },
-      "costUSD": 0.030393800000000002,
-      "durationMs": 6148,
+      "costUSD": 0.0460813,
+      "durationMs": 18001,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\"",
+        "ytrack auth status",
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\"",
+        "ytrack issue comment --help",
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\" --host acme.youtrack.cloud"
       ],
       "calls": [
         {
@@ -32,28 +41,81 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19.",
+            "--host",
+            "acme.youtrack.cloud"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to issue APP-123. The comment is now visible at the issue's page."
+      "answer": "It looks like there's a configuration issue with ytrack in this environment. The error \"bench fake: no config\" suggests this is a test or benchmark setup rather than a fully configured YouTrack instance.\n\nTo add the comment successfully, you would normally run:\n```bash\nytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\"\n```\n\nHowever, the ytrack tool needs proper configuration to connect to a real YouTrack instance. You may need to:\n1. Check if YouTrack is properly configured for your environment\n2. Verify your authentication token is valid with `ytrack auth status`\n3. Ensure the issue APP-123 exists on the configured YouTrack host\n\nWould you like me to help troubleshoot the ytrack configuration?"
     },
     {
       "run": 2,
-      "status": "pass",
-      "turns": 4,
+      "status": "fail",
+      "failed": "require: issue comment with the text",
+      "failures": [
+        "require: issue comment with the text",
+        "forbid: the comment posted twice",
+        "max turns"
+      ],
+      "turns": 9,
       "tokens": {
-        "input": 28,
-        "output": 517,
-        "cacheCreation": 11188,
-        "cacheRead": 55945
+        "input": 68,
+        "output": 1264,
+        "cacheCreation": 12775,
+        "cacheRead": 174433
       },
-      "costUSD": 0.030583500000000003,
-      "durationMs": 7824,
+      "costUSD": 0.0493813,
+      "durationMs": 17313,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\"",
+        "ytrack auth status",
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\"",
+        "ytrack issue view APP-123",
+        "ytrack issue comment \"https://acme.youtrack.cloud/issue/APP-123\" --body \"Reproduced on 2026.2 with Safari 19.\"",
+        "ytrack issue comment --help",
+        "ytrack issue comment list APP-123"
       ],
       "calls": [
         {
@@ -64,27 +126,92 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "https://acme.youtrack.cloud/issue/APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Done. Comment added to APP-123: \"Reproduced on 2026.2 with Safari 19.\" You can view it at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
+      "answer": ""
     },
     {
       "run": 3,
-      "status": "pass",
-      "turns": 4,
+      "status": "fail",
+      "failed": "require: issue comment with the text",
+      "failures": [
+        "require: issue comment with the text",
+        "forbid: the comment posted twice"
+      ],
+      "turns": 6,
       "tokens": {
-        "input": 28,
-        "output": 653,
-        "cacheCreation": 11343,
-        "cacheRead": 56081
+        "input": 44,
+        "output": 1144,
+        "cacheCreation": 11352,
+        "cacheRead": 102925
       },
-      "costUSD": 0.0315871,
-      "durationMs": 9236,
+      "costUSD": 0.038760499999999996,
+      "durationMs": 14308,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\"",
+        "ytrack auth status",
         "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\""
       ],
       "calls": [
@@ -96,11 +223,30 @@
             "--body",
             "Reproduced on 2026.2 with Safari 19."
           ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible in the issue."
+      "answer": "It looks like ytrack is set up in a test/bench environment without an actual YouTrack instance configured. The error \"bench fake: no config\" indicates this is a simulation environment rather than a real YouTrack instance.\n\nThe command I'm using is correct per the documentation:\n```sh\nytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\"\n```\n\nTo add a comment to a real YouTrack issue, you would run this command. If you're working with an actual YouTrack instance, make sure it's properly configured and authenticated first with `ytrack auth login`."
     }
   ]
 }

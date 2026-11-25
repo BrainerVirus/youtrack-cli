@@ -1,0 +1,170 @@
+{
+  "case": "tag-create",
+  "model": "claude-haiku-4-5",
+  "key": "1-e3b3d70a3eb96c23-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 44,
+        "output": 736,
+        "cacheCreation": 11053,
+        "cacheRead": 102462
+      },
+      "costUSD": 0.0360762,
+      "durationMs": 11105,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --add-tag safari-19",
+        "ytrack tag create safari-19",
+        "ytrack issue edit APP-123 --add-tag safari-19"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "tag",
+            "create",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done. I created the new tag \"safari-19\" and added it to issue APP-123."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 643,
+        "cacheCreation": 10823,
+        "cacheRead": 78715
+      },
+      "costUSD": 0.0327685,
+      "durationMs": 9271,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --add-tag safari-19",
+        "ytrack tag create safari-19 \u0026\u0026 ytrack issue edit APP-123 --add-tag safari-19"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "tag",
+            "create",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! I created the tag \"safari-19\" and added it to APP-123. The issue is now tagged and visible at https://acme.youtrack.cloud/issue/APP-123."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 636,
+        "cacheCreation": 10815,
+        "cacheRead": 78720
+      },
+      "costUSD": 0.032718,
+      "durationMs": 8988,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --add-tag safari-19",
+        "ytrack tag create safari-19 \u0026\u0026 ytrack issue edit APP-123 --add-tag safari-19"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "tag",
+            "create",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! I created the tag \"safari-19\" and added it to issue APP-123. The issue is now tagged with safari-19."
+    }
+  ]
+}
