@@ -32,7 +32,9 @@ func TestIntegration(t *testing.T) {
 func buildYtrack(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), exeName("ytrack"))
-	out, err := exec.Command("go", "build", "-o", bin, "github.com/BrainerVirus/youtrack-cli/cmd/ytrack").CombinedOutput()
+	// -buildvcs=false stamps version dev: a VCS pseudo-version reads as a
+	// release, and a release ytrack rewrites the user's installed skill copies.
+	out, err := exec.Command("go", "build", "-buildvcs=false", "-o", bin, "github.com/BrainerVirus/youtrack-cli/cmd/ytrack").CombinedOutput()
 	if err != nil {
 		t.Fatalf("building ytrack: %v\n%s", err, out)
 	}

@@ -14,9 +14,11 @@ test:
 
 # Opt-in real-instance suite against your personal YouTrack Cloud instance,
 # using the session from `ytrack auth login`: make it YTRACK_IT_PROJECT=<short name>
-# It creates issues prefixed "ytrack-it <run id>" and deletes them. See docs/integration-tests.md.
+# [YTRACK_IT_HOST=<name>.youtrack.cloud]. It creates issues prefixed "ytrack-it <run id>"
+# and tags named "ytrack-it-<run id>-*", and deletes them. See docs/integration-tests.md.
 it: build
 	YTRACK_IT=1 YTRACK_IT_BIN="$(CURDIR)/bin/ytrack" YTRACK_IT_PROJECT="$(YTRACK_IT_PROJECT)" \
+		YTRACK_IT_HOST="$(YTRACK_IT_HOST)" \
 		go test -count=1 -v -run '^TestIntegration$$' ./test/integration/
 
 vet:

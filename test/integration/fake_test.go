@@ -47,7 +47,9 @@ func sharedYtrack(t *testing.T) string {
 			return
 		}
 		binPath = filepath.Join(binDir, exeName("ytrack"))
-		out, err := exec.Command("go", "build", "-o", binPath, "github.com/BrainerVirus/youtrack-cli/cmd/ytrack").CombinedOutput()
+		// -buildvcs=false stamps version dev: a VCS pseudo-version reads as a
+		// release, and a release ytrack rewrites the user's installed skill copies.
+		out, err := exec.Command("go", "build", "-buildvcs=false", "-o", binPath, "github.com/BrainerVirus/youtrack-cli/cmd/ytrack").CombinedOutput()
 		if err != nil {
 			binErr = fmt.Errorf("building ytrack: %w\n%s", err, out)
 		}
@@ -69,7 +71,8 @@ func mustParse(t *testing.T, url string) hosts.Host {
 
 // fakeInstance fronts cmdtest's FakeYouTrack with what the suite needs on
 // top of it: issue deletion (cascading to comments and work items, as in
-// YouTrack) and injected failures. Requests are served one at a time.
+// YouTrack), tag deletion, a creation entry in every issue's history, and
+// injected failures. Requests are served one at a time.
 type fakeInstance struct {
 	yt     *cmdtest.FakeYouTrack
 	server *httptest.Server
@@ -91,6 +94,7 @@ func newFakeInstance(t *testing.T, setup ...func(*fakeInstance)) *fakeInstance {
 	yt.Localized = true // like the Spanish sandbox: "for:" matches nothing
 	yt.SeedSampleProjects()
 	yt.SeedSampleWorkItems() // NSR time tracking settings
+	yt.SavedQueries = []map[string]any{{"$type": "SavedQuery", "id": "120-1", "name": "Assigned to me", "query": "for: me"}}
 	yt.Issues = nil
 	yt.WorkItems = map[string][]map[string]any{}
 	f := &fakeInstance{yt: yt}
@@ -104,6 +108,13 @@ func newFakeInstance(t *testing.T, setup ...func(*fakeInstance)) *fakeInstance {
 		if r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/api/issues/") && strings.Count(r.URL.Path, "/") == 3 {
 			f.deleteIssue(w, r)
 			return
+		}
+		if r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/api/tags/") {
+			f.deleteTag(w, r)
+			return
+		}
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/activities") {
+			f.recordCreation(strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/issues/"), "/activities"))
 		}
 		if strings.HasPrefix(r.URL.Path, "/api/commands") && !f.localizeCommand(w, r) {
 			return
@@ -140,6 +151,34 @@ func (f *fakeInstance) deleteIssue(w http.ResponseWriter, r *http.Request) {
 	delete(f.yt.WorkItems, readable)
 	f.deleted = append(f.deleted, readable)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (f *fakeInstance) deleteTag(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/api/tags/")
+	i := slices.IndexFunc(f.yt.Tags, func(t map[string]any) bool { return t["id"] == id })
+	if i < 0 {
+		http.Error(w, `{"error":"Not Found"}`, http.StatusNotFound)
+		return
+	}
+	f.yt.Tags = slices.Delete(f.yt.Tags, i, i+1)
+	w.WriteHeader(http.StatusOK)
+}
+
+// recordCreation gives issue id the creation entry YouTrack starts every
+// history with; cmdtest's fake keeps no history of the issues it creates.
+func (f *fakeInstance) recordCreation(id string) {
+	if f.yt.Activities == nil {
+		f.yt.Activities = map[string][]map[string]any{}
+	}
+	if len(f.yt.Activities[id]) > 0 {
+		return
+	}
+	f.yt.Activities[id] = []map[string]any{{
+		"$type": "IssueCreatedActivityItem", "id": "a-" + id, "timestamp": 1790000000000,
+		"author":   map[string]any{"$type": "User", "login": f.yt.Login, "fullName": f.yt.FullName},
+		"category": map[string]any{"$type": "ActivityCategory", "id": "IssueCreatedCategory"},
+		"added":    []any{}, "removed": []any{},
+	}}
 }
 
 // localizeCommand makes the fake behave like a non-English instance: the
@@ -191,6 +230,11 @@ func (f *fakeInstance) leftovers() []string {
 			out = append(out, fmt.Sprintf("work item %v on %s", wi["id"], id))
 		}
 	}
+	for _, t := range f.yt.Tags {
+		if name := fmt.Sprint(t["name"]); strings.HasPrefix(name, "ytrack-it-") {
+			out = append(out, "tag "+name)
+		}
+	}
 	return out
 }
 
@@ -208,6 +252,7 @@ func (f *fakeInstance) runAgainst(t *testing.T) error {
 		t.Fatal(err)
 	}
 	cfg.Bin = sharedYtrack(t)
+	cfg.Offline = true
 	base := append(os.Environ(), "YTRACK_CONFIG_DIR="+t.TempDir())
 	return newSuite(cfg, base, t.Logf).run()
 }
@@ -230,8 +275,8 @@ func TestSuiteAgainstFakeServer(t *testing.T) {
 	if left := f.leftovers(); len(left) != 0 {
 		t.Errorf("the run left %v", left)
 	}
-	if len(f.deletedIssues()) != 1 {
-		t.Errorf("deleted issues %v, want the one the run created", f.deletedIssues())
+	if len(f.deletedIssues()) != 2 {
+		t.Errorf("deleted issues %v, want the two the run created", f.deletedIssues())
 	}
 	// Every command path reached the server.
 	seen := map[string]bool{}
@@ -240,17 +285,33 @@ func TestSuiteAgainstFakeServer(t *testing.T) {
 	}
 	for _, want := range []string{
 		"GET /api/users/me",
+		"POST /api/tags",
+		"GET /api/tags",
 		"POST /api/issues",
 		"GET /api/issues/{id}",
 		"GET /api/issues",
 		"POST /api/issues/{id}",
+		"POST /api/issues/{id}/tags",
+		"DELETE /api/issues/{id}/tags/{tag}",
 		"POST /api/issues/{id}/comments",
+		"GET /api/issues/{id}/comments",
+		"POST /api/issues/{id}/comments/{comment}",
+		"DELETE /api/issues/{id}/comments/{comment}",
 		"POST /api/issues/{id}/comments/{comment}/attachments",
 		"GET /api/issues/{id}/comments/{comment}",
+		"POST /api/issues/{id}/attachments",
+		"GET /api/issues/{id}/attachments",
+		"GET /api/files/{file}",
 		"POST /api/commands/assist",
 		"POST /api/commands",
+		"GET /api/admin/projects/{id}/customFields",
+		"POST /api/issuesGetter/count",
+		"GET /api/issues/{id}/activities",
+		"GET /api/savedQueries",
+		"POST /api/search/assist",
 		"POST /api/issues/{id}/timeTracking/workItems",
 		"GET /api/issues/{id}/timeTracking/workItems",
+		"GET /api/workItems",
 		"POST /api/issues/{id}/timeTracking/workItems/{item}",
 		"DELETE /api/issues/{id}/timeTracking/workItems/{item}",
 	} {
@@ -335,8 +396,14 @@ func TestSuiteReportsACleanupFailure(t *testing.T) {
 // routeOf maps a request path to its fake route pattern.
 func routeOf(path string) string {
 	parts := strings.Split(path, "/")
-	if len(parts) > 3 && parts[2] == "issues" {
-		parts[3] = "{id}"
+	if len(parts) > 3 && slices.Contains([]string{"issues", "files", "tags"}, parts[2]) {
+		parts[3] = map[string]string{"issues": "{id}", "files": "{file}", "tags": "{tag}"}[parts[2]]
+	}
+	if len(parts) > 4 && parts[2] == "admin" && parts[3] == "projects" {
+		parts[4] = "{id}"
+	}
+	if len(parts) > 5 && parts[2] == "issues" && parts[4] == "tags" {
+		parts[5] = "{tag}"
 	}
 	if len(parts) > 5 && parts[4] == "comments" {
 		parts[5] = "{comment}"
