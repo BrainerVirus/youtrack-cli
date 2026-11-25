@@ -147,6 +147,34 @@ func TestHostByWorktreeMainCheckout(t *testing.T) {
 		}
 	})
 
+	t.Run("given a worktree of a bare repository, the folder holding the repository stands for the main checkout", func(t *testing.T) {
+		if _, err := exec.LookPath("git"); err != nil {
+			t.Skip("git not on PATH")
+		}
+		t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+		t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+		base := tempDir(t)
+		src, proj, wt := filepath.Join(base, "src"), filepath.Join(base, "proj"), filepath.Join(base, "elsewhere", "wt")
+		git := func(args ...string) {
+			t.Helper()
+			cmd := exec.Command("git", append([]string{"-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false"}, args...)...)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("git %v: %v\n%s", args, err, out)
+			}
+		}
+		git("init", "-q", src)
+		git("-C", src, "commit", "-q", "--allow-empty", "-m", "init")
+		git("clone", "-q", "--bare", src, filepath.Join(proj, "repo.git"))
+		git("-C", filepath.Join(proj, "repo.git"), "worktree", "add", "-q", wt)
+		env, _, work := cmdtest.TwoHosts(t)
+		glob := proj + "/**"
+		mustRun(t, env, "auth", "paths", "--host", work.URL(), "--add", glob)
+		inFolder(env, wt)
+		if r := active(t, env); r["host"] != work.Key() || r["resolvedBy"] != "path (main checkout)" || r["matchedPath"] != glob {
+			t.Errorf("active = %v", r)
+		}
+	})
+
 	t.Run("given a submodule-style .git file without commondir, the default host is active", func(t *testing.T) {
 		base := tempDir(t)
 		repo, sub := filepath.Join(base, "repo"), filepath.Join(base, "elsewhere", "sub")
