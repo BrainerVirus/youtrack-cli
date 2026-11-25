@@ -16,7 +16,7 @@ With more than one logged-in host, run `ytrack auth status` in the folder you
 work in: it marks the active host and says why (`--host`, `YTRACK_HOST`, a
 matching path or the default). Pass `--host` when that is not the instance
 you need. Change paths only when the user asks
-(`ytrack auth paths --host <h> --add '<dir>/**'`).
+(`ytrack auth paths add '<dir>/**' --host <h>`).
 
 - When the folder or the default host picks a host without the issue's
   project and exactly one other logged-in host has it, ytrack uses that host
