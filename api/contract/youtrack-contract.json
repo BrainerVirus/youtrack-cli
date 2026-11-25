@@ -1,5 +1,5 @@
 {
-  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return (empty when ytrack reads no body). Types list the attributes ytrack requests in fields= or writes in a request body ($type, the discriminator every entity has, is implied as an attribute; the $type values ytrack writes are listed under subtypes, by the type they specialize), each with the entity types it may hold (empty for a scalar). internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schema.",
+  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return (empty when ytrack reads no body). Types list the attributes ytrack requests in fields= or writes in a request body ($type, the discriminator every entity has, is implied as an attribute; the $type values ytrack writes are listed under subtypes, by the type they specialize), each with the entity types it may hold (empty for a scalar). Writes list, by entity, the attributes ytrack sets at the top level of a JSON request body (nested objects there are references or values, named by their key attributes, not writes); an endpoint with body \"reference\" adds an existing entity to a collection, so its body names that entity and writes nothing. readOnlyWrites lists the written attributes the OpenAPI description marks readOnly but YouTrack accepts, each with its evidence. internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schemas and fails on a written attribute marked readOnly.",
   "endpoints": [
     {"method": "GET", "path": "/users/me", "query": ["fields"], "response": "User"},
     {"method": "GET", "path": "/issues", "query": ["fields", "query", "customFields", "$skip", "$top"], "response": "Issue"},
@@ -17,7 +17,7 @@
     {"method": "GET", "path": "/admin/projects/{id}/timeTrackingSettings", "query": ["fields"], "response": "ProjectTimeTrackingSettings"},
     {"method": "POST", "path": "/issues", "query": ["fields"], "response": "Issue"},
     {"method": "POST", "path": "/issues/{id}", "query": ["fields"], "response": "Issue"},
-    {"method": "POST", "path": "/issues/{id}/tags", "query": ["fields"], "response": "Tag"},
+    {"method": "POST", "path": "/issues/{id}/tags", "query": ["fields"], "response": "Tag", "body": "reference"},
     {"method": "DELETE", "path": "/issues/{id}/tags/{tagId}", "query": [], "response": ""},
     {"method": "GET", "path": "/tags", "query": ["fields", "$skip", "$top"], "response": "Tag"},
     {"method": "GET", "path": "/admin/projects", "query": ["fields", "$skip", "$top"], "response": "Project"},
@@ -28,7 +28,7 @@
     {"method": "GET", "path": "/issueLinkTypes", "query": ["fields", "$skip", "$top"], "response": "IssueLinkType"},
     {"method": "GET", "path": "/issues/{id}/links", "query": ["fields", "$skip", "$top"], "response": "IssueLink"},
     {"method": "GET", "path": "/issues/{id}/links/{issueLinkId}/issues", "query": ["fields", "$skip", "$top"], "response": "Issue"},
-    {"method": "POST", "path": "/issues/{id}/links/{issueLinkId}/issues", "query": ["fields"], "response": "Issue"},
+    {"method": "POST", "path": "/issues/{id}/links/{issueLinkId}/issues", "query": ["fields"], "response": "Issue", "body": "reference"},
     {"method": "DELETE", "path": "/issues/{id}/links/{issueLinkId}/issues/{issueId}", "query": [], "response": ""}
   ],
   "undocumented": [
@@ -37,6 +37,17 @@
   "files": [
     {"$comment": "An attachment's signed url (IssueAttachment.url): a path from the server root, service path included, that ytrack fetches as is. It serves the file's bytes and is not part of /api/openapi.json, so the openapi-contract workflow does not check it.", "method": "GET", "path": "/files/{fileId}", "query": ["sign", "updated"], "response": ""}
   ],
+  "writes": {
+    "Issue": ["summary", "description", "project", "tags", "customFields"],
+    "IssueComment": ["text"],
+    "IssueWorkItem": ["date", "duration", "type", "text"],
+    "CommandList": ["query", "issues", "comment", "silent", "caret"]
+  },
+  "readOnlyWrites": {
+    "Issue": {
+      "customFields": "JetBrains' REST API docs set custom fields by posting customFields in the issue body (Create an issue, Update an issue), and ytrack issue create/edit --field relies on it; /api/openapi.json (2026.2 and 2026.4) still marks Issue.customFields readOnly."
+    }
+  },
   "subtypes": {
     "IssueCustomField": [
       "SingleEnumIssueCustomField", "MultiEnumIssueCustomField", "StateIssueCustomField",

@@ -2,8 +2,10 @@ package adapter_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -15,6 +17,7 @@ const openAPIEnv = "YTRACK_OPENAPI"
 
 type schema struct {
 	Ref           string             `json:"$ref"`
+	ReadOnly      bool               `json:"readOnly"`
 	Items         *schema            `json:"items"`
 	Properties    map[string]*schema `json:"properties"`
 	AllOf         []*schema          `json:"allOf"`
@@ -158,24 +161,42 @@ func (s *spec) hasAttr(owner, attr string) bool {
 	return false
 }
 
+// writeProperty finds attr on owner, or else on the first type derived from
+// it that declares it.
+func (s *spec) writeProperty(owner, attr string) *schema {
+	for _, ty := range s.family(owner) {
+		if p := s.property(ty, attr); p != nil {
+			return p
+		}
+	}
+	return nil
+}
+
 func TestContractMatchesOpenAPI(t *testing.T) {
 	path := os.Getenv(openAPIEnv)
 	if path == "" {
 		t.Skip("set " + openAPIEnv + " to a YouTrack openapi.json to check the contract against it")
 	}
-	s := loadSpec(t, path)
-	c := loadContract(t)
+	for _, p := range checkContract(loadContract(t), loadSpec(t, path)) {
+		t.Error(p)
+	}
+}
 
+// checkContract lists every way the contract no longer matches the
+// OpenAPI description.
+func checkContract(c *contract, s *spec) []string {
+	var problems []string
+	errorf := func(format string, args ...any) { problems = append(problems, fmt.Sprintf(format, args...)) }
 	for _, e := range c.Endpoints {
 		name := e.Method + " " + e.Path
 		item, ok := s.paths[e.Path]
 		if !ok {
-			t.Errorf("%s: the path is gone", name)
+			errorf("%s: the path is gone", name)
 			continue
 		}
 		op, ok := item[e.Method]
 		if !ok {
-			t.Errorf("%s: the method is gone", name)
+			errorf("%s: the method is gone", name)
 			continue
 		}
 		for _, q := range e.Query {
@@ -186,7 +207,7 @@ func TestContractMatchesOpenAPI(t *testing.T) {
 			) bool {
 				return p.Name == q && p.In == "query"
 			}) {
-				t.Errorf("%s: query parameter %q is gone", name, q)
+				errorf("%s: query parameter %q is gone", name, q)
 			}
 		}
 		if e.Response == "" {
@@ -194,33 +215,46 @@ func TestContractMatchesOpenAPI(t *testing.T) {
 		}
 		resp := op.Responses["200"].Content["application/json"].Schema
 		if !slices.ContainsFunc(targets(resp), func(tg string) bool { return slices.Contains(s.family(e.Response), tg) }) {
-			t.Errorf("%s: it no longer returns %s (returns %v)", name, e.Response, targets(resp))
+			errorf("%s: it no longer returns %s (returns %v)", name, e.Response, targets(resp))
 		}
 	}
 	for base, subs := range c.Subtypes {
 		for _, sub := range subs {
 			if s.schemas[sub] == nil || !slices.Contains(s.family(base), sub) {
-				t.Errorf("$type %s is no longer a %s", sub, base)
+				errorf("$type %s is no longer a %s", sub, base)
 			}
 		}
 	}
 	for ty, attrs := range c.Types {
 		if s.schemas[ty] == nil {
-			t.Errorf("type %s is gone", ty)
+			errorf("type %s is gone", ty)
 			continue
 		}
 		for attr, holds := range attrs {
 			if !s.hasAttr(ty, attr) {
-				t.Errorf("%s.%s is gone", ty, attr)
+				errorf("%s.%s is gone", ty, attr)
 				continue
 			}
 			for _, want := range holds {
 				if !s.hasTarget(ty, attr, want) {
-					t.Errorf("%s.%s no longer holds %s", ty, attr, want)
+					errorf("%s.%s no longer holds %s", ty, attr, want)
 				}
 			}
 		}
 	}
+	tys := make([]string, 0, len(c.Writes))
+	for ty := range c.Writes {
+		tys = append(tys, ty)
+	}
+	sort.Strings(tys)
+	for _, ty := range tys {
+		for _, attr := range c.Writes[ty] {
+			if p := s.writeProperty(ty, attr); p != nil && p.ReadOnly && c.ReadOnlyWrites[ty][attr] == "" {
+				errorf("%s.%s: ytrack writes it, but the description marks it readOnly", ty, attr)
+			}
+		}
+	}
+	return problems
 }
 
 func TestOpenAPICheckCatchesDrift(t *testing.T) {
@@ -241,5 +275,36 @@ func TestOpenAPICheckCatchesDrift(t *testing.T) {
 	}
 	if s.hasTarget("Issue", "project", "Project") || !s.hasTarget("Issue", "project", "Folder") {
 		t.Error("hasTarget is wrong")
+	}
+}
+
+func TestOpenAPICheckCatchesReadOnlyWrites(t *testing.T) {
+	// IssueAttachment.comment is readOnly in YouTrack's description; a
+	// contract that writes it must fail, naming the attribute.
+	dir := t.TempDir()
+	doc := `{"paths":{},"components":{"schemas":{
+ "IssueAttachment":{"properties":{"name":{"type":"string","readOnly":false},"comment":{"$ref":"#/components/schemas/IssueComment","readOnly":true}}},
+ "IssueComment":{"properties":{"text":{"type":"string","readOnly":false}}},
+ "Issue":{"properties":{"customFields":{"type":"array","readOnly":true}}}}}}`
+	path := dir + "/openapi.json"
+	if err := os.WriteFile(path, []byte(doc), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := &contract{
+		Types: map[string]map[string][]string{
+			"IssueAttachment": {"name": nil, "comment": {"IssueComment"}},
+			"IssueComment":    {"text": nil},
+			"Issue":           {"customFields": nil},
+		},
+		Writes:         map[string][]string{"IssueAttachment": {"name", "comment"}, "IssueComment": {"text"}, "Issue": {"customFields"}},
+		ReadOnlyWrites: map[string]map[string]string{"Issue": {"customFields": "documented"}},
+	}
+	got := checkContract(c, loadSpec(t, path))
+	if len(got) != 1 || !strings.HasPrefix(got[0], "IssueAttachment.comment: ytrack writes it, but the description marks it readOnly") {
+		t.Errorf("problems %q, want only IssueAttachment.comment", got)
+	}
+	delete(c.ReadOnlyWrites, "Issue")
+	if got := checkContract(c, loadSpec(t, path)); len(got) != 2 || !strings.HasPrefix(got[0], "Issue.customFields:") {
+		t.Errorf("without its readOnlyWrites entry: problems %q", got)
 	}
 }
