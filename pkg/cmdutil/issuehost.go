@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/BrainerVirus/youtrack-cli/internal/config"
@@ -62,7 +63,7 @@ func (f *Factory) withIssueHost(ctx context.Context, id string, write bool, run 
 		return run()
 	}
 	host, res, err := f.HostResolution(cfg)
-	if err != nil || (res.Source != HostFromPath && res.Source != HostFromDefault) {
+	if err != nil || !slices.Contains([]string{HostFromPath, HostFromMainCheckout, HostFromDefault}, res.Source) {
 		return run()
 	}
 	// A host fenced to other folders by `auth paths` is never probed,
@@ -94,9 +95,9 @@ func (f *Factory) withIssueHost(ctx context.Context, id string, write bool, run 
 // suggestable keeps the keys WithIssueHost may probe, switch to or name in
 // this folder. A host with path globs (`auth paths`) is meant for those
 // folders only, so it is kept only when the folder rule picks it for the
-// working directory.
+// working directory (through a worktree's main checkout too, see folderRule).
 func (f *Factory) suggestable(cfg *config.Config, keys []string) []string {
-	m, matched, err := cfg.HostForPath(f.workDirs()...)
+	m, _, matched, err := f.folderRule(cfg)
 	var out []string
 	for _, k := range keys {
 		if len(cfg.HostPaths(k)) > 0 && (err != nil || !matched || m.Host != k) {
@@ -131,7 +132,7 @@ func (e *tryHostsError) Unwrap() error { return e.err }
 func (f *Factory) useKeyHost(owner, project string, picked hosts.Host, res Resolution) {
 	f.keyHost, f.keyProject = owner, project
 	why := "the default host is " + picked.Key
-	if res.Source == HostFromPath {
+	if res.Source == HostFromPath || res.Source == HostFromMainCheckout {
 		why = "the folder rule picked " + picked.Key
 	}
 	fmt.Fprintf(f.IOStreams.ErrOut, "using %s for %s-* (%s)\n", owner, project, why)

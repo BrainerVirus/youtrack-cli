@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- In a linked git worktree kept outside the repository's folder, ytrack now picks the host whose `auth paths` match the repository's main checkout instead of the default host, and the issue-key rescue uses that host too; `auth status --json resolvedBy` reports it as `path (main checkout)`. The main checkout is read from the worktree's `.git` file, with no git binary needed (#63).
+
 ## [0.7.1] - 2026-11-25
 
 ### Changed
