@@ -203,7 +203,7 @@ func run(ctx context.Context, f *cmdutil.Factory, exporter *output.Exporter, s *
 	if st.On != s.on {
 		why := ""
 		if s.command == "vote" {
-			why = " or you reported the issue, which YouTrack does not let you vote for,"
+			why = " or you reported the issue, which YouTrack does not let you vote for"
 		}
 		return fmt.Errorf("YouTrack accepted the %q command, but %s did not change: the command word may mean something else on this instance's language%s; %s shows how YouTrack parses it", s.command, id, why, assist)
 	}
