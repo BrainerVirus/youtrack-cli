@@ -128,9 +128,13 @@ saves all of them, or those named by name or attachment ID, or with
 `--comment <id>` the files of one comment, into `-o`/`--dir` (created when
 missing; the current folder by default), using the same host as `issue view`.
 It never overwrites a file unless `--clobber` is given, saves a name holding
-a path such as `../x` as `.._x`, adds the attachment ID to a name used twice
-(and says so on stderr), and exits 1 naming any file that failed while the
-others still download.
+a path such as `../x` as `.._x`, saves a name Windows cannot hold under a safe
+one (`NUL.txt` as `_NUL.txt`, `a. ` as `a__`, `a?b` as `a_b`), adds the
+attachment ID to a name used twice (and says so on stderr), and exits 1
+naming any file that failed while the others still download. Ctrl-C removes
+the partly written file and exits 2. A file URL outside the service URL's
+origin, or one holding a user name or password, is refused, and so is a
+redirect to another host or from https to http.
 
 ## YouTrack commands
 

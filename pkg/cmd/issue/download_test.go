@@ -133,6 +133,28 @@ func TestIssueDownload(t *testing.T) {
 		}
 	})
 
+	t.Run("given names Windows cannot save (NUL.txt, 'a. '), it saves them under safe names and stderr says so", func(t *testing.T) {
+		env, yt := withAttachments(t, "")
+		yt.AddAttachment("NSR-40", "NUL.txt", "device")
+		yt.AddAttachment("NSR-40", "a. ", "dots")
+		out := t.TempDir()
+		mustRun(t, env, "issue", "download", "NSR-40", "NUL.txt", "a. ", "-o", out)
+		if got := readFile(t, filepath.Join(out, "_NUL.txt")); got != "device" {
+			t.Errorf("_NUL.txt = %q", got)
+		}
+		if got := readFile(t, filepath.Join(out, "a__")); got != "dots" {
+			t.Errorf("a__ = %q", got)
+		}
+		if env.Stdout.String() != "_NUL.txt\t6\na__\t4\n" {
+			t.Errorf("stdout = %q", env.Stdout)
+		}
+		want := `saving "NUL.txt" as "_NUL.txt": the name is not a valid file name on every system` + "\n" +
+			`saving "a. " as "a__": the name is not a valid file name on every system` + "\n"
+		if env.Stderr.String() != want {
+			t.Errorf("stderr = %q, want %q", env.Stderr, want)
+		}
+	})
+
 	t.Run("given names and IDs, it downloads only those; one that matches nothing fails before any download", func(t *testing.T) {
 		env, yt := withAttachments(t, "")
 		out := t.TempDir()
