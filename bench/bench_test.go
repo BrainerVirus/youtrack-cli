@@ -380,6 +380,11 @@ func TestGivenTheNewCommandsTheFakeAnswersLikeYtrack(t *testing.T) {
 	if out, code := run(cases["set-field-es"], "project", "fields", "APP", "--json", "name"); code != 0 || !strings.Contains(out, `"Priority"`) {
 		t.Errorf("project fields without a fixture = %d %s", code, out)
 	}
+	for _, answer := range []string{"9h 30m in total", "You've logged **9 hours 30 minutes** so far"} {
+		if f := Grade(cases["time-report"], calls("work-item report --since 2026-11-23"), nil, answer); len(f) != 0 {
+			t.Errorf("time-report answer %q: %v", answer, f)
+		}
+	}
 	if out, code := run(cases["count-open"], "issue", "count", "project: APP #Unresolved", "--json", "count", "--jq", ".count"); code != 0 || strings.TrimSpace(out) != "137" {
 		t.Errorf("count --jq = %d %s", code, out)
 	}

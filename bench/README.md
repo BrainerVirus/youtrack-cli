@@ -172,47 +172,53 @@ token.
 
 `claude-haiku-4-5`, `--repeat 3`, after the #49 commands (comment
 list/edit/delete, tags, project fields, work-item report, issue count,
-`--assist`). Pass A is the skill as shipped, kept; pass B added three body
-lines (read `project fields` for a value the user does not name, `--assist`
-for a half-known command value, `#Unresolved` rather than `State: -Resolved`)
-and was dropped. Input is the mean total input per run.
+`--assist`). A is the skill as shipped, kept; its `bench/results` are the
+ones in this repo. B added three body lines: read `project fields` for a
+value the user does not name, `--assist` for a half-known command value,
+and `#Unresolved` rather than `State: -Resolved`. C kept only B's `--assist`
+and `#Unresolved` lines. Both were dropped. Input is the mean total input
+per run.
 
-| Case | A passes | A input | B passes | B input |
-| --- | --- | --- | --- | --- |
-| `api-read` | 3/3 | 66478 | 3/3 | 66453 |
-| `attach` | 3/3 | 87066 | 3/3 | 95397 |
-| `command-assist` | 2/3 | 139433 | 3/3 | 90788 |
-| `comment-delete` | 3/3 | 91855 | 3/3 | 91844 |
-| `comment` | 0/3 (harness) | 155073 | 3/3 | 66619 |
-| `count-open` | 2/3 | 74466 | 2/3 | 66484 |
-| `create-field` | 2/3 | 114299 | 2/2 (1 not loaded) | 115114 |
-| `create-stdin` | 3/3 | 101972 | 1/3 | 94924 |
-| `help-first` | 3/3 | 74475 | 2/3 | 108253 |
-| `link-es` | 3/3 | 90169 | 3/3 | 82600 |
-| `log-time` | 3/3 | 66302 | 3/3 | 66609 |
-| `meeting-time` | 3/3 | 66383 | 3/3 | 66789 |
-| `my-issues-es` | 3/3 | 82921 | 3/3 | 66535 |
-| `search-query` | 3/3 | 66340 | 3/3 | 82289 |
-| `set-field-es` | 3/3 | 66294 | 2/3 | 131878 |
-| `tag-create` | 3/3 | 97568 | 3/3 | 113480 |
-| `time-report` | 3/3 | 66567 | 3/3 | 66874 |
-| `view-json` | 3/3 | 66378 | 3/3 | 66582 |
-| total | 48/54, 17/18 cases | 87447 | 48/53, 17/18 cases | 84970 |
+| Case | A | A input | B | B input | C | C input | no skill |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `api-read` | 3/3 | 66478 | 3/3 | 66453 | 3/3 | 66718 | |
+| `attach` | 3/3 | 87066 | 3/3 | 95397 | 3/3 | 87506 | |
+| `command-assist` | 2/3 | 139433 | 3/3 | 90788 | 3/3 | 99400 | 0/3 |
+| `comment-delete` | 3/3 | 91855 | 3/3 | 91844 | 3/3 | 108944 | 0/3 |
+| `comment` | 3/3 | 66347 | 3/3 | 66619 | 3/3 | 66363 | |
+| `count-open` | 2/3 | 74466 | 2/3 | 66484 | 3/3 | 82203 | 0/3 |
+| `create-field` | 2/3 | 114299 | 2/2 | 115114 | 3/3 | 116240 | 0/3 |
+| `create-stdin` | 3/3 | 101972 | 1/3 | 94924 | 1/2 | 98696 | |
+| `help-first` | 3/3 | 74475 | 2/3 | 108253 | 1/3 | 83263 | |
+| `link-es` | 3/3 | 90169 | 3/3 | 82600 | 3/3 | 74618 | |
+| `log-time` | 3/3 | 66302 | 3/3 | 66609 | 3/3 | 66438 | |
+| `meeting-time` | 3/3 | 66383 | 3/3 | 66789 | 3/3 | 66569 | |
+| `my-issues-es` | 3/3 | 82921 | 3/3 | 66535 | 3/3 | 74419 | |
+| `search-query` | 3/3 | 66340 | 3/3 | 82289 | 3/3 | 66389 | |
+| `set-field-es` | 3/3 | 66294 | 2/3 | 131878 | 3/3 | 66730 | |
+| `tag-create` | 3/3 | 97568 | 3/3 | 113480 | 3/3 | 97810 | 0/3 |
+| `time-report` | 3/3 | 66567 | 3/3 | 66874 | 3/3 | 66944 | 0/3 |
+| `view-json` | 3/3 | 66378 | 3/3 | 66582 | 3/3 | 66616 | |
+| runs | 51/54 | 82518 | 48/53 | 84970 | 50/53 | 80546 | 0/18 |
+| cases | 18/18 | | 17/18 | | 16/18 | | 0/6 |
 
-- Pass A's `comment` runs hit a fake bug, not the skill: `issue comment` now
-  has subcommands, and the fake ran its real code ("no config"). The fake
-  answers it since; pass B, with the fix, passed 3/3. Without `comment`, A is
-  48/51 with every case passing and B 45/50 with `create-stdin` failing.
+- A's `comment` runs first hit a fake bug: `issue comment` now has
+  subcommands, and the fake ran its real code ("no config"). With the fix
+  they were re-run (3/3); B and C ran with the fix.
 - B's `set-field-es` failure followed its own new line: Haiku read
   `project fields` although the prompt named the value, and the fake then
-  had no reply for it (it now answers from the fixture issues). The
-  `create-stdin` (`$(ls)` instead of a pipe) and `help-first` (a guessed
-  `--limit`) drops are in text B did not touch.
-- The new cases fail where Haiku invents a query (`count-open`:
-  `State: -Resolved`, `Resolved: Empty`), creates and then edits instead of
-  reading `project fields` first (`create-field`), or applies a guessed
-  state (`command-assist`).
+  had no reply for it (it now answers from the fixture issues).
+- C fixed `command-assist` and `count-open` and kept `set-field-es`, but
+  lost `create-stdin` (`$(ls)` instead of a pipe, and one run that never
+  loaded the skill) and `help-first` (a guessed `--limit` before `--help`),
+  text it did not change. One C `time-report` run answered "9 hours 30
+  minutes", which the answer rule now accepts; every pass is graded with it.
+- The skill's weak spots on the new cases: an invented query
+  (`count-open`: `State: -Resolved`, `Resolved: Empty`), creating and then
+  editing instead of reading `project fields` first (`create-field`), and a
+  guessed state (`command-assist`).
+- Without the skill (`--no-skill`) Haiku fails all six new cases, mostly in
+  one turn without running ytrack.
 - `compare` against the 12-case results before #49 (skill 18328 → 20887
-  bytes): no case that ran in both dropped apart from the `comment` harness
-  failure; `help-first` rose from 1/3 to 3/3 once it also accepted
-  `issue comment list --limit 12`.
+  bytes): no case dropped, `help-first` rose from 1/3 to 3/3 (it also
+  accepts `issue comment list --limit 12`), and the pass rate stays 94.4%.

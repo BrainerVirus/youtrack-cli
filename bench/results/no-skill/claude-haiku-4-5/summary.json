@@ -33,6 +33,42 @@
       "costUSD": 0.0262
     },
     {
+      "case": "command-assist",
+      "pass": false,
+      "passes": 0,
+      "graded": 3,
+      "skillLoaded": 0,
+      "failed": [
+        "require: the value looked up before the first applied command",
+        "require: the value looked up before the first applied command",
+        "require: the value looked up before the first applied command"
+      ],
+      "meanTurns": 1.7,
+      "meanTotalInput": 33643.3,
+      "sdTotalInput": 23868.2,
+      "meanOutput": 696,
+      "meanDurationMs": 9620.3,
+      "costUSD": 0.0635
+    },
+    {
+      "case": "comment-delete",
+      "pass": false,
+      "passes": 0,
+      "graded": 3,
+      "skillLoaded": 0,
+      "failed": [
+        "require: comment delete of 4-2",
+        "require: comment delete of 4-2",
+        "require: comment delete of 4-2"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19850.7,
+      "sdTotalInput": 1.2,
+      "meanOutput": 612,
+      "meanDurationMs": 8433.7,
+      "costUSD": 0.0561
+    },
+    {
       "case": "comment",
       "pass": false,
       "passes": 0,
@@ -47,6 +83,42 @@
       "meanOutput": 412,
       "meanDurationMs": 6340,
       "costUSD": 0.0173
+    },
+    {
+      "case": "count-open",
+      "pass": false,
+      "passes": 0,
+      "graded": 3,
+      "skillLoaded": 0,
+      "failed": [
+        "require: issue count of APP unresolved",
+        "require: issue count of APP unresolved",
+        "require: issue count of APP unresolved"
+      ],
+      "meanTurns": 1.7,
+      "meanTotalInput": 33435,
+      "sdTotalInput": 23549,
+      "meanOutput": 420,
+      "meanDurationMs": 6947,
+      "costUSD": 0.0585
+    },
+    {
+      "case": "create-field",
+      "pass": false,
+      "passes": 0,
+      "graded": 3,
+      "skillLoaded": 0,
+      "failed": [
+        "require: project fields before the create",
+        "require: project fields before the create",
+        "require: project fields before the create"
+      ],
+      "meanTurns": 2,
+      "meanTotalInput": 40216.7,
+      "sdTotalInput": 20509.4,
+      "meanOutput": 592.3,
+      "meanDurationMs": 8497,
+      "costUSD": 0.064
     },
     {
       "case": "create-stdin",
@@ -66,6 +138,7 @@
     },
     {
       "case": "help-first",
+      "stale": true,
       "pass": false,
       "passes": 0,
       "graded": 1,
@@ -177,6 +250,42 @@
       "costUSD": 0.017
     },
     {
+      "case": "tag-create",
+      "pass": false,
+      "passes": 0,
+      "graded": 3,
+      "skillLoaded": 0,
+      "failed": [
+        "require: tag create safari-19",
+        "require: tag create safari-19",
+        "require: tag create safari-19"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19833,
+      "sdTotalInput": 0,
+      "meanOutput": 409,
+      "meanDurationMs": 6226.7,
+      "costUSD": 0.0529
+    },
+    {
+      "case": "time-report",
+      "pass": false,
+      "passes": 0,
+      "graded": 3,
+      "skillLoaded": 0,
+      "failed": [
+        "require: work-item report since Monday",
+        "require: work-item report since Monday",
+        "require: work-item report since Monday"
+      ],
+      "meanTurns": 1,
+      "meanTotalInput": 19864,
+      "sdTotalInput": 0,
+      "meanOutput": 441.3,
+      "meanDurationMs": 6720,
+      "costUSD": 0.0536
+    },
+    {
       "case": "view-json",
       "pass": false,
       "passes": 0,
@@ -194,20 +303,20 @@
     }
   ],
   "totals": {
-    "cases": 12,
+    "cases": 18,
     "casesPassed": 1,
-    "runs": 12,
-    "graded": 12,
+    "runs": 30,
+    "graded": 30,
     "passes": 1,
-    "passRate": 0.0833,
+    "passRate": 0.0333,
     "tokens": {
-      "input": 264,
-      "output": 8423,
-      "cacheCreation": 92194,
-      "cacheRead": 516781
+      "input": 500,
+      "output": 17935,
+      "cacheCreation": 224116,
+      "cacheRead": 885151
     },
-    "totalInput": 609239,
-    "meanTotalInputPerRun": 50769.9,
-    "costUSD": 0.2784
+    "totalInput": 1109767,
+    "meanTotalInputPerRun": 36992.2,
+    "costUSD": 0.6269
   }
 }
