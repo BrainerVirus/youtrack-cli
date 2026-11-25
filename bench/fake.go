@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -330,6 +331,8 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 			return fail("`--yes` is required to delete an issue when not running interactively")
 		}
 		return "", "✓ Deleted " + issueID(p.args[0]) + "\n", 0
+	case "project fields":
+		return projectFields(c, p)
 	case "tag list":
 		return listTags(c, p)
 	case "tag create":
@@ -725,4 +728,28 @@ func createTag(c *Case, p parsed) (string, string, int) {
 		return toJSON(pick(map[string]any{"id": "6-40", "name": name, "owner": "jdoe"}, p.flag("json"))), "", 0
 	}
 	return name + "\n", "", 0
+}
+
+// projectFields answers like ytrack without the project settings: the field
+// names come from the fixture issues, with no values or defaults.
+func projectFields(c *Case, p parsed) (string, string, int) {
+	var names []string
+	for _, id := range slices.Sorted(maps.Keys(c.Fixtures.Issues)) {
+		for _, n := range fieldNames(c.Fixtures.Issues[id]) {
+			if !slices.Contains(names, n) {
+				names = append(names, n)
+			}
+		}
+	}
+	if len(names) == 0 {
+		return "", "project " + p.args[0] + " has no custom fields\n", 0
+	}
+	if p.wantsJSON() {
+		rows := make([]map[string]any, len(names))
+		for i, n := range names {
+			rows[i] = pick(map[string]any{"id": fmt.Sprintf("93-%d", i+1), "name": n, "type": "", "bundle": []string{}, "required": false, "default": nil}, p.flag("json"))
+		}
+		return toJSON(rows), "", 0
+	}
+	return strings.Join(names, "\t\t\t\t\n") + "\t\t\t\t\n", "", 0
 }

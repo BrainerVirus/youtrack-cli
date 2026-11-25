@@ -377,6 +377,9 @@ func TestGivenTheNewCommandsTheFakeAnswersLikeYtrack(t *testing.T) {
 	if f := Grade(c, looked, nil, ""); len(f) != 0 {
 		t.Errorf("command-assist with the value from project fields: %v", f)
 	}
+	if out, code := run(cases["set-field-es"], "project", "fields", "APP", "--json", "name"); code != 0 || !strings.Contains(out, `"Priority"`) {
+		t.Errorf("project fields without a fixture = %d %s", code, out)
+	}
 	if out, code := run(cases["count-open"], "issue", "count", "project: APP #Unresolved", "--json", "count", "--jq", ".count"); code != 0 || strings.TrimSpace(out) != "137" {
 		t.Errorf("count --jq = %d %s", code, out)
 	}

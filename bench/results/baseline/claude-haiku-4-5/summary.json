@@ -36,7 +36,7 @@
       "graded": 3,
       "skillLoaded": 3,
       "failed": [
-        "require: a preview before the first applied command"
+        "require: one command for both issues"
       ],
       "meanTurns": 7,
       "meanTotalInput": 139433.7,

@@ -1,7 +1,7 @@
 {
   "case": "command-assist",
   "model": "claude-haiku-4-5",
-  "key": "1-d04de461959e488f-7705a98f0de8646f-claude-haiku-4-5",
+  "key": "1-c430bf54535bfe5e-7705a98f0de8646f-claude-haiku-4-5",
   "passes": 2,
   "graded": 3,
   "pass": true,
@@ -9,9 +9,8 @@
     {
       "run": 1,
       "status": "fail",
-      "failed": "require: a preview before the first applied command",
+      "failed": "require: one command for both issues",
       "failures": [
-        "require: a preview before the first applied command",
         "require: one command for both issues",
         "forbid: a raw API call where a command exists",
         "max turns"
