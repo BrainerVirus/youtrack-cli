@@ -174,6 +174,7 @@ func TestWriteApplied(t *testing.T) {
 	read := func(typ, value string) Field {
 		return Decode([]byte(`{"name":"F","$type":"` + typ + `","value":` + value + `}`))
 	}
+	period := func(d string) Write { return Write{Name: "F", Command: "F " + d, Period: d} }
 	dateTime := func(value string) Field {
 		return Decode([]byte(`{"name":"F","$type":"SimpleIssueCustomField","projectCustomField":{"field":{"fieldType":{"id":"date and time"}}},"value":` + value + `}`))
 	}
@@ -205,7 +206,19 @@ func TestWriteApplied(t *testing.T) {
 		{"given a date read back two days off, it is not applied", write("DateIssueCustomField", noon), read("DateIssueCustomField", fmt.Sprint(noon+2*24*3600*1000)), false},
 		{"given a date-time read back equal, it is applied", write("SimpleIssueCustomField", int64(1791367200000)), dateTime(`1791367200000`), true},
 		{"given a date-time read back different, it is not applied", write("SimpleIssueCustomField", int64(1791367200000)), dateTime(`1791367260000`), false},
-		{"given a period set by command, it counts as applied", Write{Name: "F", Command: "F 1w"}, read("PeriodIssueCustomField", `null`), true},
+		{"given a command write with no period, it counts as applied", Write{Name: "F", Command: "F 1w"}, read("PeriodIssueCustomField", `null`), true},
+		{"given a period read back with the same units, it is applied", period("1w2d"), read("PeriodIssueCustomField", `{"minutes":3360,"presentation":"1w 2d"}`), true},
+		{"given a period in minutes read back carried into hours, it is applied", period("90m"), read("PeriodIssueCustomField", `{"minutes":90,"presentation":"1h 30m"}`), true},
+		{"given hours read back as days under the instance's schedule, it is applied", period("9h"), read("PeriodIssueCustomField", `{"minutes":540,"presentation":"1d 1h"}`), true},
+		{"given hours read back as other minutes, it is not applied", period("5h"), read("PeriodIssueCustomField", `{"minutes":180,"presentation":"3h"}`), false},
+		{"given days read back renormalized by an unknown schedule, it is applied", period("10d"), read("PeriodIssueCustomField", `{"minutes":4800,"presentation":"2w"}`), true},
+		{"given days read back as zero, it is not applied", period("2d"), read("PeriodIssueCustomField", `{"minutes":0,"presentation":"0m"}`), false},
+		{"given days read back as another count of days, it is not applied", period("2d"), read("PeriodIssueCustomField", `{"minutes":750,"presentation":"1d 4h 30m"}`), false},
+		{"given days and hours read back in another spelling of the same schedule, it is applied", period("1d 12h"), read("PeriodIssueCustomField", `{"minutes":1200,"presentation":"2d 4h"}`), true},
+		{"given days read back under a day, it is not applied", period("1d"), read("PeriodIssueCustomField", `{"minutes":180,"presentation":"3h"}`), false},
+		{"given weeks read back as weeks of another length, it counts as applied", period("1w"), read("PeriodIssueCustomField", `{"minutes":2880,"presentation":"1w"}`), true},
+		{"given weeks read back in days, it cannot tell and counts as applied", period("1w"), read("PeriodIssueCustomField", `{"minutes":2400,"presentation":"5d"}`), true},
+		{"given a period read back empty, it is not applied", period("1w"), read("PeriodIssueCustomField", `null`), false},
 		{"given an enum cleared and read back null, it is applied", write("SingleEnumIssueCustomField", nil), read("SingleEnumIssueCustomField", `null`), true},
 		{"given an enum cleared but still set, it is not applied", write("SingleEnumIssueCustomField", nil), read("SingleEnumIssueCustomField", `{"name":"Bug"}`), false},
 		{"given a multi-enum cleared and read back empty, it is applied", write("MultiEnumIssueCustomField", []any{}), read("MultiEnumIssueCustomField", `[]`), true},
@@ -223,6 +236,38 @@ func TestWriteApplied(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.w.Applied(tt.f); got != tt.want {
 				t.Errorf("Applied = %v, want %v (field %+v)", got, tt.want, tt.f)
+			}
+		})
+	}
+}
+
+func TestWriteAppliedUnderSchedule(t *testing.T) {
+	read := func(value string) Field {
+		return Decode([]byte(`{"name":"F","$type":"PeriodIssueCustomField","value":` + value + `}`))
+	}
+	period := func(d string) Write { return Write{Name: "F", Command: "F " + d, Period: d} }
+	sixHourDays := WorkSchedule{MinutesADay: 360, DaysAWeek: 4}
+	tests := []struct {
+		name string
+		w    Write
+		f    Field
+		s    WorkSchedule
+		want bool
+	}{
+		{"given weeks read back in days with the schedule's minutes, it is applied", period("1w"), read(`{"minutes":1440,"presentation":"4d"}`), sixHourDays, true},
+		{"given weeks read back as weeks of another length, it is not applied", period("1w"), read(`{"minutes":2880,"presentation":"1w"}`), sixHourDays, false},
+		{"given weeks read back in days of another count, it is not applied", period("1w"), read(`{"minutes":2400,"presentation":"5d"}`), WorkSchedule{MinutesADay: 480, DaysAWeek: 6}, false},
+		{"given days read back renormalized into weeks, it is applied", period("10d"), read(`{"minutes":4800,"presentation":"2w"}`), WorkSchedule{MinutesADay: 480, DaysAWeek: 5}, true},
+		{"given days, hours and minutes read back with the same minutes, it is applied", period("1w 2d 3h 90m"), read(`{"minutes":2430,"presentation":"1w 2d 4h 30m"}`), sixHourDays, true},
+		{"given hours read back as other minutes, it is not applied", period("5h"), read(`{"minutes":180,"presentation":"3h"}`), sixHourDays, false},
+		{"given a period read back empty, it is not applied", period("1d"), read(`null`), sixHourDays, false},
+		{"given an unknown schedule, it falls back to the conservative rule", period("1w"), read(`{"minutes":2880,"presentation":"1w"}`), WorkSchedule{}, true},
+		{"given a schedule with no days a week, it falls back to the conservative rule", period("1w"), read(`{"minutes":2400,"presentation":"5d"}`), WorkSchedule{MinutesADay: 480}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.w.AppliedUnder(tt.f, tt.s); got != tt.want {
+				t.Errorf("AppliedUnder = %v, want %v (field %+v, schedule %+v)", got, tt.want, tt.f, tt.s)
 			}
 		})
 	}

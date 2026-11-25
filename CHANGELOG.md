@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - the OpenAPI contract records the attributes ytrack writes, and the weekly check fails when the spec marks one readOnly; it also runs against a YouTrack Cloud instance and summarizes upstream changes against a recorded snapshot without failing (#52).
+
+### Added
+
+- `auth paths add <glob>...` and `auth paths remove <glob>...` (with `--host`) take globs as arguments; `--add`/`--remove` still work (#39).
+- `issue view --json comments` lists each comment's attachments (`attachments: [{name, id, size, mimeType}]`) (#39).
+
+### Fixed
+
+- `issue download` saves names Windows cannot hold under a safe name (`NUL.txt` as `_NUL.txt`, `a. ` as `a__`, `a?b` as `a_b`) (#39).
+- Ctrl-C during `issue download` removes the partly written file and exits 2 (#39).
+- `issue download` refuses an attachment URL outside the service URL's origin or with a user name or password, and a redirect to another host or from https to http (#39).
+- `issue create` reads the new issue back and exits 1 naming any custom field YouTrack did not apply, still printing the new issue's ID and URL (#39).
+- `issue create` and `issue edit` check period fields set by command (such as Estimation) under the instance's work schedule when it can be read (administrator role), and a conservative rule otherwise (#39).
+
 ## [0.7.2] - 2026-11-25
 
 ### Fixed

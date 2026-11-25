@@ -76,8 +76,13 @@ to add or remove one value, use `issue command` with `add` or `remove`.
 enum or owned field whose value set is still empty is refused before
 anything is sent, naming the field. Without access to the project settings,
 the definitions come from the issue (edit) or from an issue in the project
-(create). `issue edit` sends only what you pass, reads the issue back, and
-exits 1 naming any field YouTrack did not change.
+(create). `issue edit` sends only what you pass. Both read the issue back and
+exit 1 naming any field YouTrack did not change, a period field set by
+command included (`issue create` first prints the new issue's ID and URL).
+A period is compared by its minutes under the instance's work schedule
+(minutes a day, days a week). Reading that schedule can need the
+administrator role; without it, a period that the read-back leaves open (a
+duration in weeks read back in days) counts as set.
 
 `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tag
 names.
@@ -122,15 +127,22 @@ that changes size during the upload fails it. A pipe such as `<(cmd)` is read
 into memory first. A missing file, a directory or a device stops it before
 anything is sent.
 
+`issue view --json comments` gives each comment an `attachments` list
+(`[{name, id, size, mimeType}]`, empty when it has none).
+
 `issue attachments` lists the files on the issue and on its comments
 (`--json name,id,size,mimeType,created,author,commentId`). `issue download`
 saves all of them, or those named by name or attachment ID, or with
 `--comment <id>` the files of one comment, into `-o`/`--dir` (created when
 missing; the current folder by default), using the same host as `issue view`.
 It never overwrites a file unless `--clobber` is given, saves a name holding
-a path such as `../x` as `.._x`, adds the attachment ID to a name used twice
-(and says so on stderr), and exits 1 naming any file that failed while the
-others still download.
+a path such as `../x` as `.._x`, saves a name Windows cannot hold under a safe
+one (`NUL.txt` as `_NUL.txt`, `a. ` as `a__`, `a?b` as `a_b`), adds the
+attachment ID to a name used twice (and says so on stderr), and exits 1
+naming any file that failed while the others still download. Ctrl-C removes
+the partly written file and exits 2. A file URL outside the service URL's
+origin, or one holding a user name or password, is refused, and so is a
+redirect to another host or from https to http.
 
 ## YouTrack commands
 

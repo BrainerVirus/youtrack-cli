@@ -134,10 +134,14 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		return err
 	}
 	for _, c := range commands {
-		if _, err := adapter.ApplyCommand(ctx, client, adapter.Command{Query: c, IssueIDs: []string{issue.IDReadable}}); err != nil {
+		if _, err := adapter.ApplyCommand(ctx, client, adapter.Command{Query: c.Command, IssueIDs: []string{issue.IDReadable}}); err != nil {
 			fmt.Fprintf(ios.Out, "%s\t%s\n", issue.IDReadable, shared.IssueURL(host, issue.IDReadable))
-			return fmt.Errorf("created %s, but `%s` failed: %w", issue.IDReadable, c, err)
+			return fmt.Errorf("created %s, but `%s` failed: %w", issue.IDReadable, c.Command, err)
 		}
+	}
+	if err := shared.CheckFieldsApplied(ctx, client, issue.IDReadable, fields, commands); err != nil {
+		fmt.Fprintf(ios.Out, "%s\t%s\n", issue.IDReadable, shared.IssueURL(host, issue.IDReadable))
+		return fmt.Errorf("created %s: %w", issue.IDReadable, err)
 	}
 	if len(commands) > 0 && opts.exporter != nil {
 		if issue, err = adapter.GetIssue(ctx, client, issue.IDReadable, attrs); err != nil {

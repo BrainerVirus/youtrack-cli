@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter/customfields"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 )
 
@@ -188,4 +189,18 @@ func GetTimeTrackingSettings(ctx context.Context, c *transport.Client, projectID
 		s.Types = append(s.Types, WorkItemType{ID: t.ID, Name: t.Name})
 	}
 	return s, nil
+}
+
+// GetWorkSchedule returns the instance's work schedule: the minutes in a
+// working day and the working days in a week. Reading it can need the
+// administrator role; a caller that can do without it falls back on error.
+func GetWorkSchedule(ctx context.Context, c *transport.Client) (customfields.WorkSchedule, error) {
+	var w struct {
+		MinutesADay int `json:"minutesADay"`
+		DaysAWeek   int `json:"daysAWeek"`
+	}
+	if err := c.GetJSON(ctx, "/api/admin/timeTrackingSettings/workTimeSettings?fields=minutesADay,daysAWeek", &w); err != nil {
+		return customfields.WorkSchedule{}, err
+	}
+	return customfields.WorkSchedule{MinutesADay: w.MinutesADay, DaysAWeek: w.DaysAWeek}, nil
 }

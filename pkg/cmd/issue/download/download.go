@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
@@ -42,11 +44,13 @@ name or attachment ID is given (see "ytrack issue attachments"). --comment
 keeps the files of one comment. Files are saved in --dir (created when
 missing, the current folder by default) under their attachment names. A
 name that holds a path, such as ../x, is saved with its separators replaced
-by "_", and a name used twice gets its attachment ID added; stderr says so.
+by "_"; so are characters, trailing dots and spaces that Windows refuses,
+and a Windows device name such as NUL.txt gets a leading "_". A name used
+twice gets its attachment ID added. stderr says when a name changes.
 
 An existing file is never overwritten unless --clobber is given. When a
 download fails, the others still run, and the command exits 1 naming the
-files that failed.`,
+files that failed. Ctrl-C removes the partly written file and exits 2.`,
 		Example: `  $ ytrack issue download APP-123 -o out/
   $ ytrack issue download APP-123 trace.log 8-123
   $ ytrack issue download https://acme.youtrack.cloud/issue/APP-123 --comment 4-17 --clobber`,
@@ -92,6 +96,8 @@ func run(ctx context.Context, f *cmdutil.Factory, opts *options) error {
 	if err := os.MkdirAll(opts.dir, 0o750); err != nil {
 		return err
 	}
+	ctx, stop := interruptible(ctx)
+	defer stop()
 	var failed []string
 	used := map[string]bool{}
 	for _, a := range picked {
@@ -100,6 +106,10 @@ func run(ctx context.Context, f *cmdutil.Factory, opts *options) error {
 			fmt.Fprintf(ios.ErrOut, "saving %q as %q: %s\n", output.SanitizeCell(a.Name), output.SanitizeCell(name), why)
 		}
 		n, err := save(ctx, client, a, filepath.Join(opts.dir, name), opts.clobber)
+		if err != nil && ctx.Err() != nil {
+			fmt.Fprintf(ios.ErrOut, "%s: interrupted; the partial file was removed\n", output.SanitizeCell(name))
+			return clierr.ErrCancel
+		}
 		if err != nil {
 			fmt.Fprintf(ios.ErrOut, "%s: %s\n", output.SanitizeCell(name), err)
 			failed = append(failed, output.SanitizeCell(name))
@@ -150,8 +160,12 @@ func pick(all []adapter.IssueAttachment, opts *options) ([]adapter.IssueAttachme
 // case for case-insensitive file systems.
 func fileName(a adapter.IssueAttachment, used map[string]bool) (name, why string) {
 	name = safeName(a.Name)
-	if name != a.Name {
+	switch {
+	case name == a.Name:
+	case strings.ContainsAny(a.Name, `/\`):
 		why = "attachment names cannot hold a path"
+	default:
+		why = "the name is not a valid file name on every system"
 	}
 	if used[strings.ToLower(name)] {
 		ext := filepath.Ext(name)
@@ -162,20 +176,52 @@ func fileName(a adapter.IssueAttachment, used map[string]bool) (name, why string
 	return name, why
 }
 
-// safeName makes an attachment name a plain file name: path separators,
-// drive colons and control characters become "_", and a name that is empty,
-// "." or ".." gets a leading "_", so the file always lands in --dir.
+// safeName makes an attachment name a plain file name that is valid on
+// every system, so the file always lands in --dir under that name: path
+// separators, drive colons, the other characters Windows refuses (<>"|?*)
+// and control characters become "_"; so do trailing dots and spaces, which
+// Windows drops ("." and ".." become "_" and "__", an empty name "_"); and a
+// Windows device name such as NUL or com1.txt gets a leading "_".
 func safeName(name string) string {
 	s := strings.Map(func(r rune) rune {
-		if r == '/' || r == '\\' || r == ':' || r < 0x20 || r == 0x7f {
+		if strings.ContainsRune(`/\:<>"|?*`, r) || r < 0x20 || r == 0x7f {
 			return '_'
 		}
 		return r
 	}, name)
-	if s == "" || s == "." || s == ".." {
+	kept := strings.TrimRight(s, ". ")
+	s = kept + strings.Repeat("_", len(s)-len(kept))
+	if s == "" {
+		s = "_"
+	}
+	if isDeviceName(s) {
 		s = "_" + s
 	}
 	return s
+}
+
+// windowsDevices are the names Windows reserves for devices in every folder,
+// with or without an extension.
+var windowsDevices = []string{
+	"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$",
+	"COM0", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM¹", "COM²", "COM³",
+	"LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT¹", "LPT²", "LPT³",
+}
+
+// isDeviceName reports whether Windows reads name as a device: its part
+// before the first dot, without trailing spaces, is a reserved name in any
+// case (NUL, nul.txt, "Com1 .log").
+func isDeviceName(name string) bool {
+	stem, _, _ := strings.Cut(name, ".")
+	stem = strings.TrimRight(stem, " ")
+	return slices.ContainsFunc(windowsDevices, func(d string) bool { return strings.EqualFold(stem, d) })
+}
+
+// interruptible returns ctx cancelled on Ctrl-C (os.Interrupt) until stop is
+// called, so an interrupted download fails like any other and save removes
+// what it wrote instead of the process dying with a partial file on disk.
+func interruptible(ctx context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(ctx, os.Interrupt)
 }
 
 // save downloads a to path. Without clobber the file is created only if it

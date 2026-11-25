@@ -45,9 +45,10 @@ With more than one host, tie each to the folders you work in; a command run
 inside one of them talks to that host:
 
 ```sh
-ytrack auth paths --host work.youtrack.cloud --add '~/work/**'
-ytrack auth paths --host acme.youtrack.cloud --add '~/oss/acme/**'
-ytrack auth paths --host acme.youtrack.cloud --remove '~/oss/acme/**'
+ytrack auth paths add '~/work/**' --host work.youtrack.cloud
+ytrack auth paths add '~/oss/acme/**' --host acme.youtrack.cloud
+ytrack auth paths remove '~/oss/acme/**' --host acme.youtrack.cloud
+ytrack auth paths --host acme.youtrack.cloud --add '~/oss/**'   # the same, as flags
 ytrack auth paths         # every host's paths
 ytrack auth status        # shows which host this folder uses and why
 ```

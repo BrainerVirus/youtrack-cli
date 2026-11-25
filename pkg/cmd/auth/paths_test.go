@@ -72,6 +72,46 @@ func TestAuthPaths(t *testing.T) {
 		}
 	})
 
+	t.Run("given auth paths add <glob>... --host, the globs are stored; auth paths remove drops one", func(t *testing.T) {
+		env, personal, work := twoHosts(t)
+		mustRunAuth(t, env, "auth", "paths", "add", "/w/**", "~/client/**", "--host", work.URL())
+		if got := env.Config().HostPaths(work.Key()); strings.Join(got, " ") != "/w/** ~/client/**" {
+			t.Errorf("stored paths = %v", got)
+		}
+		if got := env.Config().HostPaths(personal.Key()); len(got) != 0 {
+			t.Errorf("personal got paths %v", got)
+		}
+		if !strings.Contains(env.Stderr.String(), "Paths of "+work.Key()+": /w/**, ~/client/**") {
+			t.Errorf("stderr = %q", env.Stderr)
+		}
+		env.Reset()
+		mustRunAuth(t, env, "auth", "paths", "remove", "/w/**", "--host", work.URL(), "--json", "host,paths")
+		var got []map[string]any
+		if err := json.Unmarshal(env.Stdout.Bytes(), &got); err != nil {
+			t.Fatalf("stdout is not JSON: %v\n%s", err, env.Stdout)
+		}
+		if len(got) != 1 || got[0]["host"] != work.Key() || len(got[0]["paths"].([]any)) != 1 || got[0]["paths"].([]any)[0] != "~/client/**" {
+			t.Errorf("got %v", got)
+		}
+	})
+
+	t.Run("given auth paths add with no glob, a relative glob or no --host among two hosts, it is a usage error and saves nothing", func(t *testing.T) {
+		env, _, work := twoHosts(t)
+		for _, args := range [][]string{
+			{"auth", "paths", "add", "--host", work.URL()},
+			{"auth", "paths", "add", "work/**", "--host", work.URL()},
+			{"auth", "paths", "add", "/w/**"},
+		} {
+			env.Reset()
+			if code := env.Run(args...); !env.IsUsageError(code) {
+				t.Errorf("%v: exit %d: %s", args, code, env.Stderr)
+			}
+		}
+		if got := env.Config().HostPaths(work.Key()); len(got) != 0 {
+			t.Errorf("stored paths = %v", got)
+		}
+	})
+
 	t.Run("given a host that is not logged in, it is a usage error and saves nothing", func(t *testing.T) {
 		env, _, _ := twoHosts(t)
 		if code := env.Run("auth", "paths", "--host", "nope.example", "--add", "/w/**"); !env.IsUsageError(code) {

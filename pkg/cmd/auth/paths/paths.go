@@ -65,15 +65,17 @@ and ** (any number of folders): /home/me/work/** matches /home/me/work and
 every folder under it.
 
 Without --add or --remove, it lists the paths of every logged-in host, or of
-the --host host. With them, it changes the paths of the --host host (which
+the --host host. With them, or with "auth paths add <glob>..." and
+"auth paths remove <glob>...", it changes the paths of the --host host (which
 may be left out when only one host is logged in).
 
 JSON fields:
   host   host key
   paths  path globs`,
 		Example: `  $ ytrack auth paths
+  $ ytrack auth paths add '~/work/**' --host acme.youtrack.cloud
+  $ ytrack auth paths remove '~/work/**' --host acme.youtrack.cloud
   $ ytrack auth paths --host acme.youtrack.cloud --add '~/work/**'
-  $ ytrack auth paths --host acme.youtrack.cloud --remove '~/work/**'
   $ ytrack auth status    # shows which host the current folder uses and why`,
 		Args: cmdutil.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -90,6 +92,40 @@ JSON fields:
 	fl := cmd.Flags()
 	fl.StringArrayVar(&opts.add, "add", nil, "Add a folder `glob` to the host's paths (repeatable)")
 	fl.StringArrayVar(&opts.remove, "remove", nil, "Remove a folder `glob` from the host's paths (repeatable)")
+	cmdutil.AddJSONFlags(cmd, &opts.exporter, Fields)
+	cmd.AddCommand(newCmdEdit(f, "add"), newCmdEdit(f, "remove"))
+	return cmd
+}
+
+// newCmdEdit returns `auth paths add` or `auth paths remove`, the positional
+// forms of --add and --remove.
+func newCmdEdit(f *cmdutil.Factory, verb string) *cobra.Command {
+	opts := &options{}
+	short, example := "Tie folders to a host", "add '~/work/**' --host acme.youtrack.cloud"
+	if verb == "remove" {
+		short, example = "Untie folders from a host", "remove '~/work/**' --host acme.youtrack.cloud"
+	}
+	cmd := &cobra.Command{
+		Use:   verb + " <glob>...",
+		Short: short,
+		Long: `The same as "ytrack auth paths --` + verb + ` <glob>": change the paths of the
+--host host, which may be left out when only one host is logged in. See
+"ytrack auth paths --help" for how paths pick a host.`,
+		Example: "  $ ytrack auth paths " + example,
+		Args:    cmdutil.MinimumArgs(1, "expected a folder glob, e.g. '~/work/**'"),
+		RunE: func(_ *cobra.Command, args []string) error {
+			cfg, err := f.Config()
+			if err != nil {
+				return err
+			}
+			if verb == "add" {
+				opts.add = args
+			} else {
+				opts.remove = args
+			}
+			return edit(f, cfg, opts)
+		},
+	}
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, Fields)
 	return cmd
 }

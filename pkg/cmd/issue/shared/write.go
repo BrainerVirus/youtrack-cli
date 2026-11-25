@@ -58,8 +58,8 @@ which replaces their values; to add or remove one value, use
 ` + "`ytrack issue command <id> 'add <Field> <value>'` or `'remove <Field> <value>'`" + `.
 "Name=" clears a field unless the project requires a value. Without access
 to the project settings, the field definitions come from the issue (edit) or
-from an issue in the project (create). edit reads the issue back and fails
-when a field did not take the new value. Period fields such as
+from an issue in the project (create). create and edit read the issue back
+and fail when a field did not take the new value. Period fields such as
 Estimation take a duration like "1w 2d 4h" and are set with a YouTrack
 command, so the instance's work schedule applies; everything else is
 written through the REST API. For anything else, use ` + "`ytrack issue command`."
@@ -152,8 +152,9 @@ func (e *FieldsUnreadableError) Error() string {
 }
 
 // Encode turns assignments into IssueCustomField values for the REST API and
-// commands for the fields written by command.
-func (w *FieldWriter) Encode(ctx context.Context, assigns []FieldAssign) (rest []map[string]any, commands []string, err error) {
+// commands for the fields written by command (each one's Command is the
+// YouTrack command to apply).
+func (w *FieldWriter) Encode(ctx context.Context, assigns []FieldAssign) (rest []map[string]any, commands []customfields.Write, err error) {
 	if len(assigns) == 0 {
 		return nil, nil, nil
 	}
@@ -196,7 +197,7 @@ func (w *FieldWriter) Encode(ctx context.Context, assigns []FieldAssign) (rest [
 			return nil, nil, err
 		}
 		if enc.Command != "" {
-			commands = append(commands, enc.Command)
+			commands = append(commands, enc)
 		} else {
 			rest = append(rest, enc.Field)
 		}
@@ -354,22 +355,32 @@ func Zone(f *cmdutil.Factory) (*time.Location, error) {
 }
 
 // CheckFieldsApplied reads issue id back and fails, naming the fields, when
-// a custom field written through the REST API (rest, from Encode) does not
-// hold the value written: YouTrack can accept a write that a workflow or a
-// permission then leaves unapplied.
-func CheckFieldsApplied(ctx context.Context, c *transport.Client, id string, rest []map[string]any) error {
-	if len(rest) == 0 {
+// a custom field written through the REST API (rest) or by command
+// (commands), both from Encode, does not hold the value written: YouTrack can
+// accept a write that a workflow or a permission then leaves unapplied. A
+// period is compared under the instance's work schedule when ytrack may read
+// it, and by the rule for an unknown schedule otherwise.
+func CheckFieldsApplied(ctx context.Context, c *transport.Client, id string, rest []map[string]any, commands []customfields.Write) error {
+	writes := slices.Clone(commands)
+	for _, m := range rest {
+		writes = append(writes, customfields.Write{Name: fmt.Sprint(m["name"]), Field: m})
+	}
+	if len(writes) == 0 {
 		return nil
 	}
 	issue, err := adapter.GetIssue(ctx, c, id, []string{"customFields"})
 	if err != nil {
 		return fmt.Errorf("reading %s back to check its custom fields: %w", id, err)
 	}
+	var schedule customfields.WorkSchedule
+	if slices.ContainsFunc(commands, func(w customfields.Write) bool { return w.Period != "" }) {
+		// Non-admins may not read it; the zero schedule falls back.
+		schedule, _ = adapter.GetWorkSchedule(ctx, c)
+	}
 	var missed []string
-	for _, m := range rest {
-		w := customfields.Write{Name: fmt.Sprint(m["name"]), Field: m}
+	for _, w := range writes {
 		i := slices.IndexFunc(issue.CustomFields, func(f customfields.Field) bool { return f.Name == w.Name })
-		if i < 0 || !w.Applied(issue.CustomFields[i]) {
+		if i < 0 || !w.AppliedUnder(issue.CustomFields[i], schedule) {
 			missed = append(missed, w.Name)
 		}
 	}

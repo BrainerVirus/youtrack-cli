@@ -177,6 +177,9 @@ type Write struct {
 	Name    string
 	Field   map[string]any
 	Command string
+	// Period is the duration a period Command sets ("1w2d"), which Applied
+	// compares with the field read back.
+	Period string
 }
 
 // EncodeOptions carry what Encode needs beyond the definition.
@@ -263,7 +266,7 @@ func (d Definition) Encode(raw string, opts EncodeOptions) (Write, error) {
 			return Write{}, err
 		}
 		if d.Kind == KindPeriod {
-			return Write{Name: d.Name, Command: d.Name + " " + v.(string)}, nil
+			return Write{Name: d.Name, Command: d.Name + " " + v.(string), Period: v.(string)}, nil
 		}
 		values = append(values, v)
 	}
@@ -439,12 +442,35 @@ func Find(defs []Definition, name, project string) (Definition, error) {
 }
 
 // Applied reports whether f, the field read back after w was written,
-// holds the value w wrote. A value it cannot compare (a command write, or a
-// field it cannot decode) counts as applied. An empty string or text reads
-// back as cleared, and a date matches when the stored instant is within 14
-// hours of the midday-UTC instant written (a server normalizing dates to
-// midnight in its own zone).
+// holds the value w wrote. A value it cannot compare (a field it cannot
+// decode) counts as applied. An empty string or text reads back as cleared,
+// and a date matches when the stored instant is within 14 hours of the
+// midday-UTC instant written (a server normalizing dates to midnight in its
+// own zone). A period set by command is compared by periodApplied.
 func (w Write) Applied(f Field) bool {
+	return w.AppliedUnder(f, WorkSchedule{})
+}
+
+// WorkSchedule is the instance's work schedule, which turns days and weeks
+// into minutes. The zero value means it is unknown.
+type WorkSchedule struct {
+	MinutesADay int
+	DaysAWeek   int
+}
+
+// Known reports whether s can convert days and weeks into minutes.
+func (s WorkSchedule) Known() bool { return s.MinutesADay > 0 && s.DaysAWeek > 0 }
+
+// AppliedUnder is Applied with the instance's work schedule: under a known
+// one, a period set by command is applied exactly when the field read back
+// holds the minutes the duration comes to.
+func (w Write) AppliedUnder(f Field, s WorkSchedule) bool {
+	if w.Period != "" && f.Kind != KindUnknown {
+		if s.Known() {
+			return periodAppliedExactly(w.Period, f.Value, s)
+		}
+		return periodApplied(w.Period, f.Value)
+	}
 	if w.Field == nil || f.Kind == KindUnknown {
 		return true
 	}
@@ -531,3 +557,82 @@ func valueKey(v Value) string {
 }
 
 func numberKey(f float64) string { return strconv.FormatFloat(f, 'f', -1, 64) }
+
+// periodAppliedExactly reports whether got, a period field read back after
+// the command that set it to want, holds the minutes want comes to under s.
+func periodAppliedExactly(want string, got Value, s WorkSchedule) bool {
+	p, ok := got.(Period)
+	if !ok {
+		return false
+	}
+	w, wok := periodUnits(want)
+	if !wok {
+		return true
+	}
+	minutes := (w['w']*s.DaysAWeek+w['d'])*s.MinutesADay + w['h']*60 + w['m']
+	return minutes == p.Minutes
+}
+
+// periodApplied reports whether got, a period field read back after the
+// command that set it to want ("1w2d"), holds that duration, when the
+// instance's work schedule is unknown. That schedule turns days and weeks into
+// minutes and can rewrite the presentation ("10d" as "2w"), so it is false
+// only when that is certain. The same units always match. Otherwise a want
+// in hours and minutes alone must have the same minutes. The presentation,
+// which YouTrack derives from the minutes, tells the rest: one in days and
+// no weeks gives the minutes in a day, so a want without weeks must come to
+// the same minutes; one under a day cannot hold a want of a day or more;
+// and a read-back of zero minutes never holds a want of days or weeks.
+func periodApplied(want string, got Value) bool {
+	p, ok := got.(Period)
+	if !ok {
+		return false
+	}
+	w, wok := periodUnits(want)
+	if !wok {
+		return true
+	}
+	g, gok := periodUnits(p.Presentation)
+	if gok && w == g {
+		return true
+	}
+	wantClock := w['h']*60 + w['m']
+	if w['w'] == 0 && w['d'] == 0 {
+		return wantClock == p.Minutes
+	}
+	if p.Minutes <= 0 {
+		return false
+	}
+	if !gok || g['w'] > 0 {
+		return true
+	}
+	if g['d'] == 0 {
+		return false
+	}
+	rest := p.Minutes - g['h']*60 - g['m']
+	if rest <= 0 || rest%g['d'] != 0 || w['w'] > 0 {
+		return true
+	}
+	return w['d']*(rest/g['d'])+wantClock == p.Minutes
+}
+
+// periodUnits sums a duration such as "1w 2d 4h" or "90m" by unit, with
+// minutes over 59 carried into hours; ok is false when s is not a duration.
+func periodUnits(s string) (units [128]int, ok bool) {
+	s = strings.ToLower(strings.Join(strings.Fields(s), ""))
+	if !periodPattern.MatchString(s) {
+		return units, false
+	}
+	n := 0
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; c >= '0' && c <= '9' {
+			n = n*10 + int(c-'0')
+			continue
+		}
+		units[s[i]] += n
+		n = 0
+	}
+	units['h'] += units['m'] / 60
+	units['m'] %= 60
+	return units, true
+}

@@ -556,6 +556,14 @@
       "autoAttached",
       "id",
       "name"
+    ],
+    "WorkTimeSettings": [
+      "$type",
+      "daysAWeek",
+      "firstDayOfWeek",
+      "id",
+      "minutesADay",
+      "workDays"
     ]
   },
   "deprecated": []
