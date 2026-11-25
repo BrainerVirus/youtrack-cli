@@ -311,9 +311,11 @@ func (s *suite) voteWatchSteps(id, login string) error {
 	}
 
 	var watch struct{ Watching bool }
-	if err := s.ytrackJSON(&watch, "issue", "watch", id, "--json", "watching"); err != nil || !watch.Watching {
-		errs = append(errs, fmt.Errorf("issue watch %s: watching %v, want true: %v", id, watch.Watching, err))
-		return errors.Join(errs...)
+	switch err := s.ytrackJSON(&watch, "issue", "watch", id, "--json", "watching"); {
+	case err != nil:
+		return errors.Join(append(errs, fmt.Errorf("issue watch %s: %w", id, err))...)
+	case !watch.Watching:
+		return errors.Join(append(errs, fmt.Errorf("issue watch %s: watching false, want true", id))...)
 	}
 	var watchers []struct{ Login string }
 	if err := s.ytrackJSON(&watchers, "issue", "watchers", id, "--json", "login"); err != nil {
@@ -321,8 +323,10 @@ func (s *suite) voteWatchSteps(id, login string) error {
 	} else if !slices.Contains(watchers, struct{ Login string }{login}) {
 		errs = append(errs, fmt.Errorf("issue watch %s: %s missing from the watchers %+v", id, login, watchers))
 	}
-	if err := s.ytrackJSON(&watch, "issue", "unwatch", id, "--json", "watching"); err != nil || watch.Watching {
-		errs = append(errs, fmt.Errorf("issue unwatch %s: watching %v, want false: %v", id, watch.Watching, err))
+	if err := s.ytrackJSON(&watch, "issue", "unwatch", id, "--json", "watching"); err != nil {
+		errs = append(errs, fmt.Errorf("issue unwatch %s: %w", id, err))
+	} else if watch.Watching {
+		errs = append(errs, fmt.Errorf("issue unwatch %s: watching true, want false", id))
 	}
 	return errors.Join(errs...)
 }
@@ -362,8 +366,11 @@ func (s *suite) deleteSteps(id string) error {
 		return fmt.Errorf("issue delete: %w", err)
 	}
 	s.deleted[second] = true
-	if _, err := s.ytrack("issue", "view", second); err == nil || !strings.Contains(err.Error(), "not found") {
-		return fmt.Errorf("issue delete %s: issue view after it: want not found, got %v", second, err)
+	switch _, err := s.ytrack("issue", "view", second); {
+	case err == nil:
+		return fmt.Errorf("issue delete %s: issue view after it succeeded, want not found", second)
+	case !strings.Contains(err.Error(), "not found"):
+		return fmt.Errorf("issue delete %s: issue view after it: want not found, got %w", second, err)
 	}
 	return nil
 }
