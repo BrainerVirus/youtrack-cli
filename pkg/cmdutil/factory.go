@@ -90,13 +90,17 @@ const (
 	HostFromKey     = "key"     // the logged-in host that has the issue key's project
 	HostFromPath    = "path"    // a hosts.yml path glob matching the working directory
 	HostFromDefault = "default" // default_host in hosts.yml
+	// HostFromMainCheckout is a hosts.yml path glob matching the main
+	// checkout of the linked git worktree the working directory is in.
+	HostFromMainCheckout = "path (main checkout)"
 )
 
 // Resolution says why a host was picked.
 type Resolution struct {
 	// Source is one of the HostFrom* values.
 	Source string
-	// Glob is the matching path glob when Source is HostFromPath.
+	// Glob is the matching path glob when Source is HostFromPath or
+	// HostFromMainCheckout.
 	Glob string
 	// Project is the issue key's project when Source is HostFromKey.
 	Project string
@@ -115,6 +119,8 @@ func (r Resolution) Why() string {
 		return "because it has project " + r.Project
 	case HostFromPath:
 		return "by the folder rule " + r.Glob
+	case HostFromMainCheckout:
+		return "by the folder rule " + r.Glob + " (this worktree's main checkout)"
 	}
 	return "as the default host"
 }
@@ -128,7 +134,7 @@ func (f *Factory) ResolveHost(cfg *config.Config) (hosts.Host, error) {
 // HostResolution picks the host to talk to and says why: --host, then the
 // host of an issue URL argument, then $YTRACK_HOST, then the logged-in host
 // that owns the issue key's project (see WithIssueHost), then the logged-in
-// host whose path glob matches the working directory, then the default host
+// host whose path glob matches the working directory (see folderRule), then the default host
 // from hosts.yml. A known host keeps its stored URL (scheme and path prefix); an
 // unknown one is normalized from the input.
 func (f *Factory) HostResolution(cfg *config.Config) (hosts.Host, Resolution, error) {
@@ -148,12 +154,12 @@ func (f *Factory) HostResolution(cfg *config.Config) (hosts.Host, Resolution, er
 		input, res = f.keyHost, Resolution{Source: HostFromKey, Project: f.keyProject}
 	}
 	if input == "" {
-		m, ok, err := cfg.HostForPath(f.workDirs()...)
+		m, source, ok, err := f.folderRule(cfg)
 		if err != nil {
 			return hosts.Host{}, Resolution{}, err
 		}
 		if ok {
-			input, res = m.Host, Resolution{Source: HostFromPath, Glob: m.Glob}
+			input, res = m.Host, Resolution{Source: source, Glob: m.Glob}
 		}
 	}
 	if input == "" {
@@ -175,6 +181,25 @@ func (f *Factory) HostResolution(cfg *config.Config) (hosts.Host, Resolution, er
 		}
 	}
 	return h, res, nil
+}
+
+// folderRule returns the host whose path glob matches the working
+// directory, with HostFromPath as its source. When none does and the working
+// directory is inside a linked git worktree, the globs are matched against
+// the worktree's main checkout instead (HostFromMainCheckout), so a worktree
+// kept outside the repository's folder still gets the repository's host.
+func (f *Factory) folderRule(cfg *config.Config) (config.PathMatch, string, bool, error) {
+	dirs := f.workDirs()
+	m, ok, err := cfg.HostForPath(dirs...)
+	if err != nil || ok {
+		return m, HostFromPath, ok, err
+	}
+	main := mainCheckoutDirs(dirs)
+	if len(main) == 0 {
+		return config.PathMatch{}, "", false, nil
+	}
+	m, ok, err = cfg.HostForPath(main...)
+	return m, HostFromMainCheckout, ok, err
 }
 
 // workDirs returns the working directory and, when it differs, its path

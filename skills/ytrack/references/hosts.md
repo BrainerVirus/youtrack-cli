@@ -10,7 +10,8 @@ ytrack auth paths                                # folders tied to each host
 ## Which host a command uses
 
 `--host`, else the host of an issue URL, else `YTRACK_HOST`, else the host
-whose `ytrack auth paths` match the current folder, else the default host.
+whose `ytrack auth paths` match the current folder (or, in a git worktree,
+its main checkout), else the default host.
 With more than one logged-in host, run `ytrack auth status` in the folder you
 work in: it marks the active host and says why (`--host`, `YTRACK_HOST`, a
 matching path or the default). Pass `--host` when that is not the instance

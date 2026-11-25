@@ -76,17 +76,21 @@ against its host and show the account it belongs to.
 
 With --host, only that host is checked. The active host is the one
 commands run here talk to: --host, else YTRACK_HOST, else the host whose
-paths match the current folder (see "ytrack auth paths"), else the default
-host.
+paths match the current folder (see "ytrack auth paths"), else, in a linked
+git worktree, the host whose paths match its main checkout, else the
+default host.
 
 JSON fields:
   host         host key, e.g. acme.youtrack.cloud or tools.acme.com/youtrack
   url          service URL
   active       whether commands run in the current folder use this host
   resolvedBy   why the active host is active: flag (--host), env
-               (YTRACK_HOST), path (a path matches the current folder) or
-               default; empty for other hosts
-  matchedPath  the path that matched the current folder, when resolvedBy is path
+               (YTRACK_HOST), path (a path matches the current folder),
+               "path (main checkout)" (no path matches the current folder,
+               but one matches the main checkout of the git worktree it is
+               in) or default; empty for other hosts
+  matchedPath  the path that matched, when resolvedBy is path or
+               "path (main checkout)"
   paths        the host's folder paths
   login        account login (when the token works)
   fullName     account full name
@@ -234,6 +238,8 @@ func activeReason(s hostStatus) string {
 		return " (YTRACK_HOST)"
 	case cmdutil.HostFromPath:
 		return " (current folder matches " + output.SanitizeCell(s.MatchedPath) + ")"
+	case cmdutil.HostFromMainCheckout:
+		return " (this worktree's main checkout matches " + output.SanitizeCell(s.MatchedPath) + ")"
 	case cmdutil.HostFromDefault:
 		return " (default host)"
 	}

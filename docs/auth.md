@@ -73,7 +73,11 @@ and picks neither. A narrower path that also matches still wins.
    `--host` or `YTRACK_HOST` is an error);
 3. `YTRACK_HOST`;
 4. the host whose `auth paths` match the current folder;
-5. the default host (`ytrack auth switch`).
+5. in a linked git worktree, the host whose `auth paths` match the same
+   folder in the repository's main checkout, so a worktree kept outside the
+   repository's folder still uses its host (`auth status --json resolvedBy`
+   reports `path (main checkout)`);
+6. the default host (`ytrack auth switch`).
 
 When the folder rule or the default host picked a host that does not have an
 issue key's project (`APP` in `APP-123`) and exactly one other logged-in host
