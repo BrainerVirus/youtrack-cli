@@ -23,6 +23,10 @@
     },
     "rules": [
       {
+        "match": "^issue list\\b.*--query-assist",
+        "stdout": "State: Open\tstate\nState: {In Progress}\tstate\nState: {Verify on staging}\tstate\nState: Fixed\tstate\n"
+      },
+      {
         "match": "^project fields\\b.*(--json|--jq|--template)",
         "stdout": "[\n  {\n    \"id\": \"93-1\",\n    \"name\": \"Priority\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Minor\",\n      \"Normal\",\n      \"Major\",\n      \"Critical\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Normal\"\n    ]\n  },\n  {\n    \"id\": \"93-2\",\n    \"name\": \"Type\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Bug\",\n      \"Feature\",\n      \"Task\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Bug\"\n    ]\n  },\n  {\n    \"id\": \"93-3\",\n    \"name\": \"State\",\n    \"type\": \"state[1]\",\n    \"bundle\": [\n      \"Open\",\n      \"In Progress\",\n      \"Verify on staging\",\n      \"Fixed\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Open\"\n    ]\n  },\n  {\n    \"id\": \"93-4\",\n    \"name\": \"Severity\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Cosmetic\",\n      \"Minor\",\n      \"Normal\",\n      \"Major\",\n      \"Show-stopper\"\n    ],\n    \"required\": false,\n    \"default\": null\n  },\n  {\n    \"id\": \"93-5\",\n    \"name\": \"Assignee\",\n    \"type\": \"user[1]\",\n    \"bundle\": [],\n    \"required\": false,\n    \"default\": null\n  }\n]\n"
       },
