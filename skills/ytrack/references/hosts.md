@@ -26,8 +26,9 @@ you need. Change paths only when the user asks
 ## A key is not found
 
 Run `ytrack auth status` in this folder first. The error names the host that
-answered and why it was chosen; it suggests `try --host <h>` only when another
-logged-in host owns the key's project. Never switch hosts on any other error,
+answered and why it was chosen; it suggests `try --host <a> or --host <b>`
+only when two or more other logged-in hosts own the key's project (with one,
+ytrack switches to it, as above). Never switch hosts on any other error,
 and never read `hosts.yml` by hand.
 
 ## Logins and tokens

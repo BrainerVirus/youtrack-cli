@@ -38,6 +38,25 @@ The last two exist for mirrors and for the scripts' tests (`scripts/install_test
 runs both scripts against a fake release mirror; the PowerShell test runs where
 `pwsh` is installed).
 
+## Other ways to install
+
+```sh
+brew install brainervirus/tap/ytrack                              # Homebrew, macOS and Linux
+go install github.com/BrainerVirus/youtrack-cli/cmd/ytrack@latest # Go
+```
+
+Or download an archive for your platform (Linux, macOS, Windows; amd64 or
+arm64) from the [releases page](https://github.com/BrainerVirus/youtrack-cli/releases),
+unpack it and put `ytrack` on your `PATH`. Archives also contain shell
+completions for bash, zsh and fish; check the download as
+[below](#verifying-a-download). From a clone, `make build` writes
+`bin/ytrack`.
+
+A `go install …@latest` binary carries its release version and upgrades like
+any other install. A `make build` binary from a commit that is not a release
+tag (`0.7.0-3-gabc1234`, `-dirty`) is a development build: it never checks
+for or installs releases.
+
 ## Shell completions
 
 `install.sh` reads your login shell from `$SHELL` and copies the matching
@@ -109,7 +128,7 @@ without cosign installed: the certificate must chain to Sigstore's public
 Fulcio CA at a time attested by the public Rekor log (v1 or v2) or a signed
 timestamp, carry a certificate transparency SCT, match the log entry, sign
 the checksums file's SHA-256, and name the issuer and workflow identity above
-(a tag `vX.Y.Z` or `main`). The trusted root comes from Sigstore's TUF
+(a release tag `vX.Y.Z`, never a branch). The trusted root comes from Sigstore's TUF
 repository, so key rotations need no ytrack release; its metadata is cached
 in `ytrack/sigstore-tuf` under the user cache directory (`~/.cache` on Linux,
 `~/Library/Caches` on macOS, `%LOCALAPPDATA%` on Windows).
@@ -173,8 +192,12 @@ does not start:
   in a row; a successful upgrade, manual or not, resets it.
 
 The result is recorded in `state.yml`. The next command run on a terminal
-prints `ytrack upgraded 0.4.0 → 0.5.0 in the background` once, or, after a
-failure, the new-release notice followed by the error and when it retries.
+prints this once, or, after a failure, the new-release notice followed by
+the error and when it retries:
+
+```text
+ytrack upgraded 0.6.2 → 0.7.0 in the background
+```
 
 ### New-release notice
 

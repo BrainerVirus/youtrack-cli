@@ -42,9 +42,17 @@ with `go tool -modfile=tools/go.mod <name>`; no separate install needed.
    make vulncheck    # if you changed dependencies
    ```
 
+   `make test` includes the drift tests: every `ytrack` command and flag
+   named in the skill, the README and `docs/` must exist in the command tree.
+
    `make it YTRACK_IT_PROJECT=<short>` runs the opt-in suite against your own
-   YouTrack instance; read [docs/integration-tests.md](docs/integration-tests.md)
+   YouTrack instance: it creates issues prefixed `ytrack-it`, works on them
+   and deletes them, and refuses hosts other than `*.youtrack.cloud` unless
+   you allow one. Read [docs/integration-tests.md](docs/integration-tests.md)
    first. It is never required for a PR.
+
+   `make snapshot` is a local release dry run into `dist/` (needs goreleaser
+   v2).
 
 ## Commits and pull requests
 
@@ -59,8 +67,39 @@ with `go tool -modfile=tools/go.mod <name>`; no separate install needed.
   change, plus govulncheck when Go code or dependencies change and workflow
   lint (actionlint, zizmor) when `.github/` changes.
 
-Releases are cut by the maintainer with `make release VERSION=vX.Y.Z`; see the
-README's Development section.
+## The skill bench
+
+`go run ./bench --model claude-haiku-4-5 --repeat 3` gives Claude Code
+YouTrack tasks in throwaway projects with the skill installed and a fake
+`ytrack`, and grades what the model did (pass rate and tokens per case). It
+needs a Claude Code login, spends subscription usage and never runs in CI;
+`make test` runs only its unit tests. Compare a skill change against a
+baseline with `go run ./bench compare <before> <after>`. Details, flags and
+cases: [bench/README.md](bench/README.md).
+
+## The REST contract
+
+The REST surface ytrack relies on is listed by hand in
+`api/contract/youtrack-contract.json`, derived from JetBrains' public
+[YouTrack REST API docs](https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html).
+Tests check every request against it, and the weekly `openapi-contract`
+workflow checks it against the live API description.
+
+## Releases
+
+The maintainer cuts releases from an up-to-date `main` with
+`make release VERSION=vX.Y.Z`. It runs the tests, tags `main` and pushes the
+tag; the `Release` workflow then builds the archives with goreleaser, signs
+the checksums file with cosign keyless (the workflow's GitHub OIDC identity),
+publishes the GitHub release with notes that start with the version's
+`CHANGELOG.md` section, and updates the Homebrew cask when the
+`HOMEBREW_TAP_GITHUB_TOKEN` secret is set (the upload is skipped without it).
+
+To rerun a release, dispatch the workflow from the tag itself, never from a
+branch: `gh workflow run release.yml --ref v0.7.0 -f tag=v0.7.0`. The
+signature's identity is the ref the run was dispatched from, and
+`ytrack upgrade` and the install scripts accept only `refs/tags/vX.Y.Z[-pre]`;
+the workflow refuses a dispatch whose ref is not the tag it releases.
 
 ## Reporting bugs and security issues
 

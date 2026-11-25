@@ -33,6 +33,11 @@ Field names are the project's own; read them from
 `ytrack issue view APP-123 --json customFields`. Values with spaces need no
 quotes inside the command: `State In Progress`.
 
+Work item type names are localized too, but no command is needed:
+`ytrack work-item add APP-123 --duration 1h --type 117-0` takes the type's
+id, which is the same in every language, as does `work-item edit --type`.
+An unknown `--type` value lists each valid name with its id.
+
 ## When to use a command instead of `ytrack issue edit`
 
 `ytrack issue edit` writes through the REST API and needs no keywords:

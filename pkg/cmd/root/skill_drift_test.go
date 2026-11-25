@@ -46,6 +46,74 @@ func TestSkillNamesOnlyRealCommandsAndFlags(t *testing.T) {
 	}
 }
 
+// The user docs quote ytrack command lines too; a renamed or removed command
+// or flag must fail here, not in a reader's shell.
+func TestDocsNameOnlyRealCommandsAndFlags(t *testing.T) {
+	tree := commandTree(t)
+	repo := filepath.Join("..", "..", "..")
+	docs, err := filepath.Glob(filepath.Join(repo, "docs", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []string{filepath.Join(repo, "README.md"), filepath.Join(repo, "CONTRIBUTING.md"), filepath.Join(repo, "SECURITY.md")}
+	for _, f := range docs {
+		// The spec is the design record, including commands not built yet.
+		if filepath.Base(f) != "YT_CLI_SPEC.md" {
+			files = append(files, f)
+		}
+	}
+	checked := 0
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		inv, problems := docsDrift(tree, string(b))
+		checked += inv
+		for _, problem := range problems {
+			t.Errorf("%s: %s", filepath.Base(f), problem)
+		}
+	}
+	if checked < 100 {
+		t.Errorf("found only %d ytrack invocations in the docs; the scanner is broken", checked)
+	}
+}
+
+func TestDocsDriftChecksOnlyLoneFlagsOutsideYtrack(t *testing.T) {
+	tree := commandTree(t)
+	text := "`cosign verify-blob --bundle x.json` and `--clobber` and `--hostname`\n```sh\nytrack issue view APP-1 --comments\n```\n" +
+		"```text\nytrack upgraded 0.4.0 → 0.5.0 --bogus\n```"
+	n, problems := docsDrift(tree, text)
+	if want := []string{"--hostname is not a flag of any ytrack command"}; n != 1 || !slices.Equal(problems, want) {
+		t.Errorf("invocations %d, problems %q, want 1 and %q", n, problems, want)
+	}
+	// The same text as a Windows checkout gives it (CRLF): same result.
+	n, problems = docsDrift(tree, strings.ReplaceAll(text, "\n", "\r\n"))
+	if want := []string{"--hostname is not a flag of any ytrack command"}; n != 1 || !slices.Equal(problems, want) {
+		t.Errorf("CRLF: invocations %d, problems %q, want 1 and %q", n, problems, want)
+	}
+}
+
+// docsDrift is skillDrift for the user docs, which also quote other tools'
+// command lines (cosign, go, make): outside a ytrack invocation only a flag
+// quoted on its own, such as `--clobber`, must be a ytrack flag. ```text
+// blocks are output samples, not commands.
+func docsDrift(tree *cobra.Command, text string) (int, []string) {
+	// A Windows checkout has CRLF line endings; the fences and the
+	// output-block pattern expect LF.
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	var kept []string
+	for _, s := range codeSnippets(outputBlock.ReplaceAllString(text, "")) {
+		words := shellWords(s)
+		if slices.Contains(words, "ytrack") || len(words) == 1 {
+			kept = append(kept, "`"+s+"`")
+		}
+	}
+	return skillDrift(tree, strings.Join(kept, "\n"))
+}
+
+var outputBlock = regexp.MustCompile("(?s)```text\n.*?```")
+
 func TestSkillDriftCatchesBogusNames(t *testing.T) {
 	tree := commandTree(t)
 	for text, want := range map[string]string{
