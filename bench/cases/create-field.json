@@ -1,0 +1,270 @@
+{
+  "id": "create-field",
+  "about": "a field value the prompt does not name: read project fields before issue create --field",
+  "prompt": "Create a YouTrack issue in project APP titled \"Export times out on large projects\", with Severity set to the highest severity the project allows.",
+  "maxTurns": 10,
+  "fixtures": {
+    "issues": {
+      "APP-123": {
+        "idReadable": "APP-123",
+        "summary": "Login fails on Safari",
+        "state": "In Progress",
+        "assignee": {
+          "login": "jdoe",
+          "fullName": "Jane Doe"
+        },
+        "reporter": {
+          "login": "mlee",
+          "fullName": "Min Lee"
+        },
+        "priority": "Major",
+        "type": "Bug",
+        "description": "Users on Safari cannot log in: the form reloads without an error.",
+        "created": "2026-09-30T08:12:00Z",
+        "updated": "2026-10-14T16:40:00Z",
+        "resolved": null,
+        "tags": [],
+        "project": {
+          "shortName": "APP",
+          "name": "Application"
+        },
+        "customFields": [
+          {
+            "name": "State",
+            "value": "In Progress"
+          },
+          {
+            "name": "Priority",
+            "value": "Major"
+          },
+          {
+            "name": "Type",
+            "value": "Bug"
+          },
+          {
+            "name": "Assignee",
+            "value": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            }
+          },
+          {
+            "name": "Estimation",
+            "value": null
+          },
+          {
+            "name": "Spent time",
+            "value": null
+          }
+        ],
+        "comments": [
+          {
+            "id": "4-1",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-01T10:00:00Z",
+            "text": "Reported by a customer on Safari 18."
+          },
+          {
+            "id": "4-2",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-02T10:00:00Z",
+            "text": "Cannot reproduce on Chrome."
+          },
+          {
+            "id": "4-3",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-03T10:00:00Z",
+            "text": "Reproduced on Safari 18.1."
+          },
+          {
+            "id": "4-4",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-04T10:00:00Z",
+            "text": "Looks like the session cookie is dropped."
+          },
+          {
+            "id": "4-5",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-05T10:00:00Z",
+            "text": "SameSite=None is missing on the cookie."
+          },
+          {
+            "id": "4-6",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-06T10:00:00Z",
+            "text": "Patch in review: sets SameSite and Secure."
+          },
+          {
+            "id": "4-7",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-07T10:00:00Z",
+            "text": "Review: also needs the logout cookie."
+          },
+          {
+            "id": "4-8",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-08T10:00:00Z",
+            "text": "Updated the patch for logout."
+          },
+          {
+            "id": "4-9",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-09T10:00:00Z",
+            "text": "QA: login works on Safari 18.1 with the patch."
+          },
+          {
+            "id": "4-10",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-10T10:00:00Z",
+            "text": "QA: Safari 19 beta still fails on the second login."
+          },
+          {
+            "id": "4-11",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-11T10:00:00Z",
+            "text": "Second login fails because of a stale CSRF token."
+          },
+          {
+            "id": "4-12",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-12T10:00:00Z",
+            "text": "Fix for the CSRF token refresh pushed."
+          },
+          {
+            "id": "4-13",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-13T10:00:00Z",
+            "text": "QA: Safari 19 passes now."
+          },
+          {
+            "id": "4-14",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-14T10:00:00Z",
+            "text": "Waiting for the release train 2026.3."
+          }
+        ]
+      },
+      "APP-3": {
+        "idReadable": "APP-3",
+        "summary": "Checkout redesign",
+        "state": "Open",
+        "assignee": null
+      },
+      "APP-7": {
+        "idReadable": "APP-7",
+        "summary": "New payment form",
+        "state": "Open",
+        "assignee": {
+          "login": "jdoe",
+          "fullName": "Jane Doe"
+        }
+      }
+    },
+    "rules": [
+      {
+        "match": "^project fields\\b.*(--json|--jq|--template)",
+        "stdout": "[\n  {\n    \"id\": \"93-1\",\n    \"name\": \"Priority\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Minor\",\n      \"Normal\",\n      \"Major\",\n      \"Critical\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Normal\"\n    ]\n  },\n  {\n    \"id\": \"93-2\",\n    \"name\": \"Type\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Bug\",\n      \"Feature\",\n      \"Task\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Bug\"\n    ]\n  },\n  {\n    \"id\": \"93-3\",\n    \"name\": \"State\",\n    \"type\": \"state[1]\",\n    \"bundle\": [\n      \"Open\",\n      \"In Progress\",\n      \"Verify on staging\",\n      \"Fixed\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Open\"\n    ]\n  },\n  {\n    \"id\": \"93-4\",\n    \"name\": \"Severity\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Cosmetic\",\n      \"Minor\",\n      \"Normal\",\n      \"Major\",\n      \"Show-stopper\"\n    ],\n    \"required\": false,\n    \"default\": null\n  },\n  {\n    \"id\": \"93-5\",\n    \"name\": \"Assignee\",\n    \"type\": \"user[1]\",\n    \"bundle\": [],\n    \"required\": false,\n    \"default\": null\n  }\n]\n"
+      },
+      {
+        "match": "^project fields\\b",
+        "stdout": "Priority\tenum[1]\tyes\tNormal\tMinor, Normal, Major, Critical\nType\tenum[1]\tyes\tBug\tBug, Feature, Task\nState\tstate[1]\tyes\tOpen\tOpen, In Progress, Verify on staging, Fixed\nSeverity\tenum[1]\t\t\tCosmetic, Minor, Normal, Major, Show-stopper\nAssignee\tuser[1]\t\t\t\n"
+      },
+      {
+        "match": "^issue create\\b.*--field Severity=Show-stopper\\b",
+        "stdout": "https://acme.youtrack.cloud/issue/APP-130\n",
+        "stderr": "✓ Created APP-130\n"
+      },
+      {
+        "match": "^issue create\\b.*--field Severity=",
+        "stderr": "ytrack: field Severity has no value matching the one given; `ytrack project fields APP` lists its values\nnothing was created\n",
+        "exit": 1
+      }
+    ]
+  },
+  "require": [
+    {
+      "name": "project fields before the create",
+      "match": [
+        "^project fields (APP|Application)\\b"
+      ],
+      "before": [
+        "^issue create\\b"
+      ]
+    },
+    {
+      "name": "issue create with Severity=Show-stopper",
+      "match": [
+        "^issue create\\b",
+        "(-p|--project) APP\\b",
+        "--field Severity=Show-stopper\\b"
+      ]
+    }
+  ],
+  "forbid": [
+    {
+      "name": "no curl or web scraping",
+      "on": "commands",
+      "match": [
+        "\\b(curl|wget)\\b"
+      ]
+    },
+    {
+      "name": "a raw API call where a command exists",
+      "match": [
+        "^api\\b"
+      ]
+    },
+    {
+      "name": "the issue created twice",
+      "match": [
+        "^issue create\\b"
+      ],
+      "not": [
+        "--help|-h\\b"
+      ],
+      "times": 2
+    }
+  ]
+}

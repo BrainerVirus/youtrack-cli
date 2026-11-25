@@ -53,6 +53,9 @@ type Fixtures struct {
 	Issues map[string]map[string]any `json:"issues,omitempty"`
 	List   []map[string]any          `json:"list,omitempty"`
 	Rules  []Reply                   `json:"rules,omitempty"`
+	// Tags, when set, are the tags that exist: --tag and --add-tag refuse
+	// any other, and tag create adds one.
+	Tags []string `json:"tags,omitempty"`
 }
 
 // Reply answers a call whose argv line matches Match, before the built-in replies.

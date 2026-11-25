@@ -1,0 +1,89 @@
+{
+  "id": "command-assist",
+  "about": "a state the user only half names: preview with --assist (or --dry-run, or read project fields) before applying one command to both issues",
+  "prompt": "In YouTrack, move APP-3 and APP-7 to the state whose name starts with \"Ver\" (I don't remember the rest). Use a single YouTrack command for both issues.",
+  "maxTurns": 10,
+  "fixtures": {
+    "issues": {
+      "APP-3": {
+        "idReadable": "APP-3",
+        "summary": "Checkout redesign",
+        "state": "Open",
+        "assignee": null
+      },
+      "APP-7": {
+        "idReadable": "APP-7",
+        "summary": "New payment form",
+        "state": "Open",
+        "assignee": {
+          "login": "jdoe",
+          "fullName": "Jane Doe"
+        }
+      }
+    },
+    "rules": [
+      {
+        "match": "^project fields\\b.*(--json|--jq|--template)",
+        "stdout": "[\n  {\n    \"id\": \"93-1\",\n    \"name\": \"Priority\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Minor\",\n      \"Normal\",\n      \"Major\",\n      \"Critical\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Normal\"\n    ]\n  },\n  {\n    \"id\": \"93-2\",\n    \"name\": \"Type\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Bug\",\n      \"Feature\",\n      \"Task\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Bug\"\n    ]\n  },\n  {\n    \"id\": \"93-3\",\n    \"name\": \"State\",\n    \"type\": \"state[1]\",\n    \"bundle\": [\n      \"Open\",\n      \"In Progress\",\n      \"Verify on staging\",\n      \"Fixed\"\n    ],\n    \"required\": true,\n    \"default\": [\n      \"Open\"\n    ]\n  },\n  {\n    \"id\": \"93-4\",\n    \"name\": \"Severity\",\n    \"type\": \"enum[1]\",\n    \"bundle\": [\n      \"Cosmetic\",\n      \"Minor\",\n      \"Normal\",\n      \"Major\",\n      \"Show-stopper\"\n    ],\n    \"required\": false,\n    \"default\": null\n  },\n  {\n    \"id\": \"93-5\",\n    \"name\": \"Assignee\",\n    \"type\": \"user[1]\",\n    \"bundle\": [],\n    \"required\": false,\n    \"default\": null\n  }\n]\n"
+      },
+      {
+        "match": "^project fields\\b",
+        "stdout": "Priority\tenum[1]\tyes\tNormal\tMinor, Normal, Major, Critical\nType\tenum[1]\tyes\tBug\tBug, Feature, Task\nState\tstate[1]\tyes\tOpen\tOpen, In Progress, Verify on staging, Fixed\nSeverity\tenum[1]\t\t\tCosmetic, Minor, Normal, Major, Show-stopper\nAssignee\tuser[1]\t\t\t\n"
+      },
+      {
+        "match": "^issue command\\b.*--assist\\b",
+        "stdout": "State\n> State Verify on staging\tVerify on staging\n",
+        "stderr": "Dry run: nothing was applied to APP-3, APP-7\n"
+      },
+      {
+        "match": "^issue command\\b.*(State Verify on staging\\b.*--dry-run|--dry-run.*State Verify on staging\\b)",
+        "stdout": "State Verify on staging\n",
+        "stderr": "Dry run: nothing was applied to APP-3, APP-7\n"
+      },
+      {
+        "match": "^issue command\\b.*State Verify on staging\\b",
+        "stderr": "✓ Applied \"State Verify on staging\" to APP-3, APP-7\n"
+      },
+      {
+        "match": "^issue command\\b",
+        "stderr": "ytrack: YouTrack: Unknown value for State\nnothing was changed; `ytrack issue command APP-3 APP-7 '<command>' --dry-run` shows how YouTrack parses each part (command words follow the instance's language)\n",
+        "exit": 1
+      }
+    ]
+  },
+  "require": [
+    {
+      "name": "a preview before the first applied command",
+      "match": [
+        "^issue command\\b.*(--dry-run|--assist)"
+      ],
+      "before": [
+        "^issue command\\b"
+      ]
+    },
+    {
+      "name": "one command for both issues",
+      "match": [
+        "^issue command (\\S+/)?APP-(3|7) (\\S+/)?APP-(3|7) State Verify on staging\\b"
+      ],
+      "not": [
+        "--dry-run|--assist"
+      ]
+    }
+  ],
+  "forbid": [
+    {
+      "name": "no curl or web scraping",
+      "on": "commands",
+      "match": [
+        "\\b(curl|wget)\\b"
+      ]
+    },
+    {
+      "name": "a raw API call where a command exists",
+      "match": [
+        "^api\\b"
+      ]
+    }
+  ]
+}

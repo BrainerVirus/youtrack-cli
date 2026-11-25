@@ -165,7 +165,11 @@ func withJQ(p parsed, out, errOut string, code int) (string, string, int) {
 // remember applies a successful write to the fixtures: fields, assignee and
 // summary (issue edit, issue command), comments, links and work items.
 func remember(c *Case, p parsed, stdin string) {
-	if len(p.args) == 0 || p.has("dry-run") || p.has("list") || p.has("list-types") {
+	if len(p.args) == 0 || p.has("dry-run") || p.has("assist") || p.has("list") || p.has("list-types") {
+		return
+	}
+	if p.path == "tag create" {
+		c.Fixtures.Tags = append(c.Fixtures.Tags, p.args[0])
 		return
 	}
 	issue := c.Fixtures.Issues[issueID(p.args[0])]
@@ -184,6 +188,13 @@ func remember(c *Case, p parsed, stdin string) {
 		if p.has("summary") {
 			issue["summary"] = p.flag("summary")
 		}
+		if p.has("add-tag") {
+			tags, _ := issue["tags"].([]any)
+			for _, t := range p.flags["add-tag"] {
+				tags = append(tags, map[string]any{"name": t})
+			}
+			issue["tags"] = tags
+		}
 	case "issue command":
 		text := p.args[len(p.args)-1]
 		for _, name := range append(fieldNames(issue), "Assignee") {
@@ -199,6 +210,12 @@ func remember(c *Case, p parsed, stdin string) {
 		}
 		comments, _ := issue["comments"].([]any)
 		issue["comments"] = append(comments, map[string]any{"id": "4-99", "author": map[string]any{"login": "jdoe", "fullName": "Jane Doe"}, "text": body})
+	case "issue comment delete":
+		comments, _ := issue["comments"].([]any)
+		issue["comments"] = slices.DeleteFunc(slices.Clone(comments), func(cm any) bool {
+			m, _ := cm.(map[string]any)
+			return str(m["id"]) == p.args[1]
+		})
 	case "issue link":
 		links, _ := issue["links"].([]any)
 		issue["links"] = append(links, map[string]any{"phrase": strings.ToLower(p.flag("type")), "issues": p.args[1:]})
@@ -295,10 +312,31 @@ func reply(c *Case, p parsed, cwd, stdin string) (string, string, int) {
 	case "issue attach":
 		return attach(p, cwd)
 	case "issue edit":
+		if o, e, code := unknownTag(c, p.flags["add-tag"]); code != 0 {
+			return o, e, code
+		}
 		return edit(p)
+	case "issue comment list":
+		return listComments(c, p)
+	case "issue comment edit":
+		return "", "✓ Edited comment " + p.args[1] + "\n", 0
+	case "issue comment delete":
+		return deleteComment(c, p)
+	case "issue delete":
+		if !p.has("yes") {
+			return fail("`--yes` is required to delete an issue when not running interactively")
+		}
+		return "", "✓ Deleted " + issueID(p.args[0]) + "\n", 0
+	case "tag list":
+		return listTags(c, p)
+	case "tag create":
+		return createTag(c, p)
 	case "issue create":
 		if p.flag("project") == "" || p.flag("summary") == "" {
 			return fail("--project and --summary are required when not running interactively")
+		}
+		if o, e, code := unknownTag(c, p.flags["tag"]); code != 0 {
+			return o, e, code
 		}
 		if p.flag("description-file") == "-" && strings.TrimSpace(stdin) == "" {
 			return fail("the description is empty: nothing came on standard input")
@@ -489,7 +527,7 @@ func edit(p parsed) (string, string, int) {
 
 func command(p parsed) (string, string, int) {
 	cmdText := p.args[len(p.args)-1]
-	if p.has("dry-run") {
+	if p.has("dry-run") || p.has("assist") {
 		return fmt.Sprintf("%s: understood\n", cmdText), "", 0
 	}
 	return "", fmt.Sprintf("✓ Applied %q to %s\n", cmdText, strings.Join(p.args[:len(p.args)-1], ", ")), 0
@@ -601,4 +639,87 @@ func api(c *Case, p parsed) (string, string, int) {
 		return "[]\n", "", 0
 	}
 	return "{\"$type\":\"Ok\"}\n", "", 0
+}
+
+func listComments(c *Case, p parsed) (string, string, int) {
+	id := issueID(p.args[0])
+	issue, ok := c.Fixtures.Issues[id]
+	if !ok {
+		return fail("issue %s not found on %s", id, fakeHost)
+	}
+	comments, _ := issue["comments"].([]any)
+	limit := 30
+	if v := p.flag("limit"); v != "" {
+		_, _ = fmt.Sscan(v, &limit)
+	}
+	if limit > 0 && len(comments) > limit {
+		comments = comments[len(comments)-limit:]
+	}
+	if p.wantsJSON() {
+		rows := make([]map[string]any, 0, len(comments))
+		for _, cm := range comments {
+			m, _ := cm.(map[string]any)
+			rows = append(rows, pick(m, p.flag("json")))
+		}
+		return toJSON(rows), "", 0
+	}
+	if len(comments) == 0 {
+		return "", id + " has no comments\n", 0
+	}
+	var b strings.Builder
+	for _, cm := range comments {
+		m, _ := cm.(map[string]any)
+		fmt.Fprintf(&b, "%s\t%s\t%s\t%s\n", str(m["id"]), str(m["author"]), str(m["created"]), str(m["text"]))
+	}
+	return b.String(), "", 0
+}
+
+func deleteComment(c *Case, p parsed) (string, string, int) {
+	if !p.has("yes") {
+		return fail("`--yes` is required to delete a comment when not running interactively")
+	}
+	id := issueID(p.args[0])
+	comments, _ := c.Fixtures.Issues[id]["comments"].([]any)
+	for _, cm := range comments {
+		if m, _ := cm.(map[string]any); str(m["id"]) == p.args[1] {
+			return "", fmt.Sprintf("✓ Deleted comment %s on %s\n", p.args[1], id), 0
+		}
+	}
+	return fail("comment %s not found on %s; run 'ytrack issue comment list %s'", p.args[1], id, id)
+}
+
+// hasTag: whether the tag exists; with no Tags fixture every tag does.
+func hasTag(c *Case, name string) bool {
+	return c.Fixtures.Tags == nil || slices.ContainsFunc(c.Fixtures.Tags, func(t string) bool { return strings.EqualFold(t, name) })
+}
+
+func unknownTag(c *Case, names []string) (string, string, int) {
+	for _, n := range names {
+		if !hasTag(c, n) {
+			return fail("unknown tag %q (`ytrack tag create %s` creates it); tags you can use:\n  %s", n, n, strings.Join(c.Fixtures.Tags, "\n  "))
+		}
+	}
+	return "", "", 0
+}
+
+func listTags(c *Case, p parsed) (string, string, int) {
+	if p.wantsJSON() {
+		rows := make([]map[string]any, len(c.Fixtures.Tags))
+		for i, t := range c.Fixtures.Tags {
+			rows[i] = pick(map[string]any{"id": fmt.Sprintf("6-%d", i+1), "name": t, "owner": "jdoe"}, p.flag("json"))
+		}
+		return toJSON(rows), "", 0
+	}
+	return strings.Join(c.Fixtures.Tags, "\n") + "\n", "", 0
+}
+
+func createTag(c *Case, p parsed) (string, string, int) {
+	name := p.args[0]
+	if c.Fixtures.Tags != nil && hasTag(c, name) {
+		return fail("tag %q already exists (ID 6-1); --tag and --add-tag take it as is", name)
+	}
+	if p.wantsJSON() {
+		return toJSON(pick(map[string]any{"id": "6-40", "name": name, "owner": "jdoe"}, p.flag("json"))), "", 0
+	}
+	return name + "\n", "", 0
 }
