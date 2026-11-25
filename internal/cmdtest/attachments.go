@@ -115,8 +115,11 @@ func (yt *FakeYouTrack) comment(w http.ResponseWriter, r *http.Request) (map[str
 func (yt *FakeYouTrack) getComment(w http.ResponseWriter, r *http.Request) {
 	if c, ok := yt.comment(w, r); ok {
 		yt.mu.Lock()
-		defer yt.mu.Unlock()
 		c = maps.Clone(c)
+		yt.mu.Unlock()
+		yt.withCommentIssue(r, c)
+		yt.mu.Lock()
+		defer yt.mu.Unlock()
 		c["textPreview"] = yt.textPreview(c["issue"].(map[string]any)["idReadable"].(string), fmt.Sprint(c["text"]))
 		writeProjected(w, r, 200, c)
 	}

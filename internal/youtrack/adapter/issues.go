@@ -253,16 +253,27 @@ func GetIssue(ctx context.Context, c *transport.Client, id string, attrs []strin
 	return w.domain(), err
 }
 
-// Comment is an issue comment. Deleted comments are never returned.
+// Comment is an issue comment. Lists never return deleted comments.
 type Comment struct {
 	ID      string
 	Text    string
 	Author  *User
 	Created time.Time
 	Updated time.Time
+	// Deleted is set for a comment deleted in the YouTrack UI, which
+	// GetComment still returns.
+	Deleted bool
+	// IssueIDReadable is the readable ID of the comment's issue; only
+	// GetComment and UpdateComment set it.
+	IssueIDReadable string
 }
 
-const commentFields = "id,text,author(login,fullName),created,updated,deleted"
+const (
+	commentFields = "id,text,author(login,fullName),created,updated,deleted"
+	// commentIssueFields adds the issue's readable ID, which a comment URL
+	// needs when the issue was named by database ID.
+	commentIssueFields = commentFields + ",issue(idReadable)"
+)
 
 type wireComment struct {
 	ID      string    `json:"id"`
@@ -271,6 +282,17 @@ type wireComment struct {
 	Created *int64    `json:"created"`
 	Updated *int64    `json:"updated"`
 	Deleted bool      `json:"deleted"`
+	Issue   *struct {
+		IDReadable string `json:"idReadable"`
+	} `json:"issue"`
+}
+
+func (w wireComment) domain() Comment {
+	c := Comment{ID: w.ID, Text: w.Text, Author: w.Author.domain(), Created: millis(w.Created), Updated: millis(w.Updated), Deleted: w.Deleted}
+	if w.Issue != nil {
+		c.IssueIDReadable = w.Issue.IDReadable
+	}
+	return c
 }
 
 // ListComments returns an issue's comments, oldest first, starting at skip;
@@ -290,9 +312,35 @@ func ListComments(ctx context.Context, c *transport.Client, issueID string, skip
 		if w.Deleted {
 			continue
 		}
-		out = append(out, Comment{ID: w.ID, Text: w.Text, Author: w.Author.domain(), Created: millis(w.Created), Updated: millis(w.Updated)})
+		out = append(out, w.domain())
 	}
 	return out, nil
+}
+
+// GetComment returns one comment of an issue, also a deleted one.
+func GetComment(ctx context.Context, c *transport.Client, issueID, commentID string) (Comment, error) {
+	var w wireComment
+	err := c.GetJSON(ctx, commentPath(issueID, commentID)+"?fields="+commentIssueFields, &w)
+	return w.domain(), err
+}
+
+// UpdateComment replaces the text of a comment and returns the comment as
+// changed.
+func UpdateComment(ctx context.Context, c *transport.Client, issueID, commentID, text string) (Comment, error) {
+	var w wireComment
+	err := c.SendJSON(ctx, http.MethodPost, commentPath(issueID, commentID)+"?fields="+commentIssueFields, map[string]any{"text": text}, &w)
+	return w.domain(), err
+}
+
+// DeleteComment deletes a comment of an issue.
+func DeleteComment(ctx context.Context, c *transport.Client, issueID, commentID string) error {
+	return c.Delete(ctx, commentPath(issueID, commentID))
+}
+
+// DeleteIssue deletes an issue with its comments, attachments and work
+// items. It cannot be undone.
+func DeleteIssue(ctx context.Context, c *transport.Client, id string) error {
+	return c.Delete(ctx, "/api/issues/"+url.PathEscape(id))
 }
 
 // NewComment is a comment AddComment created.

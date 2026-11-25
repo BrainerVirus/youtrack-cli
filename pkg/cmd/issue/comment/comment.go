@@ -4,19 +4,18 @@ package comment
 import (
 	"errors"
 	"fmt"
-	"io"
 	"maps"
-	"os"
 	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
-	"github.com/BrainerVirus/youtrack-cli/internal/editor"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
+	deletecmd "github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment/delete"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment/edit"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment/list"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -36,11 +35,9 @@ const (
 )
 
 type options struct {
-	ref      shared.Ref
-	body     string
-	bodyFile string
-	editor   bool
-	attach   []string
+	ref    shared.Ref
+	body   shared.BodyFlags
+	attach []string
 	// text is the body once read, so a rerun does not read it again.
 	text     string
 	bodyRead bool
@@ -77,13 +74,28 @@ func (c created) ExportData(fields []string) map[string]any {
 	return out
 }
 
-// NewCmdComment returns the comment command.
+// NewCmdComment returns the comment command: on its own it adds a comment,
+// like its add subcommand.
 func NewCmdComment(f *cmdutil.Factory) *cobra.Command {
-	opts := &options{}
-	cmd := &cobra.Command{
-		Use:   "comment {<id> | <url>}",
-		Short: "Add a comment to an issue",
-		Long: `Add a comment to an issue and print its URL.
+	cmd := newCmdAdd(f)
+	cmd.Use = "comment {<id> | <url>}"
+	cmd.Short = "Add, list, edit or delete issue comments"
+	cmd.Long = `Add a comment to an issue, or with a subcommand list, edit or delete
+comments. "ytrack issue comment <id>" is "ytrack issue comment add <id>".
+
+` + addHelp
+	add := newCmdAdd(f)
+	add.Use = "add {<id> | <url>}"
+	add.Example = strings.ReplaceAll(add.Example, "issue comment APP-123", "issue comment add APP-123")
+	cmd.Example += `
+  $ ytrack issue comment list APP-123
+  $ ytrack issue comment edit APP-123 4-17 --body 'Reproduced on 2026.3'
+  $ ytrack issue comment delete APP-123 4-17 --yes`
+	cmd.AddCommand(add, list.NewCmdList(f), edit.NewCmdEdit(f), deletecmd.NewCmdDelete(f))
+	return cmd
+}
+
+const addHelp = `Add a comment to an issue and print its URL.
 
 The text comes from --body, from --body-file (a file, or "-" for standard
 input) or from your editor with --editor. With none of them, the editor
@@ -112,7 +124,15 @@ JSON fields:
   issue        readable ID of the issue
   attachments  the --attach files: name, id and state, where state is
                comment (on the comment), issue (on the issue only) or
-               failed (neither on the comment nor shown by it)`,
+               failed (neither on the comment nor shown by it)`
+
+// newCmdAdd returns the command that adds a comment.
+func newCmdAdd(f *cmdutil.Factory) *cobra.Command {
+	opts := &options{}
+	cmd := &cobra.Command{
+		Use:   "add {<id> | <url>}",
+		Short: "Add a comment to an issue",
+		Long:  addHelp,
 		Example: `  $ ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
   $ git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
   $ ytrack issue comment APP-123 --editor
@@ -125,15 +145,8 @@ JSON fields:
 				return err
 			}
 			opts.ref = ref
-			bodyGiven := cmd.Flags().Changed("body")
-			if err := cmdutil.MutuallyExclusive("specify only one of `--body`, `--body-file` or `--editor`", bodyGiven, opts.bodyFile != "", opts.editor); err != nil {
+			if err := opts.body.Check(f, cmd); err != nil {
 				return err
-			}
-			if !bodyGiven && opts.bodyFile == "" && !opts.editor {
-				if !f.IOStreams.CanPrompt() {
-					return clierr.FlagErrorf("`--body`, `--body-file` or `--editor` required when not running interactively")
-				}
-				opts.editor = true
 			}
 			if opts.files, err = shared.CheckFiles(opts.attach); err != nil {
 				return err
@@ -142,17 +155,14 @@ JSON fields:
 				return err
 			}
 			err = f.WithIssueHostForWrite(cmd.Context(), ref.ID, func() error { return run(cmd, f, opts) })
-			if err != nil && opts.editor && !opts.posted && strings.TrimSpace(opts.text) != "" {
-				saveDraft(f, opts.text)
+			if err != nil && opts.body.Editor && !opts.posted && strings.TrimSpace(opts.text) != "" {
+				shared.SaveDraft(f, "the comment was not posted", opts.text)
 			}
 			return err
 		},
 	}
-	fl := cmd.Flags()
-	fl.StringVarP(&opts.body, "body", "b", "", "Comment `text`")
-	fl.StringVarP(&opts.bodyFile, "body-file", "F", "", "Read the comment from `file` (\"-\" for standard input)")
-	fl.BoolVarP(&opts.editor, "editor", "e", false, "Write the comment in your editor")
-	fl.StringArrayVar(&opts.attach, "attach", nil, "Attach a `file` to the comment (repeatable)")
+	opts.body.Add(cmd)
+	cmd.Flags().StringArrayVar(&opts.attach, "attach", nil, "Attach a `file` to the comment (repeatable)")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, Fields)
 	return cmd
 }
@@ -166,7 +176,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	// A rerun on the host that owns the issue reuses the text read the first time.
 	if !opts.bodyRead {
-		if opts.text, err = readBody(f, opts); err != nil {
+		if opts.text, err = opts.body.Read(f, ""); err != nil {
 			return err
 		}
 		opts.bodyRead = true
@@ -323,40 +333,4 @@ func byName(as []adapter.Attachment) map[string]string {
 		m[a.Name] = a.ID
 	}
 	return m
-}
-
-// saveDraft keeps text written in the editor when posting it failed, so the
-// user does not lose it.
-func saveDraft(f *cmdutil.Factory, body string) {
-	d, err := os.CreateTemp("", "ytrack-comment-*.md")
-	if err != nil {
-		return
-	}
-	_, werr := d.WriteString(body)
-	if cerr := d.Close(); werr != nil || cerr != nil {
-		return
-	}
-	fmt.Fprintf(f.IOStreams.ErrOut, "! the comment was not posted; your text is saved in %s\n", d.Name())
-}
-
-func readBody(f *cmdutil.Factory, opts *options) (string, error) {
-	ios := f.IOStreams
-	switch {
-	case opts.bodyFile == "-":
-		b, err := io.ReadAll(ios.In)
-		if err != nil {
-			return "", fmt.Errorf("reading standard input: %w", err)
-		}
-		return string(b), nil
-	case opts.bodyFile != "":
-		b, err := os.ReadFile(opts.bodyFile)
-		if err != nil {
-			return "", fmt.Errorf("reading the comment file: %w", err)
-		}
-		return string(b), nil
-	case opts.editor:
-		text, err := editor.Edit(editor.Command(), ".md", "", ios.In, ios.ErrOut)
-		return strings.TrimRight(text, " \t\r\n"), err
-	}
-	return opts.body, nil
 }

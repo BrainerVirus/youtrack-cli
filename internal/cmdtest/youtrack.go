@@ -49,6 +49,10 @@ type Request struct {
 //	GET  /api/issues/{id}/comments/{comment}  one of Comments, with a
 //	                                textPreview that resolves ![](name) and
 //	                                [label](name) against the issue's Attachments
+//	POST|DELETE /api/issues/{id}/comments/{comment}  changes a comment's text
+//	                                (setting updated) or deletes it
+//	DELETE /api/issues/{id}         deletes the issue with its comments,
+//	                                attachments and work items
 //	POST /api/issues/{id}/comments/{comment}/attachments  stores multipart files
 //	                                as the comment's attachments (also listed in
 //	                                Attachments) and returns them; see
@@ -194,8 +198,14 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 			return
 		}
 		yt.mu.Lock()
-		comments := yt.Comments[is["idReadable"].(string)]
+		comments := make([]map[string]any, len(yt.Comments[is["idReadable"].(string)]))
+		for i, c := range yt.Comments[is["idReadable"].(string)] {
+			comments[i] = maps.Clone(c)
+		}
 		yt.mu.Unlock()
+		for _, c := range comments {
+			yt.withCommentIssue(r, c)
+		}
 		writeProjected(w, r, 200, page(r, comments))
 	})
 	mux.HandleFunc("POST /api/issues/{id}/comments", func(w http.ResponseWriter, r *http.Request) {
@@ -235,6 +245,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 	yt.workItemRoutes(mux)
 	yt.issueWriteRoutes(mux)
 	yt.linkRoutes(mux)
+	yt.commentRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = io.WriteString(w, "plain text")
