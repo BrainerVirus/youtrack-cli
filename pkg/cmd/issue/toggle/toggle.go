@@ -1,5 +1,7 @@
 // Package toggle implements `ytrack issue vote`, `unvote`, `watch` and
-// `unwatch`: switches YouTrack changes only through a command.
+// `unwatch`. Votes change only through a YouTrack command; the star is
+// written through the REST API, which does not depend on the instance's
+// language.
 package toggle
 
 import (
@@ -10,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BrainerVirus/youtrack-cli/internal/hosts"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
@@ -32,8 +35,10 @@ type state struct {
 // spec describes one of the four commands.
 type spec struct {
 	verb, short, long, done string
-	// command is the YouTrack command keyword applied.
+	// command is the YouTrack command keyword applied; "" when apply
+	// changes the switch through the REST API.
 	command string
+	apply   func(ctx context.Context, c *transport.Client, id string, on bool) error
 	on      bool
 	fields  []string
 	help    string
@@ -86,9 +91,11 @@ const watchHelp = `JSON fields:
 
 const commandNote = `The REST API cannot change this (it marks it read-only), so ytrack applies
 YouTrack's %q command, then reads the issue back: if it did not change,
-it exits 1 instead of reporting success. Command words can follow the
-instance's language; "ytrack issue command <id> %s --assist" shows how
-YouTrack parses it there.`
+it exits 1 instead of reporting success. "ytrack issue command <id> %s
+--assist" shows how YouTrack parses the command.`
+
+const starNote = `ytrack changes the star through the REST API, then reads the issue back:
+if it did not change, it exits 1 instead of reporting success.`
 
 func voteExport(r result, f string) any {
 	switch f {
@@ -140,7 +147,7 @@ you have not cast changes nothing.`,
 // NewCmdWatch returns the watch command.
 func NewCmdWatch(f *cmdutil.Factory) *cobra.Command {
 	return newCmd(f, &spec{
-		verb: "watch", command: "star", on: true, short: "Star an issue to get its notifications", done: "Starred",
+		verb: "watch", apply: adapter.SetStar, on: true, short: "Star an issue to get its notifications", done: "Starred",
 		long: `Star an issue, as the star in YouTrack does, so you get its notifications.
 Starring an issue you starred changes nothing.`,
 		fields: WatchFields, help: watchHelp, read: readStar, export: watchExport, text: watchText,
@@ -150,7 +157,7 @@ Starring an issue you starred changes nothing.`,
 // NewCmdUnwatch returns the unwatch command.
 func NewCmdUnwatch(f *cmdutil.Factory) *cobra.Command {
 	return newCmd(f, &spec{
-		verb: "unwatch", command: "unstar", short: "Remove your star from an issue", done: "Unstarred",
+		verb: "unwatch", apply: adapter.SetStar, short: "Remove your star from an issue", done: "Unstarred",
 		long: `Remove your star from an issue. You may still get its notifications
 through a tag or a saved search ("ytrack issue watchers" shows how each
 watcher watches).`,
@@ -160,10 +167,14 @@ watcher watches).`,
 
 func newCmd(f *cmdutil.Factory, s *spec) *cobra.Command {
 	var exporter *output.Exporter
+	note := starNote
+	if s.command != "" {
+		note = fmt.Sprintf(commandNote, s.command, s.command)
+	}
 	cmd := &cobra.Command{
 		Use:               s.verb + " {<id> | <url>}",
 		Short:             s.short,
-		Long:              s.long + "\n\n" + fmt.Sprintf(commandNote, s.command, s.command) + "\n\n" + s.help,
+		Long:              s.long + "\n\n" + note + "\n\n" + s.help,
 		Example:           fmt.Sprintf("  $ ytrack issue %[1]s APP-123\n  $ ytrack issue %[1]s APP-123 --json %[2]s", s.verb, s.fields[len(s.fields)-1]),
 		Args:              cmdutil.ExactArgs(1, "expected one issue ID or URL, e.g. APP-123"),
 		ValidArgsFunction: shared.CompleteIssues(f, 1),
@@ -189,23 +200,19 @@ func run(ctx context.Context, f *cmdutil.Factory, exporter *output.Exporter, s *
 	if err != nil {
 		return err
 	}
-	assist := fmt.Sprintf("`ytrack issue command %s %s --assist`", id, s.command)
-	if _, err := adapter.ApplyCommand(ctx, client, adapter.Command{Query: s.command, IssueIDs: []string{id}}); err != nil {
-		if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusBadRequest {
-			return fmt.Errorf("%w\nnothing was changed; YouTrack rejected the %q command (on an instance in another language the command word may differ: %s shows how it parses)", err, s.command, assist)
+	if s.apply != nil {
+		if err := s.apply(ctx, client, id, s.on); err != nil {
+			return shared.NotFound(err, id, host)
 		}
-		return shared.NotFound(err, id, host)
+	} else if err := applyCommand(ctx, client, s.command, id, host); err != nil {
+		return err
 	}
 	st, err := s.read(ctx, client, id)
 	if err != nil {
 		return shared.NotFound(err, id, host)
 	}
 	if st.On != s.on {
-		why := ""
-		if s.command == "vote" {
-			why = " or you reported the issue, which YouTrack does not let you vote for"
-		}
-		return fmt.Errorf("YouTrack accepted the %q command, but %s did not change: the command word may mean something else on this instance's language%s; %s shows how YouTrack parses it", s.command, id, why, assist)
+		return unchanged(s, id)
 	}
 	res := result{Issue: id, URL: shared.IssueURL(host, id), State: st, spec: s}
 	ios := f.IOStreams
@@ -217,4 +224,31 @@ func run(ctx context.Context, f *cmdutil.Factory, exporter *output.Exporter, s *
 		fmt.Fprintf(ios.ErrOut, "%s %s %s\n", ios.ErrColorScheme().SuccessIcon(), s.done, id)
 	}
 	return nil
+}
+
+func assistHint(command, id string) string {
+	return fmt.Sprintf("`ytrack issue command %s %s --assist`", id, command)
+}
+
+func applyCommand(ctx context.Context, client *transport.Client, command, id string, host hosts.Host) error {
+	_, err := adapter.ApplyCommand(ctx, client, adapter.Command{Query: command, IssueIDs: []string{id}})
+	if err == nil {
+		return nil
+	}
+	if apiErr, ok := errors.AsType[*transport.APIError](err); ok && apiErr.StatusCode == http.StatusBadRequest {
+		return fmt.Errorf("%w\nnothing was changed; YouTrack rejected the %q command: %s shows how it parses", err, command, assistHint(command, id))
+	}
+	return shared.NotFound(err, id, host)
+}
+
+// unchanged is the error when the read-back shows the switch did not move.
+func unchanged(s *spec, id string) error {
+	if s.command == "" {
+		return fmt.Errorf("YouTrack accepted the change, but the star on %s did not change", id)
+	}
+	why := ""
+	if s.command == "vote" {
+		why = " (YouTrack does not let you vote for an issue you reported)"
+	}
+	return fmt.Errorf("YouTrack accepted the %q command, but %s did not change%s; %s shows how YouTrack parses it", s.command, id, why, assistHint(s.command, id))
 }

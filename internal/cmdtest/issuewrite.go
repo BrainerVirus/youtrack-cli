@@ -209,6 +209,18 @@ func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
 				return
 			}
 		}
+		if raw, ok := body["watchers"]; ok {
+			ws, _ := raw.(map[string]any)
+			on, isBool := ws["hasStar"].(bool)
+			if len(ws) != 1 || !isBool {
+				badRequest(w, "watchers takes only hasStar")
+				return
+			}
+			delete(body, "watchers")
+			if !yt.IgnoreStarWrites {
+				yt.setStar(is, on)
+			}
+		}
 		if msg := yt.applyIssue(is, body); msg != "" {
 			badRequest(w, msg)
 			return
@@ -384,6 +396,22 @@ func (yt *FakeYouTrack) applyIssue(is, body map[string]any) string {
 	}
 	is["updated"] = float64(todayMillis + 1000)
 	return ""
+}
+
+// setStar stars is for the token's user (on) or removes the star, as the
+// star command and a watchers.hasStar write do.
+func (yt *FakeYouTrack) setStar(is map[string]any, on bool) {
+	ws, _ := is["watchers"].(map[string]any)
+	list, _ := ws["issueWatchers"].([]any)
+	list = slices.DeleteFunc(slices.Clone(list), func(w any) bool {
+		m, _ := w.(map[string]any)
+		u, _ := m["user"].(map[string]any)
+		return u["login"] == yt.Login && m["isStarred"] == true
+	})
+	if on {
+		list = append(list, map[string]any{"$type": "IssueWatcher", "isStarred": true, "user": map[string]any{"$type": "User", "login": yt.Login, "fullName": yt.FullName}})
+	}
+	is["watchers"] = map[string]any{"$type": "IssueWatchers", "hasStar": on, "issueWatchers": list}
 }
 
 func setField(is map[string]any, name string, cf map[string]any) {
@@ -610,19 +638,7 @@ func (yt *FakeYouTrack) commandPart(kw, value string, defs []map[string]any) com
 			return bad(kw + " takes no value: " + value)
 		}
 		on := kw == "star"
-		return commandPart{description: kw, html: boldHTML(kw, ""), apply: func(is map[string]any) {
-			ws, _ := is["watchers"].(map[string]any)
-			list, _ := ws["issueWatchers"].([]any)
-			list = slices.DeleteFunc(slices.Clone(list), func(w any) bool {
-				m, _ := w.(map[string]any)
-				u, _ := m["user"].(map[string]any)
-				return u["login"] == yt.Login && m["isStarred"] == true
-			})
-			if on {
-				list = append(list, map[string]any{"$type": "IssueWatcher", "isStarred": true, "user": map[string]any{"$type": "User", "login": yt.Login, "fullName": yt.FullName}})
-			}
-			is["watchers"] = map[string]any{"$type": "IssueWatchers", "hasStar": on, "issueWatchers": list}
-		}}
+		return commandPart{description: kw, html: boldHTML(kw, ""), apply: func(is map[string]any) { yt.setStar(is, on) }}
 	case "vote", "unvote":
 		if value != "" {
 			return bad(kw + " takes no value: " + value)

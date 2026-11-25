@@ -32,7 +32,8 @@ type Request struct {
 //	                                and restricted by customFields= when given
 //	POST /api/issues                creates an issue (see SeedSampleProjects); echoes
 //	                                the JSON body back when no projects are seeded
-//	POST /api/issues/{id}           updates summary, description and customFields
+//	POST /api/issues/{id}           updates summary, description, customFields
+//	                                and watchers.hasStar (the token user's star)
 //	POST|DELETE /api/issues/{id}/tags[/{tag}]  tags and untags an issue
 //	GET  /api/admin/projects        Projects, paged
 //	GET  /api/admin/projects/{id}/customFields  ProjectFields[project id], paged
@@ -135,6 +136,9 @@ type FakeYouTrack struct {
 	// IgnoreFieldWrites names custom fields whose REST writes YouTrack
 	// accepts (200) but leaves unchanged, as a workflow can.
 	IgnoreFieldWrites []string
+	// IgnoreStarWrites makes a watchers.hasStar write answer 200 without
+	// changing the star.
+	IgnoreStarWrites bool
 	// ForbidSilentCommands answers a command with "silent": true with a
 	// 403, as for a user without Apply Commands Silently.
 	ForbidSilentCommands bool

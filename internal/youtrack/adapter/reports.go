@@ -107,6 +107,14 @@ func GetWatchers(ctx context.Context, c *transport.Client, issueID string) (Issu
 	return out, nil
 }
 
+// SetStar stars an issue for the current user (on) or removes the star by
+// writing its watchers' hasStar. Unlike the star command, it does not
+// depend on the instance's language.
+func SetStar(ctx context.Context, c *transport.Client, issueID string, on bool) error {
+	body := map[string]any{"watchers": map[string]bool{"hasStar": on}}
+	return c.SendJSON(ctx, http.MethodPost, "/api/issues/"+url.PathEscape(issueID)+"?fields=id", body, nil)
+}
+
 // IssueVotes is an issue's vote count and whether the current user voted.
 type IssueVotes struct {
 	IssueIDReadable string
