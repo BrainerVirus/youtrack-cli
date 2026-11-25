@@ -46,9 +46,10 @@ with `go tool -modfile=tools/go.mod <name>`; no separate install needed.
    named in the skill, the README and `docs/` must exist in the command tree.
 
    `make it YTRACK_IT_PROJECT=<short>` runs the opt-in suite against your own
-   YouTrack instance: it creates issues prefixed `ytrack-it`, works on them
-   and deletes them, and refuses hosts other than `*.youtrack.cloud` unless
-   you allow one. Read [docs/integration-tests.md](docs/integration-tests.md)
+   YouTrack instance (add `YTRACK_IT_HOST=<name>.youtrack.cloud` when it is
+   not your default host): it creates issues prefixed `ytrack-it` and tags
+   named `ytrack-it-<run id>-*`, works on them and deletes them, and refuses
+   hosts other than `*.youtrack.cloud` unless you allow one. Read [docs/integration-tests.md](docs/integration-tests.md)
    first. It is never required for a PR.
 
    `make snapshot` is a local release dry run into `dist/` (needs goreleaser
