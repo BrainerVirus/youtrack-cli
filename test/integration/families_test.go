@@ -201,7 +201,7 @@ func (s *suite) attachmentSteps(id string) (err error) {
 		return fmt.Errorf("issue download %s: %w", names[0], err)
 	}
 	if _, err := s.ytrack("issue", "download", id, names[0], "-o", out); err == nil || !strings.Contains(err.Error(), "--clobber") {
-		return fmt.Errorf("issue download %s again: want a refusal naming --clobber, got %v", names[0], err)
+		return fmt.Errorf("issue download %s again: want a refusal naming --clobber, got %w", names[0], err)
 	}
 	if err := os.WriteFile(filepath.Join(out, names[0]), []byte("stale\n"), 0o600); err != nil {
 		return err
@@ -299,10 +299,10 @@ func (s *suite) voteWatchSteps(id, login string) error {
 		errs = append(errs, fmt.Errorf("issue vote: %w", err))
 	default:
 		if err := decode(out, &vote, "issue vote"); err != nil || !vote.Voted {
-			errs = append(errs, fmt.Errorf("issue vote %s: voted %v, want true: %v", id, vote.Voted, err))
+			errs = append(errs, fmt.Errorf("issue vote %s: voted %v, want true: %w", id, vote.Voted, err))
 		}
 		if err := s.ytrackJSON(&vote, "issue", "unvote", id, "--json", "voted"); err != nil || vote.Voted {
-			errs = append(errs, fmt.Errorf("issue unvote %s: voted %v, want false: %v", id, vote.Voted, err))
+			errs = append(errs, fmt.Errorf("issue unvote %s: voted %v, want false: %w", id, vote.Voted, err))
 		}
 	}
 

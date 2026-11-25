@@ -214,12 +214,11 @@ func (s *suite) commandSteps(id, login string) error {
 	if err := s.ytrackJSON(&assist, "issue", "command", id, assignToMe, "--assist", "--json", "commands,suggestions"); err != nil {
 		return fmt.Errorf("issue command --assist: %w", err)
 	}
-	if len(assist.Commands) == 0 || slices.ContainsFunc(assist.Commands, func(c struct {
-		Description string
-		Error       bool
-	}) bool {
-		return c.Error
-	}) {
+	failed := len(assist.Commands) == 0
+	for _, c := range assist.Commands {
+		failed = failed || c.Error
+	}
+	if failed {
 		return fmt.Errorf("issue command %q --assist: commands %+v, want parsed with no error", assignToMe, assist.Commands)
 	}
 	if _, err := s.ytrack("issue", "command", id, assignToMe, "--silent"); err != nil {
