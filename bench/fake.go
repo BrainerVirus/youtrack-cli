@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -268,11 +269,13 @@ func setField(issue map[string]any, name, value string) {
 	issue["customFields"] = append(fields, map[string]any{"name": name, "value": v})
 }
 
-// stubRuns replaces every leaf command's run with one that records the
-// parse. Groups keep theirs (help, or an unknown-command error), and PreRunE
+// stubRuns replaces every runnable command's run with one that records the
+// parse, a command with subcommands of its own included (issue comment).
+// Plain groups keep theirs (help, or an unknown-command error), and PreRunE
 // stays, so an unknown --json field fails as in ytrack.
 func stubRuns(cmd *cobra.Command, hit **parsed) {
-	if !cmd.HasSubCommands() && (cmd.Run != nil || cmd.RunE != nil) {
+	group := cmd.RunE != nil && reflect.ValueOf(cmd.RunE).Pointer() == reflect.ValueOf(cmdutil.GroupRunE).Pointer()
+	if !group && (cmd.Run != nil || cmd.RunE != nil) {
 		cmd.Run = nil
 		cmd.RunE = func(c *cobra.Command, args []string) error {
 			p := parsed{path: strings.TrimPrefix(c.CommandPath(), "ytrack "), args: args, flags: map[string][]string{}}

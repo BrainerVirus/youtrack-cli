@@ -158,11 +158,14 @@ func TestGivenHelpFirstOnlyTheFlagInTheTextViewPasses(t *testing.T) {
 	if f := Grade(c, calls("issue view APP-123 --comments --comments-limit 12"), nil, ""); len(f) != 0 {
 		t.Errorf("knew the flag, no guess: %v", f)
 	}
+	if f := Grade(c, calls("issue comment list APP-123 --limit 12"), nil, ""); len(f) != 0 {
+		t.Errorf("the comment list text view fails: %v", f)
+	}
 	for _, bad := range [][]Call{
 		calls("issue view APP-123 --json summary,comments"),
 		calls("issue view APP-123 --comments"),
 	} {
-		if f := Grade(c, bad, nil, ""); len(f) != 1 || f[0] != "require: issue view text with 12 comments" {
+		if f := Grade(c, bad, nil, ""); len(f) != 1 || f[0] != "require: 12 comments in a text view" {
 			t.Errorf("%v: %v", bad, f)
 		}
 	}
@@ -190,6 +193,7 @@ func TestGivenTheFakeYtrack(t *testing.T) {
 		{"it prints the real help", []string{"issue", "view", "--help"}, 0, "--comments-limit"},
 		{"it refuses an unknown flag like ytrack", []string{"issue", "view", "APP-1", "--hostname", "x"}, 1, "unknown flag: --hostname"},
 		{"it refuses an unknown command", []string{"issue", "close", "APP-1"}, 1, "ytrack issue --help"},
+		{"it answers a command that also has subcommands", []string{"issue", "comment", "APP-9", "--body", "hi"}, 0, "Comments-4-17"},
 		{"it refuses read parameters without -X GET", []string{"api", "/issues", "-f", "query=x"}, 1, "add -X GET"},
 		{"it answers a GET from the case fixture", []string{"api", "/issues", "-X", "GET", "-f", "query=x", "--fields", "idReadable"}, 0, "APP-401"},
 		{"it links by phrase", []string{"issue", "link", "APP-1", "APP-2", "--type", "Depends On"}, 0, "APP-1 depends on APP-2"},

@@ -1,6 +1,6 @@
 {
   "id": "help-first",
-  "about": "a count the skill does not name (--comments-limit) in the text view: read --help or know the flag; a guessed flag before --help fails",
+  "about": "a count the skill does not name in a text view (issue view --comments-limit, or issue comment list --limit): read --help or know the flag; a guessed flag before --help fails",
   "prompt": "Show me the last 12 comments on YouTrack issue APP-123 in ytrack's normal text view (not JSON), then summarize where the fix stands in two sentences.",
   "maxTurns": 10,
   "fixtures": {
@@ -207,18 +207,17 @@
     {
       "name": "issue view --help before a guessed flag",
       "match": [
-        "^(help issue view|issue view\\b.*(--help|-h)\\b)"
+        "^(help issue (view|comment list)|issue (view|comment list)\\b.*(--help|-h)\\b)"
       ],
       "before": [
-        "^issue view\\b"
+        "^issue (view|comment list)\\b"
       ],
       "beforeFailed": true
     },
     {
-      "name": "issue view text with 12 comments",
+      "name": "12 comments in a text view",
       "match": [
-        "^issue view (\\S+/)?APP-123\\b",
-        "--comments-limit 12\\b"
+        "^(issue view (\\S+/)?APP-123\\b.*--comments-limit 12\\b|issue comment list (\\S+/)?APP-123\\b.*(--limit|-L) 12\\b)"
       ],
       "not": [
         "--json|--jq|--template"

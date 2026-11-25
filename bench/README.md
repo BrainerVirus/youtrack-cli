@@ -135,7 +135,7 @@ rule holds when no call failed. A `forbid` rule breaks on
 | `link-es` | localized trap: `issue link --type 'subtask of'`, not `issue command` |
 | `attach` | `issue attach` with a local file |
 | `api-read` | `ytrack api` read with `-X GET`, a query and `--fields` |
-| `help-first` | 12 comments in the text view: `--comments-limit 12`, with `--help` before any guessed flag |
+| `help-first` | 12 comments in a text view: `issue view --comments-limit 12` or `issue comment list --limit 12`, with `--help` before any guessed flag |
 | `meeting-time` | `work-item add --meeting` with a `1h 30m` duration, today |
 | `create-stdin` | `issue create --description-file -` with the description piped in |
 
