@@ -35,6 +35,7 @@ Available Commands:
   help        Help about any command
   issue       Work with YouTrack issues
   project     Look up YouTrack projects
+  query       List saved searches
   skill       Print or install the ytrack agent skill
   tag         List and create issue tags
   upgrade     Upgrade ytrack to the latest release

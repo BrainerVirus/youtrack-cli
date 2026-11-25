@@ -8,6 +8,7 @@ import (
 	deletecmd "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/delete"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/edit"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/list"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/report"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
 
@@ -23,5 +24,6 @@ func NewCmdWorkItem(f *cmdutil.Factory) *cobra.Command {
 	cmd.AddCommand(add.NewCmdAdd(f))
 	cmd.AddCommand(edit.NewCmdEdit(f))
 	cmd.AddCommand(deletecmd.NewCmdDelete(f))
+	cmd.AddCommand(report.NewCmdReport(f))
 	return cmd
 }

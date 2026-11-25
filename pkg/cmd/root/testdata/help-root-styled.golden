@@ -35,6 +35,7 @@ An unofficial command-line interface for JetBrains YouTrack.
   <accent>help       </> Help about any command
   <accent>issue      </> Work with YouTrack issues
   <accent>project    </> Look up YouTrack projects
+  <accent>query      </> List saved searches
   <accent>skill      </> Print or install the ytrack agent skill
   <accent>tag        </> List and create issue tags
   <accent>upgrade    </> Upgrade ytrack to the latest release

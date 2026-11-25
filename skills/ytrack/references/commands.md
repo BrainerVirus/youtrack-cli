@@ -16,6 +16,11 @@ argument before it is an issue, and all of them change in one request.
 
 `--dry-run` cannot be combined with `--comment` or `--silent`.
 
+`--assist` is `--dry-run` plus YouTrack's completions for the end of the
+command, each printed as the full command it makes after `>` (with `--json`,
+in `suggestions`). Use it to find a field name or value:
+`ytrack issue command APP-123 'State Fi' --assist`.
+
 ## Write field names, not keywords
 
 YouTrack translates command keywords (`for`, `tag`, `add`, `remove`, ...)

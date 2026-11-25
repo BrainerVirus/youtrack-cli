@@ -1,6 +1,6 @@
 ---
 name: ytrack
-description: Work with JetBrains YouTrack through the ytrack CLI - read, search, create, edit and delete issues, add, list, edit and delete comments, apply YouTrack commands, list and create tags, list a project's custom fields, log and edit spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
+description: Work with JetBrains YouTrack through the ytrack CLI - read, search, count, create, edit and delete issues, read issue history, watchers and votes, vote and star issues, list saved searches, add, list, edit and delete comments, apply YouTrack commands, list and create tags, list a project's custom fields, log, edit and report spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
 metadata:
   version: "dev"
 ---
@@ -41,6 +41,10 @@ ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments   # lates
 ytrack issue list -q 'project: APP Assignee: me #Unresolved'
 ytrack issue list --project APP --assignee me --state 'In Progress' --sort 'updated desc'
 ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state
+ytrack issue count 'project: APP #Unresolved'          # a number, no listing
+ytrack issue activities APP-123 --category fields,comments --json timestamp,author,field,added
+ytrack issue watchers APP-123 --json login
+ytrack query list --json name,query                    # saved searches
 ```
 
 - `--json <fields>` prints only those fields (`--help` lists them); ask for
@@ -52,6 +56,11 @@ ytrack issue list --project APP --all --limit 0 --json idReadable,summary,state
   defaults to 30, `--limit 0` is all.
 - Query keywords such as `for:` are localized; `Assignee: me` (or
   `--assignee me`), `project:` and `#Unresolved` work on every locale.
+- Unsure of a field name or value? `ytrack issue list -q 'State: ' --query-assist`
+  prints YouTrack's completions instead of issues.
+- `ytrack issue vote APP-123` / `issue unvote` change your vote and
+  `issue watch` / `issue unwatch` your star; ask first. Exit 1 means nothing
+  changed (see the error).
 
 ## Create, edit, comment, attach
 
@@ -92,6 +101,7 @@ ytrack issue attachments APP-123                    # files on the issue and its
 
 ```sh
 ytrack issue command APP-123 'State Fixed' --dry-run    # preview, changes nothing
+ytrack issue command APP-123 'State Fi' --assist        # preview plus completions
 ytrack issue command APP-123 APP-124 'State Fixed' --comment 'Fixed in 2026.3'
 ```
 
@@ -124,6 +134,7 @@ ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
 ytrack work-item add APP-123 --duration 45m --date 2026-10-06 --type Development
 ytrack work-item add APP-123 --duration '1h 30m' --meeting      # meeting time
 ytrack work-item list APP-123 --author me --since 2026-10-01 --json id,date,duration,text
+ytrack work-item report --since 2026-10-01 --until 2026-10-31 --json minutes,issues,days   # across issues
 ytrack work-item edit APP-123 115-3 --duration 2h
 ytrack work-item delete APP-123 115-3 --yes
 ```

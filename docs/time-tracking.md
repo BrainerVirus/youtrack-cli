@@ -34,3 +34,36 @@ The project needs time tracking turned on in its settings.
 
 `--json` fields: `id`, `date`, `duration` (`{minutes, presentation}`),
 `author`, `type`, `text`, `issue` and `url`.
+
+## Reports across issues
+
+```sh
+ytrack work-item report --since 2026-10-01 --until 2026-10-31   # your time
+ytrack work-item report --author jroe --project APP --since 2026-10-01
+ytrack work-item report --since 2026-10-01 --json days --jq '.days[] | "\(.date) \(.duration)"'
+```
+
+```text
+$ ytrack work-item report --since 2026-10-01
+ISSUE    TIME
+APP-123  6h 30m
+APP-130  2h
+
+DATE        TIME
+2026-10-01  4h
+2026-10-02  4h 30m
+
+total	8h 30m
+```
+
+`work-item report` sums one author's work items across issues: the time per
+issue (most first), per day (oldest first) and in total. `--author` takes a
+login and defaults to `me`; `--since` and `--until` (`YYYY-MM-DD`,
+inclusive) bound the work item dates; `--project` keeps one project's
+issues. Totals are hours and minutes (`8h`, never `1d`), whatever the
+instance's work schedule.
+
+`--json` fields: `author`, `since`, `until`, `project`, `minutes`,
+`duration`, `issues` (`[{issue, url, minutes, duration}]`), `days`
+(`[{date, minutes, duration}]`) and `items` (the work items, with the
+fields of `work-item list`).

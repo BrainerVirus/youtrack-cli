@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `work-item report` sums your (or `--author`'s) time across issues per issue, per day and in total, with `--since`, `--until`, `--project` and `--json`. New issue reads: `issue count <query>` (waits while YouTrack is still counting), `issue activities` (history, `--category`), `issue watchers`, and `query list` (saved searches). `issue vote`/`unvote` and `issue watch`/`unwatch` (star) apply YouTrack's commands, then read the issue back and exit 1 when the state did not change. `issue command --assist` and `issue list --query-assist` (text or `--json`) show YouTrack's completions (#49).
 - `tag list`, `tag create <name>` and `project fields <project>` (name, type, required, default, values; --json); a missing `--tag` now points at `ytrack tag create` and an unknown `--field` at `ytrack project fields` (#49).
 - `issue delete` and `issue comment list|edit|delete` (with `issue comment add` as an explicit form of `issue comment`); deletes ask on a terminal and need `--yes` in scripts, comment edit takes --body, --body-file or the editor and sends nothing for unchanged text (#49).
 - `auth paths add <glob>...` and `auth paths remove <glob>...` (with `--host`) take globs as arguments; `--add`/`--remove` still work (#39).
