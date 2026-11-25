@@ -298,11 +298,15 @@ func (s *suite) voteWatchSteps(id, login string) error {
 	case err != nil:
 		errs = append(errs, fmt.Errorf("issue vote: %w", err))
 	default:
-		if err := decode(out, &vote, "issue vote"); err != nil || !vote.Voted {
-			errs = append(errs, fmt.Errorf("issue vote %s: voted %v, want true: %w", id, vote.Voted, err))
+		if err := decode(out, &vote, "issue vote"); err != nil {
+			errs = append(errs, fmt.Errorf("issue vote %s: %w", id, err))
+		} else if !vote.Voted {
+			errs = append(errs, fmt.Errorf("issue vote %s: voted false, want true", id))
 		}
-		if err := s.ytrackJSON(&vote, "issue", "unvote", id, "--json", "voted"); err != nil || vote.Voted {
-			errs = append(errs, fmt.Errorf("issue unvote %s: voted %v, want false: %w", id, vote.Voted, err))
+		if err := s.ytrackJSON(&vote, "issue", "unvote", id, "--json", "voted"); err != nil {
+			errs = append(errs, fmt.Errorf("issue unvote %s: %w", id, err))
+		} else if vote.Voted {
+			errs = append(errs, fmt.Errorf("issue unvote %s: voted true, want false", id))
 		}
 	}
 
