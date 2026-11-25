@@ -56,7 +56,6 @@ ytrack query list --json name,query                    # saved searches
   defaults to 30, `--limit 0` is all.
 - Query keywords such as `for:` are localized; `Assignee: me` (or
   `--assignee me`), `project:` and `#Unresolved` work on every locale.
-  Unresolved is `#Unresolved`, never `State: -Resolved`.
 - Unsure of a field name or value? `ytrack issue list -q 'State: ' --query-assist`
   prints YouTrack's completions instead of issues.
 - `ytrack issue vote APP-123` / `issue unvote` change your vote and
@@ -108,9 +107,7 @@ ytrack issue command APP-123 APP-124 'State Fixed' --comment 'Fixed in 2026.3'
 
 - Prefer `issue edit` for fields, tags and the assignee, and `issue link` for
   links. Use a command for several issues at once or what edit cannot do,
-  always with `--dry-run` first. Unsure of a value (a state that starts
-  with "Ver")? Preview with `--assist` and apply a full command it prints
-  after `>`; never apply a guess.
+  always with `--dry-run` first.
 - Command keywords are localized (a Spanish instance rejects `for me`);
   write `<Field name> <value>`, such as `Assignee me` or `State Fixed`.
   More: [references/commands.md](references/commands.md).
