@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `issue delete` and `issue comment list|edit|delete` (with `issue comment add` as an explicit form of `issue comment`); deletes ask on a terminal and need `--yes` in scripts, comment edit takes --body, --body-file or the editor and sends nothing for unchanged text (#49).
 - `auth paths add <glob>...` and `auth paths remove <glob>...` (with `--host`) take globs as arguments; `--add`/`--remove` still work (#39).
 - `issue view --json comments` lists each comment's attachments (`attachments: [{name, id, size, mimeType}]`) (#39).
 

@@ -8,8 +8,9 @@ Available Commands:
   attach      Attach files to an issue
   attachments List the attachments of an issue
   command     Apply a YouTrack command to one or more issues
-  comment     Add a comment to an issue
+  comment     Add, list, edit or delete issue comments
   create      Create an issue
+  delete      Delete an issue
   download    Download the attachments of an issue
   edit        Edit an issue
   link        Link issues, or list an issue's links or the link types

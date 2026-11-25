@@ -12,6 +12,7 @@ import (
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter/customfields"
+	commentedit "github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment/edit"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/link"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	workitem "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/shared"
@@ -278,6 +279,10 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"issue", "edit", "NSR-40", "-s", "edited", "-d", "", "--field", "Type=Feature", "--assignee", "jroe", "--add-tag", "regression", "--remove-tag", "sso", "--json", allIssue},
 		{"issue", "command", "NSR-40", "State Fixed", "--comment", "done", "--silent"},
 		{"issue", "command", "NSR-40", "Priority Critical", "--dry-run"},
+		{"issue", "comment", "list", "NSR-40", "--limit", "2", "--json", strings.Join(shared.CommentFields, ",")},
+		{"issue", "comment", "edit", "NSR-40", "4-1", "--body", "contract", "--json", strings.Join(commentedit.Fields, ",")},
+		{"issue", "comment", "delete", "NSR-40", "4-2", "--yes"},
+		{"issue", "delete", "NSR-41", "--yes"},
 	}
 	for _, args := range runs {
 		if code := env.Run(args...); code != 0 {
@@ -289,6 +294,14 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	env.Stdin.WriteString("y\n")
 	if code := env.Run("work-item", "delete", "NSR-40", "115-3"); code != 0 {
 		t.Fatalf("interactive delete: exit %d: %s", code, env.Stderr)
+	}
+	// So do the interactive comment and issue deletes, before asking.
+	env.Stdin.WriteString("y\ny\n")
+	if code := env.Run("issue", "comment", "delete", "NSR-40", "4-3"); code != 0 {
+		t.Fatalf("interactive comment delete: exit %d: %s", code, env.Stderr)
+	}
+	if code := env.Run("issue", "delete", "NSR-40"); code != 0 {
+		t.Fatalf("interactive issue delete: exit %d: %s", code, env.Stderr)
 	}
 
 	covered := map[string]bool{}
@@ -409,7 +422,7 @@ func TestContractCheckerCatchesMistakes(t *testing.T) {
 	if attrs, got := c.checkWrites(endpoint{Response: "Tag", Body: "reference"}, `{"id":"6-3"}`); attrs != nil || got != nil {
 		t.Errorf("a reference body: written %q, problems %q", attrs, got)
 	}
-	if _, ok := c.endpoint("DELETE", "/api/issues/NSR-1"); ok {
+	if _, ok := c.endpoint("DELETE", "/api/tags"); ok {
 		t.Error("an unlisted method matched")
 	}
 	if e, ok := c.endpoint("GET", "/api/users/me"); !ok || e.Path != "/users/me" {

@@ -9,6 +9,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/command"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/create"
+	deletecmd "github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/delete"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/download"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/edit"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/link"
@@ -33,6 +34,7 @@ func NewCmdIssue(f *cmdutil.Factory) *cobra.Command {
 	cmd.AddCommand(download.NewCmdDownload(f))
 	cmd.AddCommand(create.NewCmdCreate(f))
 	cmd.AddCommand(edit.NewCmdEdit(f))
+	cmd.AddCommand(deletecmd.NewCmdDelete(f))
 	cmd.AddCommand(command.NewCmdCommand(f))
 	cmd.AddCommand(link.NewCmdLink(f))
 	cmd.AddCommand(unlink.NewCmdUnlink(f))

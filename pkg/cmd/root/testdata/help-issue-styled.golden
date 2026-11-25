@@ -8,8 +8,9 @@ Work with YouTrack issues
   <accent>attach     </> Attach files to an issue
   <accent>attachments</> List the attachments of an issue
   <accent>command    </> Apply a YouTrack command to one or more issues
-  <accent>comment    </> Add a comment to an issue
+  <accent>comment    </> Add, list, edit or delete issue comments
   <accent>create     </> Create an issue
+  <accent>delete     </> Delete an issue
   <accent>download   </> Download the attachments of an issue
   <accent>edit       </> Edit an issue
   <accent>link       </> Link issues, or list an issue's links or the link types

@@ -236,12 +236,7 @@ func (i Issue) field(name string) any {
 	case "comments":
 		cs := make([]map[string]any, len(i.Comments))
 		for n, c := range i.Comments {
-			cs[n] = map[string]any{
-				"id": c.ID, "text": c.Text, "author": exportUser(c.Author),
-				"created": exportTime(c.Created), "updated": exportTime(c.Updated),
-				"url":         CommentURL(i.Host, i.IDReadable, c.ID),
-				"attachments": exportAttachments(i.CommentFiles[c.ID]),
-			}
+			cs[n] = Comment{Comment: c, Host: i.Host, IssueID: i.IDReadable, Files: i.CommentFiles[c.ID]}.ExportData(CommentFields)
 		}
 		return cs
 	}
