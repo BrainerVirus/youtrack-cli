@@ -87,6 +87,11 @@ func TestDocsDriftChecksOnlyLoneFlagsOutsideYtrack(t *testing.T) {
 	if want := []string{"--hostname is not a flag of any ytrack command"}; n != 1 || !slices.Equal(problems, want) {
 		t.Errorf("invocations %d, problems %q, want 1 and %q", n, problems, want)
 	}
+	// The same text as a Windows checkout gives it (CRLF): same result.
+	n, problems = docsDrift(tree, strings.ReplaceAll(text, "\n", "\r\n"))
+	if want := []string{"--hostname is not a flag of any ytrack command"}; n != 1 || !slices.Equal(problems, want) {
+		t.Errorf("CRLF: invocations %d, problems %q, want 1 and %q", n, problems, want)
+	}
 }
 
 // docsDrift is skillDrift for the user docs, which also quote other tools'
@@ -94,6 +99,9 @@ func TestDocsDriftChecksOnlyLoneFlagsOutsideYtrack(t *testing.T) {
 // quoted on its own, such as `--clobber`, must be a ytrack flag. ```text
 // blocks are output samples, not commands.
 func docsDrift(tree *cobra.Command, text string) (int, []string) {
+	// A Windows checkout has CRLF line endings; the fences and the
+	// output-block pattern expect LF.
+	text = strings.ReplaceAll(text, "\r\n", "\n")
 	var kept []string
 	for _, s := range codeSnippets(outputBlock.ReplaceAllString(text, "")) {
 		words := shellWords(s)
