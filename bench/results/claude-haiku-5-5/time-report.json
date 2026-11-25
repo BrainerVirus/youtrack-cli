@@ -1,0 +1,117 @@
+{
+  "case": "time-report",
+  "model": "claude-haiku-5-5",
+  "key": "1-80dd59b556897e13-7705a98f0de8646f-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 471,
+        "cacheCreation": 10798,
+        "cacheRead": 48646
+      },
+      "costUSD": 0.0028821600000000004,
+      "durationMs": 5233,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item report --since 2026-11-23 --until 2026-11-25 --json minutes,issues,days 2\u003e\u00261; echo \"EXIT:$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "report",
+            "--since",
+            "2026-11-23",
+            "--until",
+            "2026-11-25",
+            "--json",
+            "minutes,issues,days"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "You've logged **9h 30m** (570 minutes) this week, from Monday 2026-11-23 through today.\n\n| Issue | Time |\n|---|---|\n| APP-123 | 5h 30m |\n| APP-7 | 4h |\n| **Total** | **9h 30m** |\n\nBy day: Monday 4h 30m, Tuesday 5h. Nothing is logged yet for today (Wednesday)."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 753,
+        "cacheCreation": 10820,
+        "cacheRead": 48665
+      },
+      "costUSD": 0.00302775,
+      "durationMs": 6671,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item report --since 2026-11-23 --until 2026-11-25 --author me --json minutes,issues,days 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "report",
+            "--since",
+            "2026-11-23",
+            "--until",
+            "2026-11-25",
+            "--author",
+            "me",
+            "--json",
+            "minutes,issues,days"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "You logged **9h 30m** (570 minutes) from Monday 2026-11-23 through today.\n\n| Issue | Time |\n|---|---|\n| APP-123 | 5h 30m |\n| APP-7 | 4h |\n| **Total** | **9h 30m** |\n\nBy day: Monday 11-23 had 4h 30m, Tuesday 11-24 had 5h, and nothing was logged yet today (Wednesday 11-25).\n\nThe report's output showed `until: null`, so I'm not certain the end date was applied. The daily breakdown only covers the 23rd and 24th, so the total matches the window either way."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 574,
+        "cacheCreation": 10800,
+        "cacheRead": 48668
+      },
+      "costUSD": 0.0029342800000000005,
+      "durationMs": 5885,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item report --since 2026-11-23 --until 2026-11-25 --json minutes,issues,days"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "report",
+            "--since",
+            "2026-11-23",
+            "--until",
+            "2026-11-25",
+            "--json",
+            "minutes,issues,days"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "You've logged **9h 30m (570 min)** this week, Monday 2026-11-23 through today.\n\n| Issue | Time |\n|---|---|\n| APP-123 | 5h 30m |\n| APP-7 | 4h |\n| **Total** | **9h 30m** |\n\nBy day: Mon 23 Nov 4h 30m, Tue 24 Nov 5h, Wed 25 Nov nothing logged yet.\n\nThe report was filtered to the author `jdoe`, which is the account the CLI is logged in as."
+    }
+  ]
+}

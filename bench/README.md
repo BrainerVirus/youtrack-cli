@@ -222,3 +222,16 @@ per run.
 - `compare` against the 12-case results before #49 (skill 18328 → 20887
   bytes): no case dropped, `help-first` rose from 1/3 to 3/3 (it also
   accepts `issue comment list --limit 12`), and the pass rate stays 94.4%.
+
+`claude-haiku-5-5`, `--repeat 3`, the six new cases on the shipped skill:
+every run passes (18/18, $0.16 in all). Its other 12 cases are still the
+results made with the skill before #49 (marked stale in `summary.json`).
+
+| Case | Passes | Input |
+| --- | --- | --- |
+| `command-assist` | 3/3 | 109258 |
+| `comment-delete` | 3/3 | 82357 |
+| `count-open` | 3/3 | 58953 |
+| `create-field` | 3/3 | 80780 |
+| `tag-create` | 3/3 | 95251 |
+| `time-report` | 3/3 | 59471 |

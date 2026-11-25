@@ -1,0 +1,155 @@
+{
+  "case": "create-field",
+  "model": "claude-haiku-5-5",
+  "key": "1-9639bbea4cfb3bff-7705a98f0de8646f-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 493,
+        "cacheCreation": 10734,
+        "cacheRead": 69574
+      },
+      "costUSD": 0.00308984,
+      "durationMs": 5349,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack project fields APP",
+        "ytrack issue create -p APP -s 'Export times out on large projects' --field 'Severity=Show-stopper'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Export times out on large projects",
+            "--field",
+            "Severity=Show-stopper"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Created APP-130, \"Export times out on large projects\", in project APP with Severity set to Show-stopper: https://acme.youtrack.cloud/issue/APP-130\n\nShow-stopper is the highest value in the APP project's Severity field. The order from `ytrack project fields APP` is Cosmetic, Minor, Normal, Major, Show-stopper, so I took the last one as the highest."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 706,
+        "cacheCreation": 11462,
+        "cacheRead": 70168
+      },
+      "costUSD": 0.00334788,
+      "durationMs": 6705,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack project fields APP --help 2\u003e\u00261 | head -40; echo ---; ytrack project fields APP 2\u003e\u00261",
+        "ytrack issue create -p APP -s 'Export times out on large projects' --field 'Severity=Show-stopper' 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP",
+            "--help"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Export times out on large projects",
+            "--field",
+            "Severity=Show-stopper"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Created APP-130, \"Export times out on large projects\", at https://acme.youtrack.cloud/issue/APP-130.\n\nSeverity is set to **Show-stopper**, the highest value in APP's Severity field (the order is Cosmetic, Minor, Normal, Major, Show-stopper). I took that order from the field listing rather than from a YouTrack setting that marks ordering explicitly.\n\nThe other required fields (Priority, Type, State) were not set, so they took the project defaults: Normal, Bug and Open."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 559,
+        "cacheCreation": 10792,
+        "cacheRead": 69586
+      },
+      "costUSD": 0.00313456,
+      "durationMs": 5987,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack project fields APP",
+        "ytrack issue create -p APP -s 'Export times out on large projects' --field 'Severity=Show-stopper'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "create",
+            "-p",
+            "APP",
+            "-s",
+            "Export times out on large projects",
+            "--field",
+            "Severity=Show-stopper"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "I created APP-130, \"Export times out on large projects\", in project APP with Severity set to Show-stopper.\n\nShow-stopper is the highest severity APP allows. The field's values run Cosmetic, Minor, Normal, Major, Show-stopper, so it's the last one. I didn't set any other fields, so Type, Priority and Assignee are at their defaults.\n\nhttps://acme.youtrack.cloud/issue/APP-130"
+    }
+  ]
+}

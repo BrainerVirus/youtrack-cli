@@ -1,0 +1,148 @@
+{
+  "case": "comment-delete",
+  "model": "claude-haiku-5-5",
+  "key": "1-fe119641479f2068-7705a98f0de8646f-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 479,
+        "cacheCreation": 11641,
+        "cacheRead": 70492
+      },
+      "costUSD": 0.00327342,
+      "durationMs": 5698,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --json id,author,text",
+        "ytrack issue comment delete APP-123 4-2 --yes"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--json",
+            "id,author,text"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "delete",
+            "APP-123",
+            "4-2",
+            "--yes"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "I deleted Jane Doe's comment \"Cannot reproduce on Chrome.\" (comment 4-2) from APP-123. It was the only comment with that text, and the CLI confirmed the deletion. This can't be undone."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 550,
+        "cacheCreation": 11769,
+        "cacheRead": 70728
+      },
+      "costUSD": 0.0033368800000000004,
+      "durationMs": 7973,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --json id,author,text",
+        "ytrack issue comment delete APP-123 4-2 --yes"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--json",
+            "id,author,text"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "delete",
+            "APP-123",
+            "4-2",
+            "--yes"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "I deleted Jane Doe's comment \"Cannot reproduce on Chrome.\" (comment 4-2) from APP-123. The CLI confirmed the deletion. It was the only comment with that text, and I didn't touch any others."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 469,
+        "cacheCreation": 11706,
+        "cacheRead": 70712
+      },
+      "costUSD": 0.0032836199999999997,
+      "durationMs": 5941,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --json id,author,text",
+        "ytrack issue comment delete APP-123 4-2 --yes"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--json",
+            "id,author,text"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "delete",
+            "APP-123",
+            "4-2",
+            "--yes"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "I deleted Jane Doe's comment \"Cannot reproduce on Chrome.\" (comment ID 4-2) from APP-123. It was the only comment matching that text and author. The deletion can't be undone."
+    }
+  ]
+}

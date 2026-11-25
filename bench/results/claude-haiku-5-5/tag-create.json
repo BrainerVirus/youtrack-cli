@@ -1,0 +1,194 @@
+{
+  "case": "tag-create",
+  "model": "claude-haiku-5-5",
+  "key": "1-e3b3d70a3eb96c23-7705a98f0de8646f-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 8,
+        "output": 647,
+        "cacheCreation": 10902,
+        "cacheRead": 69675
+      },
+      "costUSD": 0.0032014499999999998,
+      "durationMs": 6088,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue edit APP-123 --add-tag safari-19",
+        "ytrack tag create safari-19 \u0026\u0026 ytrack issue edit APP-123 --add-tag safari-19"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "tag",
+            "create",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Issue APP-123 is now tagged `safari-19`.\n\nThe tag didn't exist on the instance, so I created it with `ytrack tag create safari-19` and then added it to the issue. The tag is now available for other issues too."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 849,
+        "cacheCreation": 11206,
+        "cacheRead": 91156
+      },
+      "costUSD": 0.0035782600000000006,
+      "durationMs": 7206,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack tag list --json name 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack tag create safari-19 2\u003e\u00261; echo \"exit=$?\"; ytrack issue edit APP-123 --add-tag safari-19 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack issue view APP-123 --json idReadable,tags 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "tag",
+            "list",
+            "--json",
+            "name"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "tag",
+            "create",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,tags"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "APP-123 is now tagged `safari-19`, and I confirmed it by reading the issue back.\n\nThe tag didn't exist in the instance, so I created it with `ytrack tag create safari-19` before adding it. Anyone on the instance can now see and use that tag."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 7,
+      "tokens": {
+        "input": 10,
+        "output": 1134,
+        "cacheCreation": 11401,
+        "cacheRead": 91387
+      },
+      "costUSD": 0.0037620699999999997,
+      "durationMs": 9064,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack tag list --json name 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack tag create safari-19 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack issue edit APP-123 --add-tag safari-19 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack issue view APP-123 --json idReadable,tags --jq '.tags' 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "tag",
+            "list",
+            "--json",
+            "name"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "tag",
+            "create",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "edit",
+            "APP-123",
+            "--add-tag",
+            "safari-19"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-123",
+            "--json",
+            "idReadable,tags",
+            "--jq",
+            ".tags"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "APP-123 is now tagged `safari-19`.\n\nThe tag didn't exist on the instance, so I created it with `ytrack tag create safari-19` and then added it to the issue. Anyone on the instance can now see and use that tag. A read-back shows `safari-19` as the issue's only tag."
+    }
+  ]
+}
