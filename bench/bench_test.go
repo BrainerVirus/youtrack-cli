@@ -385,6 +385,12 @@ func TestGivenTheNewCommandsTheFakeAnswersLikeYtrack(t *testing.T) {
 			t.Errorf("time-report answer %q: %v", answer, f)
 		}
 	}
+	// A different total that merely ends in the right digits must not pass.
+	for _, answer := range []string{"19h 30m in total", "29.5h logged", "1570 min"} {
+		if f := Grade(cases["time-report"], calls("work-item report --since 2026-11-23"), nil, answer); len(f) == 0 {
+			t.Errorf("time-report accepted the wrong answer %q", answer)
+		}
+	}
 	if out, code := run(cases["count-open"], "issue", "count", "project: APP #Unresolved", "--json", "count", "--jq", ".count"); code != 0 || strings.TrimSpace(out) != "137" {
 		t.Errorf("count --jq = %d %s", code, out)
 	}
