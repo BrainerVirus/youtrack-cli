@@ -66,6 +66,8 @@ ytrack issue comment APP-123 --body 'Fixed: ![](after.png)' --attach after.png
 ytrack issue command APP-123 'State Fixed' --dry-run      # preview a YouTrack command
 ytrack issue link APP-123 APP-7 --type 'depends on'
 ytrack work-item add APP-123 --duration 1h30m --text 'Code review'
+ytrack work-item report --since 2026-10-01                # your time per issue and per day
+ytrack issue count 'project: APP #Unresolved'
 ytrack api /users/me --fields login,fullName              # anything else
 ```
 
@@ -125,8 +127,8 @@ their package manager. See [docs/install.md](docs/install.md#upgrades).
 | Topic | |
 | --- | --- |
 | Login, tokens, several hosts, folder rules, CI | [docs/auth.md](docs/auth.md) |
-| Issues: list, view, create, edit, delete, comments, attachments, commands, links, tags, project fields | [docs/issues.md](docs/issues.md) |
-| Time tracking (work items) | [docs/time-tracking.md](docs/time-tracking.md) |
+| Issues: list, view, count, history, watchers, votes, saved searches, create, edit, delete, comments, attachments, commands, links, tags, project fields | [docs/issues.md](docs/issues.md) |
+| Time tracking (work items, time reports) | [docs/time-tracking.md](docs/time-tracking.md) |
 | Raw REST API (`ytrack api`) | [docs/api.md](docs/api.md) |
 | Output, JSON, exit codes, environment, config files, completion | [docs/scripting.md](docs/scripting.md) |
 | Install, verify, upgrade, background upgrade | [docs/install.md](docs/install.md) |
