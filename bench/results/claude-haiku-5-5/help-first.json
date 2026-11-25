@@ -1,7 +1,7 @@
 {
   "case": "help-first",
   "model": "claude-haiku-5-5",
-  "key": "1-74bee6843c8700af-48ccf401f04fcecd-claude-haiku-5-5",
+  "key": "1-5e956f717c22a5d0-48ccf401f04fcecd-claude-haiku-5-5",
   "passes": 3,
   "graded": 3,
   "pass": true,

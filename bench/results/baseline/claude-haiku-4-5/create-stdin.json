@@ -1,60 +1,67 @@
 {
   "case": "create-stdin",
   "model": "claude-haiku-4-5",
-  "key": "1-45bb42465b883e9f-4c7c930f04322467-claude-haiku-4-5",
-  "passes": 1,
+  "key": "1-45bb42465b883e9f-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 3,
   "graded": 3,
-  "pass": false,
+  "pass": true,
   "runs": [
     {
       "run": 1,
-      "status": "fail",
-      "failed": "forbid: the issue created twice",
-      "failures": [
-        "forbid: the issue created twice"
-      ],
-      "turns": 9,
+      "status": "pass",
+      "turns": 5,
       "tokens": {
-        "input": 68,
-        "output": 2033,
-        "cacheCreation": 14371,
-        "cacheRead": 176611
+        "input": 36,
+        "output": 911,
+        "cacheCreation": 11083,
+        "cacheRead": 76379
       },
-      "costUSD": 0.0566361,
-      "durationMs": 27443,
+      "costUSD": 0.034394900000000006,
+      "durationMs": 12385,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ls -la \u003cworld\u003e/project/ | head -20",
-        "ls -1 \u003cworld\u003e/project/export",
-        "ls -1 \u003cworld\u003e/project/export | ytrack issue create APP --summary \"Files in the export folder\" --description-file -",
-        "ytrack issue create --help",
-        "ls -1 export | ytrack issue create -p APP -s \"Files in the export folder\" -F -",
-        "ytrack issue view APP-130"
+        "find . -type d -name \"export\" | head -5",
+        "ls -1 export | ytrack issue create -p APP --summary \"Files in the export folder\" --description-file -"
       ],
       "calls": [
         {
           "argv": [
             "issue",
             "create",
+            "-p",
             "APP",
             "--summary",
             "Files in the export folder",
             "--description-file",
             "-"
           ],
-          "exit": 1,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "issue",
-            "create",
-            "--help"
-          ],
           "exit": 0,
-          "day": "2026-11-21"
-        },
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! I've created YouTrack issue **APP-130** with the summary \"Files in the export folder\" and piped the output of `ls -1 export` directly into the issue's description. \n\nThe issue is now available at: https://acme.youtrack.cloud/issue/APP-130"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 44,
+        "output": 1369,
+        "cacheCreation": 11698,
+        "cacheRead": 97840
+      },
+      "costUSD": 0.040069,
+      "durationMs": 16556,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "find \u003cworld\u003e/project -type d -name \"*export*\" 2\u003e/dev/null | head -20",
+        "ls -1 \u003cworld\u003e/project/export",
+        "ls -1 \u003cworld\u003e/project/export | ytrack issue create -p APP -s \"Files in the export folder\" --description-file -"
+      ],
+      "calls": [
         {
           "argv": [
             "issue",
@@ -63,89 +70,51 @@
             "APP",
             "-s",
             "Files in the export folder",
-            "-F",
+            "--description-file",
             "-"
           ],
           "exit": 0,
-          "day": "2026-11-21"
-        },
-        {
-          "argv": [
-            "issue",
-            "view",
-            "APP-130"
-          ],
-          "exit": 1,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "✓ Done! I've successfully created YouTrack issue **APP-130** with:\n- **Summary:** \"Files in the export folder\"\n- **Description:** The output from `ls -1 export` piped directly in (containing `a.csv` and `b.csv`)\n\nThe issue is available at: https://acme.youtrack.cloud/issue/APP-130"
+      "answer": "Done! Created issue **APP-130** with the export folder file listing piped directly into the description: https://acme.youtrack.cloud/issue/APP-130"
     },
     {
-      "run": 2,
+      "run": 3,
       "status": "pass",
-      "turns": 5,
+      "turns": 6,
       "tokens": {
-        "input": 28,
-        "output": 722,
-        "cacheCreation": 11412,
-        "cacheRead": 56154
+        "input": 44,
+        "output": 1133,
+        "cacheCreation": 11435,
+        "cacheRead": 97358
       },
-      "costUSD": 0.0320774,
-      "durationMs": 12327,
+      "costUSD": 0.038314799999999996,
+      "durationMs": 14458,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ls -1",
-        "ls -1 | ytrack issue create --project APP --summary \"Files in the export folder\" --description-file -"
+        "find \u003cworld\u003e/project -type d -name export 2\u003e/dev/null",
+        "ls -1 \u003cworld\u003e/project/export",
+        "ls -1 \u003cworld\u003e/project/export | ytrack issue create -p APP -s \"Files in the export folder\" --description-file -"
       ],
       "calls": [
         {
           "argv": [
             "issue",
             "create",
-            "--project",
+            "-p",
             "APP",
-            "--summary",
+            "-s",
             "Files in the export folder",
             "--description-file",
             "-"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Done! Created issue **APP-130** with the summary \"Files in the export folder\" and the output of `ls -1` as the description:\n\n```\nexport\nnotes.md\n```\n\nThe issue is at: https://acme.youtrack.cloud/issue/APP-130"
-    },
-    {
-      "run": 3,
-      "status": "fail",
-      "failed": "require: issue create with the description on stdin",
-      "failures": [
-        "require: issue create with the description on stdin",
-        "require: the description piped from ls"
-      ],
-      "turns": 6,
-      "tokens": {
-        "input": 44,
-        "output": 1104,
-        "cacheCreation": 12004,
-        "cacheRead": 96939
-      },
-      "costUSD": 0.0392659,
-      "durationMs": 16369,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ls -1",
-        "ls -1 export/",
-        "ytrack issue create --project APP --summary \"Files in the export folder\" --description \"$(ls -1 export/)\""
-      ],
-      "calls": null,
-      "denials": [
-        "ytrack issue create --project APP --summary \"Files in the export folder\" --description \"$(ls -1 export/)\""
-      ],
-      "answer": "I need permission to run the `ytrack` command to create the YouTrack issue. This will execute:\n\n```bash\nytrack issue create --project APP --summary \"Files in the export folder\" --description \"$(ls -1 export/)\"\n```\n\nThis pipes the output of `ls -1 export/` (which lists the files `a.csv` and `b.csv`) directly into the issue's description field. May I proceed?"
+      "answer": "Done! Created issue **APP-130** with the summary \"Files in the export folder\" and the output of `ls -1` piped directly into the description. The issue is at https://acme.youtrack.cloud/issue/APP-130"
     }
   ]
 }

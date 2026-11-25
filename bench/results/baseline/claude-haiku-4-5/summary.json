@@ -1,7 +1,7 @@
 {
   "model": "claude-haiku-4-5",
-  "skillHash": "4c7c930f04322467",
-  "skillBytes": 18977,
+  "skillHash": "7705a98f0de8646f",
+  "skillBytes": 20887,
   "cases": [
     {
       "case": "api-read",
@@ -10,27 +10,53 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 67395.7,
-      "sdTotalInput": 196.9,
-      "meanOutput": 690.7,
-      "meanDurationMs": 9267,
-      "costUSD": 0.0954
+      "meanTotalInput": 66478,
+      "sdTotalInput": 268.9,
+      "meanOutput": 774.3,
+      "meanDurationMs": 10774.3,
+      "costUSD": 0.0936
     },
     {
       "case": "attach",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 5,
+      "meanTotalInput": 87066.3,
+      "sdTotalInput": 73.2,
+      "meanOutput": 662.3,
+      "meanDurationMs": 9395.7,
+      "costUSD": 0.0982
+    },
+    {
+      "case": "command-assist",
       "pass": true,
       "passes": 2,
       "graded": 3,
       "skillLoaded": 3,
       "failed": [
-        "require: issue attach crash.log"
+        "require: one command for both issues"
       ],
+      "meanTurns": 7,
+      "meanTotalInput": 139433.7,
+      "sdTotalInput": 84730.5,
+      "meanOutput": 1281.3,
+      "meanDurationMs": 16978.3,
+      "costUSD": 0.1282
+    },
+    {
+      "case": "comment-delete",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
       "meanTurns": 5,
-      "meanTotalInput": 88273.7,
-      "sdTotalInput": 405.5,
-      "meanOutput": 846,
-      "meanDurationMs": 11110.7,
-      "costUSD": 0.106
+      "meanTotalInput": 91855.3,
+      "sdTotalInput": 198.6,
+      "meanOutput": 826.7,
+      "meanDurationMs": 11861.7,
+      "costUSD": 0.1079
     },
     {
       "case": "comment",
@@ -39,46 +65,69 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 67256.3,
-      "sdTotalInput": 169.5,
-      "meanOutput": 552,
-      "meanDurationMs": 7736,
-      "costUSD": 0.0926
+      "meanTotalInput": 66347.7,
+      "sdTotalInput": 137.7,
+      "meanOutput": 602,
+      "meanDurationMs": 8479.3,
+      "costUSD": 0.09
+    },
+    {
+      "case": "count-open",
+      "pass": true,
+      "passes": 2,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "require: issue count of APP unresolved"
+      ],
+      "meanTurns": 4.3,
+      "meanTotalInput": 74466.3,
+      "sdTotalInput": 14380.9,
+      "meanOutput": 715.7,
+      "meanDurationMs": 10493.7,
+      "costUSD": 0.0951
+    },
+    {
+      "case": "create-field",
+      "pass": true,
+      "passes": 2,
+      "graded": 3,
+      "skillLoaded": 3,
+      "failed": [
+        "require: project fields before the create"
+      ],
+      "meanTurns": 6,
+      "meanTotalInput": 114299,
+      "sdTotalInput": 23930.8,
+      "meanOutput": 897,
+      "meanDurationMs": 13101,
+      "costUSD": 0.1131
     },
     {
       "case": "create-stdin",
-      "pass": false,
-      "passes": 1,
+      "pass": true,
+      "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "failed": [
-        "forbid: the issue created twice",
-        "require: issue create with the description on stdin"
-      ],
-      "meanTurns": 6.7,
-      "meanTotalInput": 122543.7,
-      "sdTotalInput": 62834.6,
-      "meanOutput": 1286.3,
-      "meanDurationMs": 18713,
-      "costUSD": 0.128
+      "meanTurns": 5.7,
+      "meanTotalInput": 101972.3,
+      "sdTotalInput": 12540.7,
+      "meanOutput": 1137.7,
+      "meanDurationMs": 14466.3,
+      "costUSD": 0.1128
     },
     {
       "case": "help-first",
-      "pass": false,
-      "passes": 0,
+      "pass": true,
+      "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "failed": [
-        "require: issue view text with 12 comments",
-        "require: issue view text with 12 comments",
-        "require: issue view text with 12 comments"
-      ],
-      "meanTurns": 4,
-      "meanTotalInput": 67941,
-      "sdTotalInput": 141.5,
-      "meanOutput": 1579,
-      "meanDurationMs": 18222.3,
-      "costUSD": 0.112
+      "meanTurns": 4.3,
+      "meanTotalInput": 74475.3,
+      "sdTotalInput": 13576.9,
+      "meanOutput": 1091.3,
+      "meanDurationMs": 12861.3,
+      "costUSD": 0.1019
     },
     {
       "case": "link-es",
@@ -86,11 +135,11 @@
       "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "meanTurns": 4.7,
-      "meanTotalInput": 83756,
-      "sdTotalInput": 14399,
-      "meanOutput": 897.7,
-      "meanDurationMs": 11915.3,
+      "meanTurns": 5,
+      "meanTotalInput": 90169.7,
+      "sdTotalInput": 293.5,
+      "meanOutput": 954,
+      "meanDurationMs": 12105.3,
       "costUSD": 0.1051
     },
     {
@@ -100,11 +149,11 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 67338.7,
-      "sdTotalInput": 57.1,
-      "meanOutput": 644.7,
-      "meanDurationMs": 9140,
-      "costUSD": 0.0945
+      "meanTotalInput": 66302.3,
+      "sdTotalInput": 124.8,
+      "meanOutput": 607.7,
+      "meanDurationMs": 9108.3,
+      "costUSD": 0.0901
     },
     {
       "case": "meeting-time",
@@ -113,11 +162,11 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 67471.3,
-      "sdTotalInput": 340.3,
-      "meanOutput": 818.7,
-      "meanDurationMs": 10920,
-      "costUSD": 0.0981
+      "meanTotalInput": 66383.3,
+      "sdTotalInput": 187.6,
+      "meanOutput": 707.7,
+      "meanDurationMs": 9565.3,
+      "costUSD": 0.0923
     },
     {
       "case": "my-issues-es",
@@ -125,28 +174,25 @@
       "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "meanTurns": 4,
-      "meanTotalInput": 67595,
-      "sdTotalInput": 599.6,
-      "meanOutput": 1012,
-      "meanDurationMs": 13146.7,
+      "meanTurns": 4.7,
+      "meanTotalInput": 82921.7,
+      "sdTotalInput": 28716,
+      "meanOutput": 821.3,
+      "meanDurationMs": 11628.3,
       "costUSD": 0.1017
     },
     {
       "case": "search-query",
       "pass": true,
-      "passes": 2,
+      "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "failed": [
-        "require: issue list with a tag query on APP"
-      ],
-      "meanTurns": 6,
-      "meanTotalInput": 88514.7,
-      "sdTotalInput": 36533.6,
-      "meanOutput": 1452.7,
-      "meanDurationMs": 18325.3,
-      "costUSD": 0.1307
+      "meanTurns": 4,
+      "meanTotalInput": 66340.3,
+      "sdTotalInput": 223.7,
+      "meanOutput": 592.3,
+      "meanDurationMs": 9793.7,
+      "costUSD": 0.0899
     },
     {
       "case": "set-field-es",
@@ -155,11 +201,37 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 67418.3,
-      "sdTotalInput": 221.8,
-      "meanOutput": 804.7,
-      "meanDurationMs": 10879,
-      "costUSD": 0.0977
+      "meanTotalInput": 66294.3,
+      "sdTotalInput": 103.2,
+      "meanOutput": 638.7,
+      "meanDurationMs": 9273.7,
+      "costUSD": 0.0906
+    },
+    {
+      "case": "tag-create",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 5.3,
+      "meanTotalInput": 97568,
+      "sdTotalInput": 13848.6,
+      "meanOutput": 671.7,
+      "meanDurationMs": 9788,
+      "costUSD": 0.1016
+    },
+    {
+      "case": "time-report",
+      "pass": true,
+      "passes": 3,
+      "graded": 3,
+      "skillLoaded": 3,
+      "meanTurns": 4,
+      "meanTotalInput": 66567.3,
+      "sdTotalInput": 162,
+      "meanOutput": 749.3,
+      "meanDurationMs": 9876,
+      "costUSD": 0.0937
     },
     {
       "case": "view-json",
@@ -168,28 +240,28 @@
       "graded": 3,
       "skillLoaded": 3,
       "meanTurns": 4,
-      "meanTotalInput": 67461.7,
-      "sdTotalInput": 157.2,
-      "meanOutput": 769.7,
-      "meanDurationMs": 10287.3,
-      "costUSD": 0.0972
+      "meanTotalInput": 66378.3,
+      "sdTotalInput": 304.8,
+      "meanOutput": 664,
+      "meanDurationMs": 9520.7,
+      "costUSD": 0.0914
     }
   ],
   "totals": {
-    "cases": 12,
-    "casesPassed": 10,
-    "runs": 36,
-    "graded": 36,
-    "passes": 29,
-    "passRate": 0.8056,
+    "cases": 18,
+    "casesPassed": 18,
+    "runs": 54,
+    "graded": 54,
+    "passes": 51,
+    "passRate": 0.9444,
     "tokens": {
-      "input": 1124,
-      "output": 34062,
-      "cacheCreation": 426582,
-      "cacheRead": 2341192
+      "input": 1806,
+      "output": 43185,
+      "cacheCreation": 596792,
+      "cacheRead": 3857360
     },
-    "totalInput": 2768898,
-    "meanTotalInputPerRun": 76913.8,
-    "costUSD": 1.2587
+    "totalInput": 4455958,
+    "meanTotalInputPerRun": 82517.7,
+    "costUSD": 1.7971
   }
 }

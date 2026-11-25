@@ -1,0 +1,76 @@
+{
+  "case": "comment-delete",
+  "model": "claude-haiku-4-5",
+  "key": "1-fe119641479f2068-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: comment delete of 4-2",
+      "failures": [
+        "require: comment delete of 4-2"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 562,
+        "cacheCreation": 7175,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0184365,
+      "durationMs": 7704,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have a built-in YouTrack integration, but I can help you delete that comment using the YouTrack API via curl if you provide authentication.\n\nTo proceed, I'd need either:\n1. Your YouTrack **API token** (from your YouTrack profile settings)\n2. Or your YouTrack instance URL so I can help you structure the request\n\nWhich would you prefer? Once you provide the API token, I can make the deletion request to remove Jane Doe's comment from APP-123."
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: comment delete of 4-2",
+      "failures": [
+        "require: comment delete of 4-2"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 726,
+        "cacheCreation": 7177,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0192605,
+      "durationMs": 9757,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I appreciate the explicit authorization, but I need more information to proceed. I don't have direct access to YouTrack in my available tools.\n\nTo delete the comment, I'd need:\n\n1. **YouTrack URL/instance** — where is your YouTrack deployed? (e.g., your-instance.youtrack.cloud)\n2. **Authentication** — how should I authenticate? (API token, credentials, or is there a CLI already configured locally?)\n3. **Comment ID** — do you know the comment ID, or should I look it up by searching for Jane Doe's comment first?\n\nOnce you provide these, I can either:\n- Use a `curl` command to call the YouTrack API directly, or\n- Use a YouTrack CLI if one is available on your system\n\nWhich approach would work best for your setup?"
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: comment delete of 4-2",
+      "failures": [
+        "require: comment delete of 4-2"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 548,
+        "cacheCreation": 7175,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0183665,
+      "durationMs": 7840,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have tools available to interact with YouTrack's API to delete comments. I can work with git, GitHub, and local files, but YouTrack integration isn't set up in this session.\n\nYou'll need to delete that comment directly in YouTrack:\n1. Navigate to APP-123\n2. Find Jane Doe's comment \"Cannot reproduce on Chrome\"\n3. Click the comment's menu (usually ⋯) and select Delete\n\nIf you'd like to automate YouTrack operations in the future, we could explore setting up an MCP (Model Context Protocol) server for YouTrack, but that would require additional configuration first."
+    }
+  ]
+}

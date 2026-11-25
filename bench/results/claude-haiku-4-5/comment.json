@@ -1,7 +1,7 @@
 {
   "case": "comment",
   "model": "claude-haiku-4-5",
-  "key": "1-69ffb72ae5ff141c-48ccf401f04fcecd-claude-haiku-4-5",
+  "key": "1-69ffb72ae5ff141c-7705a98f0de8646f-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,12 +12,44 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 692,
-        "cacheCreation": 10176,
-        "cacheRead": 54907
+        "output": 519,
+        "cacheCreation": 10609,
+        "cacheRead": 55587
       },
-      "costUSD": 0.0293307,
-      "durationMs": 10729,
+      "costUSD": 0.0293997,
+      "durationMs": 7636,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "APP-123",
+            "--body",
+            "Reproduced on 2026.2 with Safari 19."
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Comment added successfully to APP-123: \"Reproduced on 2026.2 with Safari 19.\" — [view on YouTrack](https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0)"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 634,
+        "cacheCreation": 10719,
+        "cacheRead": 55576
+      },
+      "costUSD": 0.030193599999999998,
+      "durationMs": 8502,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -33,39 +65,7 @@
             "Reproduced on 2026.2 with Safari 19."
           ],
           "exit": 0,
-          "day": "2026-11-21"
-        }
-      ],
-      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
-    },
-    {
-      "run": 2,
-      "status": "pass",
-      "turns": 4,
-      "tokens": {
-        "input": 28,
-        "output": 484,
-        "cacheCreation": 10001,
-        "cacheRead": 54813
-      },
-      "costUSD": 0.027931300000000003,
-      "durationMs": 9798,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
-      ],
-      "calls": [
-        {
-          "argv": [
-            "issue",
-            "comment",
-            "APP-123",
-            "--body",
-            "Reproduced on 2026.2 with Safari 19."
-          ],
-          "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
       "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible at: https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
@@ -76,16 +76,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 532,
-        "cacheCreation": 10070,
-        "cacheRead": 54862
+        "output": 653,
+        "cacheCreation": 10765,
+        "cacheRead": 55703
       },
-      "costUSD": 0.0283142,
-      "durationMs": 9529,
+      "costUSD": 0.0303933,
+      "durationMs": 9300,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue comment APP-123 --body 'Reproduced on 2026.2 with Safari 19.'"
+        "ytrack issue comment APP-123 --body \"Reproduced on 2026.2 with Safari 19.\""
       ],
       "calls": [
         {
@@ -97,10 +97,10 @@
             "Reproduced on 2026.2 with Safari 19."
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Comment added to APP-123: \"Reproduced on 2026.2 with Safari 19.\" — view it at https://acme.youtrack.cloud/issue/APP-123#focus=Comments-4-17.0-0"
+      "answer": "Done! I've added the comment \"Reproduced on 2026.2 with Safari 19.\" to APP-123. The comment is now visible on the issue."
     }
   ]
 }

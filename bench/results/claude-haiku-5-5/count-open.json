@@ -1,0 +1,100 @@
+{
+  "case": "count-open",
+  "model": "claude-haiku-5-5",
+  "key": "1-c0374e8590f6271f-7705a98f0de8646f-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 233,
+        "cacheCreation": 10387,
+        "cacheRead": 48548
+      },
+      "costUSD": 0.0026799799999999998,
+      "durationMs": 4191,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue count 'project: APP #Unresolved'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "count",
+            "project: APP #Unresolved"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "137"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 246,
+        "cacheCreation": 10400,
+        "cacheRead": 48563
+      },
+      "costUSD": 0.00268923,
+      "durationMs": 4202,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue count 'project: APP #Unresolved'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "count",
+            "project: APP #Unresolved"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "137"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 6,
+        "output": 221,
+        "cacheCreation": 10392,
+        "cacheRead": 48551
+      },
+      "costUSD": 0.0026750100000000002,
+      "durationMs": 4158,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue count 'project: APP #Unresolved'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "count",
+            "project: APP #Unresolved"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "137"
+    }
+  ]
+}

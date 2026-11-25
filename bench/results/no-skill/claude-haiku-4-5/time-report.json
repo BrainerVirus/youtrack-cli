@@ -1,0 +1,79 @@
+{
+  "case": "time-report",
+  "model": "claude-haiku-4-5",
+  "key": "1-80dd59b556897e13-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: work-item report since Monday",
+      "failures": [
+        "require: work-item report since Monday",
+        "answer"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 461,
+        "cacheCreation": 7189,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0179595,
+      "durationMs": 7012,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have direct access to YouTrack in my available tools. To help you get this information, I'll need:\n\n1. **Your YouTrack instance URL** (e.g., `https://company.youtrack.cloud` or similar)\n2. **Authentication** — either:\n   - Your API token (if you have one)\n   - Login credentials (username/password or SSO)\n   - Or you could export/share the data another way\n\nDo you have a YouTrack API token I can use, or would you prefer to access your time logs directly and share the data with me?"
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: work-item report since Monday",
+      "failures": [
+        "require: work-item report since Monday",
+        "answer"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 452,
+        "cacheCreation": 7189,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0179145,
+      "durationMs": 6939,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have access to your YouTrack instance. To retrieve your time logs, I'll need:\n\n1. **YouTrack URL** (e.g., `https://your-domain.youtrack.cloud`)\n2. **API token** (from YouTrack: Settings → Authentication → Tokens)\n3. **Your username** (the account to filter time logs for)\n\nAlternatively, if you can export the data or provide YouTrack API access through environment variables, I can query it for you.\n\nDo you have these details, or would you prefer to share them another way?"
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: work-item report since Monday",
+      "failures": [
+        "require: work-item report since Monday",
+        "answer"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 411,
+        "cacheCreation": 7189,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0177095,
+      "durationMs": 6209,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have direct access to YouTrack to retrieve your time logs. To help you with this, I'd need one of the following:\n\n1. **YouTrack API credentials** — if you can provide an API token, I can query your time logs directly\n2. **A link to a YouTrack report or export** — if you have a time-tracking report you can share\n3. **Manual data** — if you can tell me which issues you logged time to and how much\n\nWhich approach would work best for you? If you have API credentials, I can write a script to fetch and summarize your time logs for this week."
+    }
+  ]
+}

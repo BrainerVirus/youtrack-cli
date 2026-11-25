@@ -1,7 +1,7 @@
 {
   "case": "search-query",
   "model": "claude-haiku-4-5",
-  "key": "1-618b93a1905fddff-48ccf401f04fcecd-claude-haiku-4-5",
+  "key": "1-618b93a1905fddff-7705a98f0de8646f-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -12,12 +12,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 607,
-        "cacheCreation": 10148,
-        "cacheRead": 54777
+        "output": 580,
+        "cacheCreation": 10697,
+        "cacheRead": 55548
       },
-      "costUSD": 0.028836700000000003,
-      "durationMs": 8800,
+      "costUSD": 0.0298768,
+      "durationMs": 9966,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -34,7 +34,7 @@
             "idReadable"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
       "answer": "The unresolved YouTrack issues in project APP tagged with \"regression\" are:\n\n- **APP-201**\n- **APP-207**"
@@ -45,16 +45,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 653,
-        "cacheCreation": 10153,
-        "cacheRead": 54796
+        "output": 448,
+        "cacheCreation": 10565,
+        "cacheRead": 55565
       },
-      "costUSD": 0.0290786,
-      "durationMs": 9585,
+      "costUSD": 0.0289545,
+      "durationMs": 7720,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack issue list -q 'project: APP tag: regression' --json idReadable,state"
+        "ytrack issue list -q 'project: APP tag: regression State: Unresolved' --json idReadable"
       ],
       "calls": [
         {
@@ -62,15 +62,15 @@
             "issue",
             "list",
             "-q",
-            "project: APP tag: regression",
+            "project: APP tag: regression State: Unresolved",
             "--json",
-            "idReadable,state"
+            "idReadable"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "The unresolved YouTrack issues in project APP tagged with \"regression\" are:\n\n- **APP-201** (Open)\n- **APP-207** (In Progress)"
+      "answer": "The unresolved YouTrack issues in project APP tagged as \"regression\" are:\n\n- **APP-201**\n- **APP-207**"
     },
     {
       "run": 3,
@@ -78,12 +78,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 702,
-        "cacheCreation": 10246,
-        "cacheRead": 54812
+        "output": 749,
+        "cacheCreation": 10857,
+        "cacheRead": 55705
       },
-      "costUSD": 0.0295112,
-      "durationMs": 10738,
+      "costUSD": 0.0310575,
+      "durationMs": 11695,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -100,10 +100,10 @@
             "idReadable"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "The unresolved YouTrack issues in project APP tagged as regression are:\n\n- **APP-201**\n- **APP-207**"
+      "answer": "Found 2 unresolved regression issues in project APP:\n\n- **APP-201**\n- **APP-207**"
     }
   ]
 }

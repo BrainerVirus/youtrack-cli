@@ -93,7 +93,7 @@ parsed call is answered from the case's `fixtures.rules` (regex on the argv
 line, first match wins), then from built-in replies (issues and lists from
 `fixtures.issues` and `fixtures.list`, a success line for writes, the
 `ytrack api` refusal of read parameters without `-X GET`, link phrases, the
-work item duration rules). Its HTTP transport fails every request, and it
+work item duration rules, comment list and delete, tag list and create, project fields from the fixture issues). Its HTTP transport fails every request, and it
 reads no config. Each call is appended to `calls.jsonl` with its exit code.
 
 A run where the model ran `ytrack` but the fake logged nothing is a harness
@@ -108,7 +108,7 @@ error (a real `ytrack` was first on `PATH`).
 | `prompt` | the user message |
 | `maxTurns` | `--max-turns` (default 10) |
 | `files` | files written into the project |
-| `fixtures` | `issues` (by ID), `list` (what `issue list` returns), `rules` (`match`, `stdout`, `stderr`, `exit`) |
+| `fixtures` | `issues` (by ID), `list` (what `issue list` returns), `tags` (the tags that exist: `--tag` and `--add-tag` refuse others until `tag create`), `rules` (`match`, `stdout`, `stderr`, `exit`) |
 | `require` | rules that must hold |
 | `forbid` | rules that must not hold |
 | `answer` | regex the final message must match (case-insensitive) |
@@ -135,9 +135,15 @@ rule holds when no call failed. A `forbid` rule breaks on
 | `link-es` | localized trap: `issue link --type 'subtask of'`, not `issue command` |
 | `attach` | `issue attach` with a local file |
 | `api-read` | `ytrack api` read with `-X GET`, a query and `--fields` |
-| `help-first` | 12 comments in the text view: `--comments-limit 12`, with `--help` before any guessed flag |
+| `help-first` | 12 comments in a text view: `issue view --comments-limit 12` or `issue comment list --limit 12`, with `--help` before any guessed flag |
 | `meeting-time` | `work-item add --meeting` with a `1h 30m` duration, today |
 | `create-stdin` | `issue create --description-file -` with the description piped in |
+| `comment-delete` | the comment the user names: its ID from `issue comment list`, then `issue comment delete --yes`; never `issue delete` |
+| `time-report` | my time this week: one `work-item report --since`, with the total in the answer |
+| `count-open` | `issue count` with a `project:` and `#Unresolved` query, the number in the answer |
+| `create-field` | a value the prompt does not name: `project fields` before `issue create --field Severity=Show-stopper`, created once |
+| `tag-create` | a missing tag: `tag create`, then `issue edit --add-tag`; never a tag command |
+| `command-assist` | a half-named state: the value from `--assist`, `--dry-run`, `project fields` or `--query-assist` before one `issue command` on both issues, never a guess |
 
 A new case gets a row in `TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap`
 (`bench/bench_test.go`): the calls the skill teaches must pass and the trap
@@ -161,3 +167,71 @@ directory with `~` and the login name with `<user>`, masks anything shaped
 like a YouTrack token (`perm:`), an Anthropic key or a bearer header as
 `<token>`, and refuses to write a file that still holds a home path or a
 token.
+
+## Results
+
+`claude-haiku-4-5`, `--repeat 3`, after the #49 commands (comment
+list/edit/delete, tags, project fields, work-item report, issue count,
+`--assist`). A is the skill as shipped, kept; its `bench/results` are the
+ones in this repo. B added three body lines: read `project fields` for a
+value the user does not name, `--assist` for a half-known command value,
+and `#Unresolved` rather than `State: -Resolved`. C kept only B's `--assist`
+and `#Unresolved` lines. Both were dropped. Input is the mean total input
+per run.
+
+| Case | A | A input | B | B input | C | C input | no skill |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `api-read` | 3/3 | 66478 | 3/3 | 66453 | 3/3 | 66718 | |
+| `attach` | 3/3 | 87066 | 3/3 | 95397 | 3/3 | 87506 | |
+| `command-assist` | 2/3 | 139433 | 3/3 | 90788 | 3/3 | 99400 | 0/3 |
+| `comment-delete` | 3/3 | 91855 | 3/3 | 91844 | 3/3 | 108944 | 0/3 |
+| `comment` | 3/3 | 66347 | 3/3 | 66619 | 3/3 | 66363 | |
+| `count-open` | 2/3 | 74466 | 2/3 | 66484 | 3/3 | 82203 | 0/3 |
+| `create-field` | 2/3 | 114299 | 2/2 | 115114 | 3/3 | 116240 | 0/3 |
+| `create-stdin` | 3/3 | 101972 | 1/3 | 94924 | 1/2 | 98696 | |
+| `help-first` | 3/3 | 74475 | 2/3 | 108253 | 1/3 | 83263 | |
+| `link-es` | 3/3 | 90169 | 3/3 | 82600 | 3/3 | 74618 | |
+| `log-time` | 3/3 | 66302 | 3/3 | 66609 | 3/3 | 66438 | |
+| `meeting-time` | 3/3 | 66383 | 3/3 | 66789 | 3/3 | 66569 | |
+| `my-issues-es` | 3/3 | 82921 | 3/3 | 66535 | 3/3 | 74419 | |
+| `search-query` | 3/3 | 66340 | 3/3 | 82289 | 3/3 | 66389 | |
+| `set-field-es` | 3/3 | 66294 | 2/3 | 131878 | 3/3 | 66730 | |
+| `tag-create` | 3/3 | 97568 | 3/3 | 113480 | 3/3 | 97810 | 0/3 |
+| `time-report` | 3/3 | 66567 | 3/3 | 66874 | 3/3 | 66944 | 0/3 |
+| `view-json` | 3/3 | 66378 | 3/3 | 66582 | 3/3 | 66616 | |
+| runs | 51/54 | 82518 | 48/53 | 84970 | 50/53 | 80546 | 0/18 |
+| cases | 18/18 | | 17/18 | | 16/18 | | 0/6 |
+
+- A's `comment` runs first hit a fake bug: `issue comment` now has
+  subcommands, and the fake ran its real code ("no config"). With the fix
+  they were re-run (3/3); B and C ran with the fix.
+- B's `set-field-es` failure followed its own new line: Haiku read
+  `project fields` although the prompt named the value, and the fake then
+  had no reply for it (it now answers from the fixture issues).
+- C fixed `command-assist` and `count-open` and kept `set-field-es`, but
+  lost `create-stdin` (`$(ls)` instead of a pipe, and one run that never
+  loaded the skill) and `help-first` (a guessed `--limit` before `--help`),
+  text it did not change. One C `time-report` run answered "9 hours 30
+  minutes", which the answer rule now accepts; every pass is graded with it.
+- The skill's weak spots on the new cases: an invented query
+  (`count-open`: `State: -Resolved`, `Resolved: Empty`), creating and then
+  editing instead of reading `project fields` first (`create-field`), and a
+  guessed state (`command-assist`).
+- Without the skill (`--no-skill`) Haiku fails all six new cases, mostly in
+  one turn without running ytrack.
+- `compare` against the 12-case results before #49 (skill 18328 → 20887
+  bytes): no case dropped, `help-first` rose from 1/3 to 3/3 (it also
+  accepts `issue comment list --limit 12`), and the pass rate stays 94.4%.
+
+`claude-haiku-5-5`, `--repeat 3`, the six new cases on the shipped skill:
+every run passes (18/18, $0.16 in all). Its other 12 cases are still the
+results made with the skill before #49 (marked stale in `summary.json`).
+
+| Case | Passes | Input |
+| --- | --- | --- |
+| `command-assist` | 3/3 | 109258 |
+| `comment-delete` | 3/3 | 82357 |
+| `count-open` | 3/3 | 58953 |
+| `create-field` | 3/3 | 80780 |
+| `tag-create` | 3/3 | 95251 |
+| `time-report` | 3/3 | 59471 |

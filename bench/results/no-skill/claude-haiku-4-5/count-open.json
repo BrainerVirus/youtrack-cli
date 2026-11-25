@@ -1,0 +1,82 @@
+{
+  "case": "count-open",
+  "model": "claude-haiku-4-5",
+  "key": "1-c0374e8590f6271f-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: issue count of APP unresolved",
+      "failures": [
+        "require: issue count of APP unresolved",
+        "answer"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 350,
+        "cacheCreation": 7164,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.017354500000000002,
+      "durationMs": 5865,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have access to YouTrack in this environment. To get the number of unresolved issues in the APP project, I'd need:\n\n1. The YouTrack instance URL\n2. Authentication credentials (API token or login)\n\nCould you provide these, or is there an MCP server/integration already configured for YouTrack access that I should use?"
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: issue count of APP unresolved",
+      "failures": [
+        "require: issue count of APP unresolved",
+        "answer"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 382,
+        "cacheCreation": 7164,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.017514500000000002,
+      "durationMs": 6171,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have direct access to YouTrack. To check the number of unresolved issues in the APP project, I'd need:\n\n1. Your YouTrack instance URL (e.g., `https://youtrack.yourcompany.com`)\n2. API credentials or a way to authenticate\n\nCould you provide these, or let me know if YouTrack access is already configured in your environment that I can use?"
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: issue count of APP unresolved",
+      "failures": [
+        "require: issue count of APP unresolved",
+        "answer"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 26,
+        "output": 528,
+        "cacheCreation": 7827,
+        "cacheRead": 52774
+      },
+      "costUSD": 0.0235974,
+      "durationMs": 8805,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "ls -la \u003cworld\u003e/project",
+        "find \u003cworld\u003e/project -type f 2\u003e/dev/null"
+      ],
+      "calls": null,
+      "answer": "I need access to YouTrack to query the APP project for unresolved issues. Do you have:\n\n1. YouTrack instance URL\n2. API token or credentials\n3. Environment variables configured for YouTrack access\n\nCan you provide the connection details so I can fetch the count?"
+    }
+  ]
+}

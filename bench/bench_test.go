@@ -75,6 +75,36 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 			[]Call{{Argv: strings.Fields("issue view APP-123 --comments --limit 12"), Exit: 1}, {Argv: strings.Fields("issue view --help")}, {Argv: strings.Fields("issue view APP-123 --comments --comments-limit 12")}},
 			"",
 		},
+		"comment-delete": {
+			calls("issue comment list APP-123 --json id,text", "issue comment delete APP-123 4-2 --yes"),
+			calls("issue comment list APP-123", "issue comment delete APP-123 4-3 --yes"),
+			"",
+		},
+		"time-report": {
+			calls("work-item report --since 2026-11-23 --json minutes,issues"),
+			calls("work-item list APP-123 --author me --since 2026-11-23", "work-item list APP-7 --author me --since 2026-11-23"),
+			"Total 9h 30m: APP-123 5h 30m, APP-7 4h.",
+		},
+		"count-open": {
+			[]Call{{Argv: []string{"issue", "count", "project: APP #Unresolved"}}},
+			calls("issue list --project APP --limit 0 --json idReadable"),
+			"137",
+		},
+		"create-field": {
+			[]Call{{Argv: strings.Fields("project fields APP")}, {Argv: []string{"issue", "create", "-p", "APP", "-s", "Export times out", "--field", "Severity=Show-stopper"}}},
+			[]Call{{Argv: []string{"issue", "create", "-p", "APP", "-s", "Export times out", "--field", "Severity=Critical"}, Exit: 1}, {Argv: strings.Fields("project fields APP")}, {Argv: []string{"issue", "create", "-p", "APP", "-s", "Export times out", "--field", "Severity=Show-stopper"}}},
+			"",
+		},
+		"tag-create": {
+			[]Call{{Argv: strings.Fields("issue edit APP-123 --add-tag safari-19"), Exit: 1}, {Argv: strings.Fields("tag create safari-19")}, {Argv: strings.Fields("issue edit APP-123 --add-tag safari-19")}},
+			[]Call{{Argv: strings.Fields("tag create safari-19")}, {Argv: []string{"issue", "command", "APP-123", "tag safari-19"}}},
+			"",
+		},
+		"command-assist": {
+			[]Call{{Argv: []string{"issue", "command", "APP-3", "APP-7", "State Ver", "--assist"}}, {Argv: []string{"issue", "command", "APP-3", "APP-7", "State Verify on staging"}}},
+			[]Call{{Argv: []string{"issue", "command", "APP-3", "APP-7", "State Verified"}, Exit: 1}, {Argv: []string{"issue", "command", "APP-3", "APP-7", "State Ver", "--assist"}}, {Argv: []string{"issue", "command", "APP-3", "APP-7", "State Verify on staging"}}},
+			"",
+		},
 	} {
 		c := cases[id]
 		if c == nil {
@@ -118,8 +148,8 @@ func TestGivenEachCaseWhenGradedItPassesTheTaughtCallsAndFailsTheTrap(t *testing
 			}
 		}
 	})
-	if len(cases) != 12 {
-		t.Errorf("%d cases, the table covers 12", len(cases))
+	if len(cases) != 18 {
+		t.Errorf("%d cases, the table covers 18", len(cases))
 	}
 }
 
@@ -128,11 +158,14 @@ func TestGivenHelpFirstOnlyTheFlagInTheTextViewPasses(t *testing.T) {
 	if f := Grade(c, calls("issue view APP-123 --comments --comments-limit 12"), nil, ""); len(f) != 0 {
 		t.Errorf("knew the flag, no guess: %v", f)
 	}
+	if f := Grade(c, calls("issue comment list APP-123 --limit 12"), nil, ""); len(f) != 0 {
+		t.Errorf("the comment list text view fails: %v", f)
+	}
 	for _, bad := range [][]Call{
 		calls("issue view APP-123 --json summary,comments"),
 		calls("issue view APP-123 --comments"),
 	} {
-		if f := Grade(c, bad, nil, ""); len(f) != 1 || f[0] != "require: issue view text with 12 comments" {
+		if f := Grade(c, bad, nil, ""); len(f) != 1 || f[0] != "require: 12 comments in a text view" {
 			t.Errorf("%v: %v", bad, f)
 		}
 	}
@@ -160,6 +193,7 @@ func TestGivenTheFakeYtrack(t *testing.T) {
 		{"it prints the real help", []string{"issue", "view", "--help"}, 0, "--comments-limit"},
 		{"it refuses an unknown flag like ytrack", []string{"issue", "view", "APP-1", "--hostname", "x"}, 1, "unknown flag: --hostname"},
 		{"it refuses an unknown command", []string{"issue", "close", "APP-1"}, 1, "ytrack issue --help"},
+		{"it answers a command that also has subcommands", []string{"issue", "comment", "APP-9", "--body", "hi"}, 0, "Comments-4-17"},
 		{"it refuses read parameters without -X GET", []string{"api", "/issues", "-f", "query=x"}, 1, "add -X GET"},
 		{"it answers a GET from the case fixture", []string{"api", "/issues", "-X", "GET", "-f", "query=x", "--fields", "idReadable"}, 0, "APP-401"},
 		{"it links by phrase", []string{"issue", "link", "APP-1", "APP-2", "--type", "Depends On"}, 0, "APP-1 depends on APP-2"},
@@ -285,5 +319,82 @@ func TestGivenRunsTheCasePassesOnTwoOfThree(t *testing.T) {
 		if got := casePasses(tc.passes, tc.graded); got != tc.want {
 			t.Errorf("casePasses(%d, %d) = %v", tc.passes, tc.graded, got)
 		}
+	}
+}
+
+func TestGivenTheNewCommandsTheFakeAnswersLikeYtrack(t *testing.T) {
+	cases := loadAll(t)
+	run := func(c *Case, args ...string) (string, int) {
+		t.Helper()
+		out, errOut, code := fakeYtrack(c, args, t.TempDir(), "")
+		return out + errOut, code
+	}
+	c := cases["comment-delete"]
+	if out, code := run(c, "issue", "comment", "list", "APP-123", "--json", "id,text"); code != 0 || !strings.Contains(out, `"id": "4-2"`) {
+		t.Errorf("comment list = %d %s", code, out)
+	}
+	if out, code := run(c, "issue", "comment", "delete", "APP-123", "4-2"); code != 1 || !strings.Contains(out, "--yes") {
+		t.Errorf("comment delete without --yes = %d %s", code, out)
+	}
+	if out, code := run(c, "issue", "comment", "delete", "APP-123", "4-99", "--yes"); code != 1 || !strings.Contains(out, "not found") {
+		t.Errorf("comment delete of a missing ID = %d %s", code, out)
+	}
+	if _, code := run(c, "issue", "comment", "delete", "APP-123", "4-2", "--yes"); code != 0 {
+		t.Fatal("comment delete --yes failed")
+	}
+	if out, _ := run(c, "issue", "comment", "list", "APP-123"); strings.Contains(out, "Cannot reproduce on Chrome") {
+		t.Errorf("the deleted comment is still listed: %s", out)
+	}
+
+	c = cases["tag-create"]
+	if out, code := run(c, "issue", "edit", "APP-123", "--add-tag", "safari-19"); code != 1 || !strings.Contains(out, "ytrack tag create safari-19") {
+		t.Errorf("edit with a missing tag = %d %s", code, out)
+	}
+	if _, code := run(c, "tag", "create", "safari-19"); code != 0 {
+		t.Fatal("tag create failed")
+	}
+	if out, code := run(c, "tag", "create", "Safari-19"); code != 1 || !strings.Contains(out, "already exists") {
+		t.Errorf("a second tag create = %d %s", code, out)
+	}
+	if out, code := run(c, "issue", "edit", "APP-123", "--add-tag", "safari-19"); code != 0 {
+		t.Errorf("edit after tag create = %d %s", code, out)
+	}
+	if out, _ := run(c, "tag", "list"); !strings.Contains(out, "safari-19") {
+		t.Errorf("tag list = %s", out)
+	}
+
+	c = cases["command-assist"]
+	if out, code := run(c, "issue", "command", "APP-3", "APP-7", "State Ver", "--assist"); code != 0 || !strings.Contains(out, "> State Verify on staging") {
+		t.Errorf("assist = %d %s", code, out)
+	}
+	if _, code := run(c, "issue", "command", "APP-3", "APP-7", "State Verified"); code != 1 {
+		t.Error("a guessed state applies")
+	}
+	if _, code := run(c, "issue", "command", "APP-3", "APP-7", "State Verify on staging"); code != 0 {
+		t.Error("the state from the completions fails")
+	}
+	looked := []Call{{Argv: strings.Fields("project fields APP")}, {Argv: []string{"issue", "command", "APP-3", "APP-7", "State Verify on staging"}}}
+	if f := Grade(c, looked, nil, ""); len(f) != 0 {
+		t.Errorf("command-assist with the value from project fields: %v", f)
+	}
+	if out, code := run(cases["set-field-es"], "project", "fields", "APP", "--json", "name"); code != 0 || !strings.Contains(out, `"Priority"`) {
+		t.Errorf("project fields without a fixture = %d %s", code, out)
+	}
+	for _, answer := range []string{"9h 30m in total", "You've logged **9 hours 30 minutes** so far"} {
+		if f := Grade(cases["time-report"], calls("work-item report --since 2026-11-23"), nil, answer); len(f) != 0 {
+			t.Errorf("time-report answer %q: %v", answer, f)
+		}
+	}
+	// A different total that merely ends in the right digits must not pass.
+	for _, answer := range []string{"19h 30m in total", "29.5h logged", "1570 min"} {
+		if f := Grade(cases["time-report"], calls("work-item report --since 2026-11-23"), nil, answer); len(f) == 0 {
+			t.Errorf("time-report accepted the wrong answer %q", answer)
+		}
+	}
+	if out, code := run(cases["count-open"], "issue", "count", "project: APP #Unresolved", "--json", "count", "--jq", ".count"); code != 0 || strings.TrimSpace(out) != "137" {
+		t.Errorf("count --jq = %d %s", code, out)
+	}
+	if out, code := run(cases["time-report"], "work-item", "report", "--since", "2026-11-23", "--jq", ".duration"); code != 0 || !strings.Contains(out, "9h 30m") {
+		t.Errorf("report --jq = %d %s", code, out)
 	}
 }

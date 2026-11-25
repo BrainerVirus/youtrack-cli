@@ -1,0 +1,190 @@
+{
+  "case": "command-assist",
+  "model": "claude-haiku-5-5",
+  "key": "1-c430bf54535bfe5e-7705a98f0de8646f-claude-haiku-5-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 646,
+        "cacheCreation": 11042,
+        "cacheRead": 91301
+      },
+      "costUSD": 0.00344541,
+      "durationMs": 6885,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack project fields APP",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging' --dry-run",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging",
+            "--dry-run"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "APP-3 and APP-7 are now in \"Verify on staging\". The state starting with \"Ver\" was the only match in the APP project's State field, which also has Open, In Progress, and Fixed.\n\nI ran one command for both issues: `ytrack issue command APP-3 APP-7 'State Verify on staging'`. I previewed it with `--dry-run` first, and then the CLI confirmed it applied to both."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 7,
+      "tokens": {
+        "input": 12,
+        "output": 749,
+        "cacheCreation": 11238,
+        "cacheRead": 112490
+      },
+      "costUSD": 0.0037482,
+      "durationMs": 8360,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack project fields APP --json name,type,values 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack project fields APP 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging' --dry-run 2\u003e\u00261; echo \"exit=$?\"",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging' 2\u003e\u00261; echo \"exit=$?\""
+      ],
+      "calls": [
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP",
+            "--json",
+            "name,type,values"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "project",
+            "fields",
+            "APP"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging",
+            "--dry-run"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "APP-3 and APP-7 are now in \"Verify on staging\". I ran one command for both issues: `ytrack issue command APP-3 APP-7 'State Verify on staging'`. It applied cleanly.\n\nI looked up the APP project's State values first. \"Verify on staging\" was the only one starting with \"Ver\"; the others are Open, In Progress and Fixed."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 6,
+      "tokens": {
+        "input": 10,
+        "output": 598,
+        "cacheCreation": 10866,
+        "cacheRead": 90806
+      },
+      "costUSD": 0.0033812599999999996,
+      "durationMs": 7136,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue command APP-3 APP-7 'State Ver' --assist",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging' --dry-run",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Ver",
+            "--assist"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging",
+            "--dry-run"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "APP-3 and APP-7 are now in the state **\"Verify on staging\"**. I applied it with one command, `ytrack issue command APP-3 APP-7 'State Verify on staging'`.\n\nThe only state starting with \"Ver\" that YouTrack offered was \"Verify on staging\". I previewed it with `--assist` and `--dry-run` before applying."
+    }
+  ]
+}

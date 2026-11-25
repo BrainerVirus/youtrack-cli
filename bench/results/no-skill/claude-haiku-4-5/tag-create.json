@@ -1,0 +1,79 @@
+{
+  "case": "tag-create",
+  "model": "claude-haiku-4-5",
+  "key": "1-e3b3d70a3eb96c23-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: tag create safari-19",
+      "failures": [
+        "require: tag create safari-19",
+        "require: issue edit --add-tag safari-19"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 406,
+        "cacheCreation": 7158,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0176225,
+      "durationMs": 6248,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need a bit more information to tag the YouTrack issue:\n\n1. **YouTrack instance URL** — What's the base URL of your YouTrack instance?\n2. **Authentication** — Do you have an API token or how should I authenticate?\n\nOnce you provide these details, I can use the YouTrack API to add the \"safari-19\" tag to issue APP-123."
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: tag create safari-19",
+      "failures": [
+        "require: tag create safari-19",
+        "require: issue edit --add-tag safari-19"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 496,
+        "cacheCreation": 7158,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.018072500000000002,
+      "durationMs": 7136,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need some information to tag the YouTrack issue. Can you provide:\n\n1. **YouTrack instance URL** — your YouTrack server (e.g., `https://youtrack.example.com`)\n2. **Authentication** — either:\n   - An API token, or\n   - Your YouTrack credentials\n\nOnce you provide those, I can use the YouTrack API to add the \"safari-19\" tag to issue APP-123."
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: tag create safari-19",
+      "failures": [
+        "require: tag create safari-19",
+        "require: issue edit --add-tag safari-19"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 325,
+        "cacheCreation": 7158,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0172175,
+      "durationMs": 5296,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need some information to tag the YouTrack issue. Could you provide:\n\n1. **YouTrack instance URL** — where is your YouTrack hosted? (e.g., `https://company.youtrack.cloud` or a self-hosted instance)\n2. **Authentication** — do you have an API token or should I use another auth method?\n\nOnce you provide these, I can tag issue APP-123 with the \"safari-19\" tag."
+    }
+  ]
+}

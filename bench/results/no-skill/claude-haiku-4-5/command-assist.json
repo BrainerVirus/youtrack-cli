@@ -1,0 +1,85 @@
+{
+  "case": "command-assist",
+  "model": "claude-haiku-4-5",
+  "key": "1-c430bf54535bfe5e-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: the value looked up before the first applied command",
+      "failures": [
+        "require: the value looked up before the first applied command",
+        "require: one command for both issues"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 661,
+        "cacheCreation": 7188,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.018957500000000002,
+      "durationMs": 9334,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need a few details to move those issues in YouTrack:\n\n1. **YouTrack instance URL** — your YouTrack server (e.g., `https://youtrack.example.com`)\n2. **Authentication** — either a personal access token or credentials\n3. **Exact state name** — the full name starting with \"Ver\" (e.g., \"Verified\", \"Verification In Progress\")\n\nDo you have the YouTrack CLI configured, or should I use the REST API? Once you provide the state name and authentication details, I can construct the command to move both issues at once."
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: the value looked up before the first applied command",
+      "failures": [
+        "require: the value looked up before the first applied command",
+        "require: one command for both issues"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 26,
+        "output": 944,
+        "cacheCreation": 8213,
+        "cacheRead": 52965
+      },
+      "costUSD": 0.0264685,
+      "durationMs": 12721,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "which youtrack",
+        "env | grep -i youtrack"
+      ],
+      "calls": null,
+      "denials": [
+        "env | grep -i youtrack"
+      ],
+      "answer": "I need some information to move these issues in YouTrack:\n\n1. **YouTrack URL** — What's your YouTrack instance URL? (e.g., `https://youtrack.company.com`)\n2. **Authentication** — Do you have a YouTrack API token or should I use username/password?\n3. **State name** — Can you confirm the full name of the state starting with \"Ver\"? (e.g., \"Verification\", \"Verified\", etc.)\n\nOnce you provide these, I can run a single command to move both APP-3 and APP-7 to that state."
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: the value looked up before the first applied command",
+      "failures": [
+        "require: the value looked up before the first applied command",
+        "require: one command for both issues"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 483,
+        "cacheCreation": 7188,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0180675,
+      "durationMs": 6806,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need a bit more information to help you with this YouTrack command:\n\n1. **Full state name**: What's the complete name of the state starting with \"Ver\"? (e.g., \"Verified\", \"Verification In Progress\", etc.)\n2. **YouTrack instance**: What's your YouTrack URL or instance name?\n3. **Authentication**: Are you already authenticated with YouTrack, or do you have credentials/API token available?\n\nOnce you provide these details, I can construct the single bulk update command to move both APP-3 and APP-7 to that state."
+    }
+  ]
+}

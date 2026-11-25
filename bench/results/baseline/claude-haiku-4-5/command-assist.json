@@ -1,0 +1,218 @@
+{
+  "case": "command-assist",
+  "model": "claude-haiku-4-5",
+  "key": "1-c430bf54535bfe5e-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 2,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: one command for both issues",
+      "failures": [
+        "require: one command for both issues",
+        "forbid: a raw API call where a command exists",
+        "max turns"
+      ],
+      "turns": 11,
+      "tokens": {
+        "input": 84,
+        "output": 1881,
+        "cacheCreation": 12860,
+        "cacheRead": 224328
+      },
+      "costUSD": 0.05764180000000001,
+      "durationMs": 24491,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue view APP-3 APP-7 --json state",
+        "ytrack issue list -q 'id: APP-3 or id: APP-7' --json idReadable,state",
+        "ytrack auth status",
+        "ytrack issue list --project APP --all --limit 20 --json idReadable,state",
+        "ytrack api /projects -X GET --fields name,key",
+        "ls -la \u003cworld\u003e/project/",
+        "find \u003cworld\u003e -type f -name \"*.json\" -o -name \"*.yml\" -o -name \"*.yaml\" -o -name \"README*\" 2\u003e/dev/null | head -20",
+        "ytrack issue list -q 'State: ' --query-assist 2\u003e\u00261 | head -30",
+        "ytrack issue command APP-3 APP-7 'State Verified' --dry-run"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "view",
+            "APP-3",
+            "APP-7",
+            "--json",
+            "state"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "id: APP-3 or id: APP-7",
+            "--json",
+            "idReadable,state"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "auth",
+            "status"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "--project",
+            "APP",
+            "--all",
+            "--limit",
+            "20",
+            "--json",
+            "idReadable,state"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "api",
+            "/projects",
+            "-X",
+            "GET",
+            "--fields",
+            "name,key"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "State: ",
+            "--query-assist"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verified",
+            "--dry-run"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        }
+      ],
+      "denials": [
+        "find \u003cworld\u003e -type f -name \"*.json\" -o -name \"*.yml\" -o -name \"*.yaml\" -o -name \"README*\" 2\u003e/dev/null | head -20"
+      ],
+      "answer": ""
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 1010,
+        "cacheCreation": 11245,
+        "cacheRead": 79334
+      },
+      "costUSD": 0.0355094,
+      "durationMs": 13943,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue command APP-3 'State Ver' --assist",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "State Ver",
+            "--assist"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! Both APP-3 and APP-7 have been moved to \"Verify on staging\" with a single `ytrack issue command`."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 953,
+        "cacheCreation": 11160,
+        "cacheRead": 79218
+      },
+      "costUSD": 0.035042800000000006,
+      "durationMs": 12501,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue command APP-3 'State Ver' --assist",
+        "ytrack issue command APP-3 APP-7 'State Verify on staging'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "State Ver",
+            "--assist"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "command",
+            "APP-3",
+            "APP-7",
+            "State Verify on staging"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done! Both APP-3 and APP-7 have been moved to the \"Verify on staging\" state using the single command: `ytrack issue command APP-3 APP-7 'State Verify on staging'`"
+    }
+  ]
+}

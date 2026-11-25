@@ -1,0 +1,115 @@
+{
+  "case": "count-open",
+  "model": "claude-haiku-4-5",
+  "key": "1-c0374e8590f6271f-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 2,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 451,
+        "cacheCreation": 10562,
+        "cacheRead": 55578
+      },
+      "costUSD": 0.028964799999999995,
+      "durationMs": 7886,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue count 'project: APP #Unresolved'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "count",
+            "project: APP #Unresolved"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "137"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 1271,
+        "cacheCreation": 11521,
+        "cacheRead": 79515
+      },
+      "costUSD": 0.0373845,
+      "durationMs": 16428,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue count -q 'project: APP #Unresolved'",
+        "ytrack issue count 'project: APP #Unresolved'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "count",
+            "-q",
+            "project: APP #Unresolved"
+          ],
+          "exit": 1,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "count",
+            "project: APP #Unresolved"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "137"
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: issue count of APP unresolved",
+      "failures": [
+        "require: issue count of APP unresolved"
+      ],
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 425,
+        "cacheCreation": 10531,
+        "cacheRead": 55600
+      },
+      "costUSD": 0.028775,
+      "durationMs": 7167,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue count 'project: APP AND state: -Resolved'"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "count",
+            "project: APP AND state: -Resolved"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "137"
+    }
+  ]
+}

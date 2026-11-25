@@ -1,0 +1,245 @@
+{
+  "id": "time-report",
+  "about": "my time this week across issues: one work-item report --since, not a work-item list per issue",
+  "prompt": "Today is Wednesday 2026-11-25. How much time have I logged in YouTrack this week (since Monday 2026-11-23)? Give me the total and the time per issue.",
+  "maxTurns": 8,
+  "fixtures": {
+    "issues": {
+      "APP-123": {
+        "idReadable": "APP-123",
+        "summary": "Login fails on Safari",
+        "state": "In Progress",
+        "assignee": {
+          "login": "jdoe",
+          "fullName": "Jane Doe"
+        },
+        "reporter": {
+          "login": "mlee",
+          "fullName": "Min Lee"
+        },
+        "priority": "Major",
+        "type": "Bug",
+        "description": "Users on Safari cannot log in: the form reloads without an error.",
+        "created": "2026-09-30T08:12:00Z",
+        "updated": "2026-10-14T16:40:00Z",
+        "resolved": null,
+        "tags": [],
+        "project": {
+          "shortName": "APP",
+          "name": "Application"
+        },
+        "customFields": [
+          {
+            "name": "State",
+            "value": "In Progress"
+          },
+          {
+            "name": "Priority",
+            "value": "Major"
+          },
+          {
+            "name": "Type",
+            "value": "Bug"
+          },
+          {
+            "name": "Assignee",
+            "value": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            }
+          },
+          {
+            "name": "Estimation",
+            "value": null
+          },
+          {
+            "name": "Spent time",
+            "value": null
+          }
+        ],
+        "comments": [
+          {
+            "id": "4-1",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-01T10:00:00Z",
+            "text": "Reported by a customer on Safari 18."
+          },
+          {
+            "id": "4-2",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-02T10:00:00Z",
+            "text": "Cannot reproduce on Chrome."
+          },
+          {
+            "id": "4-3",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-03T10:00:00Z",
+            "text": "Reproduced on Safari 18.1."
+          },
+          {
+            "id": "4-4",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-04T10:00:00Z",
+            "text": "Looks like the session cookie is dropped."
+          },
+          {
+            "id": "4-5",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-05T10:00:00Z",
+            "text": "SameSite=None is missing on the cookie."
+          },
+          {
+            "id": "4-6",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-06T10:00:00Z",
+            "text": "Patch in review: sets SameSite and Secure."
+          },
+          {
+            "id": "4-7",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-07T10:00:00Z",
+            "text": "Review: also needs the logout cookie."
+          },
+          {
+            "id": "4-8",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-08T10:00:00Z",
+            "text": "Updated the patch for logout."
+          },
+          {
+            "id": "4-9",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-09T10:00:00Z",
+            "text": "QA: login works on Safari 18.1 with the patch."
+          },
+          {
+            "id": "4-10",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-10T10:00:00Z",
+            "text": "QA: Safari 19 beta still fails on the second login."
+          },
+          {
+            "id": "4-11",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-11T10:00:00Z",
+            "text": "Second login fails because of a stale CSRF token."
+          },
+          {
+            "id": "4-12",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-12T10:00:00Z",
+            "text": "Fix for the CSRF token refresh pushed."
+          },
+          {
+            "id": "4-13",
+            "author": {
+              "login": "mlee",
+              "fullName": "Min Lee"
+            },
+            "created": "2026-10-13T10:00:00Z",
+            "text": "QA: Safari 19 passes now."
+          },
+          {
+            "id": "4-14",
+            "author": {
+              "login": "jdoe",
+              "fullName": "Jane Doe"
+            },
+            "created": "2026-10-14T10:00:00Z",
+            "text": "Waiting for the release train 2026.3."
+          }
+        ]
+      },
+      "APP-3": {
+        "idReadable": "APP-3",
+        "summary": "Checkout redesign",
+        "state": "Open",
+        "assignee": null
+      },
+      "APP-7": {
+        "idReadable": "APP-7",
+        "summary": "New payment form",
+        "state": "Open",
+        "assignee": {
+          "login": "jdoe",
+          "fullName": "Jane Doe"
+        }
+      }
+    },
+    "rules": [
+      {
+        "match": "^work-item report\\b.*(--json|--jq|--template)",
+        "stdout": "{\n  \"author\": \"jdoe\",\n  \"since\": \"2026-11-23\",\n  \"until\": null,\n  \"project\": null,\n  \"minutes\": 570,\n  \"duration\": \"9h 30m\",\n  \"issues\": [\n    {\n      \"issue\": \"APP-123\",\n      \"url\": \"https://acme.youtrack.cloud/issue/APP-123\",\n      \"minutes\": 330,\n      \"duration\": \"5h 30m\"\n    },\n    {\n      \"issue\": \"APP-7\",\n      \"url\": \"https://acme.youtrack.cloud/issue/APP-7\",\n      \"minutes\": 240,\n      \"duration\": \"4h\"\n    }\n  ],\n  \"days\": [\n    {\n      \"date\": \"2026-11-23\",\n      \"minutes\": 270,\n      \"duration\": \"4h 30m\"\n    },\n    {\n      \"date\": \"2026-11-24\",\n      \"minutes\": 300,\n      \"duration\": \"5h\"\n    }\n  ]\n}\n"
+      },
+      {
+        "match": "^work-item report\\b",
+        "stdout": "APP-123\t5h 30m\nAPP-7\t4h\n\n2026-11-23\t4h 30m\n2026-11-24\t5h\n\ntotal\t9h 30m\n"
+      }
+    ]
+  },
+  "require": [
+    {
+      "name": "work-item report since Monday",
+      "match": [
+        "^work-item report\\b",
+        "--since 2026-11-23\\b"
+      ],
+      "not": [
+        "--until 2026-11-2[34]\\b",
+        "--author (jroe|mlee)\\b"
+      ]
+    }
+  ],
+  "forbid": [
+    {
+      "name": "no curl or web scraping",
+      "on": "commands",
+      "match": [
+        "\\b(curl|wget)\\b"
+      ]
+    },
+    {
+      "name": "a raw API call where a command exists",
+      "match": [
+        "^api\\b"
+      ]
+    }
+  ],
+  "answer": "\\b9 ?h(ours?)?,? ?(and )?30 ?m|\\b9\\.5 ?h|\\b570 min"
+}

@@ -1,7 +1,7 @@
 {
   "case": "api-read",
   "model": "claude-haiku-4-5",
-  "key": "1-5625d45472a83f63-4c7c930f04322467-claude-haiku-4-5",
+  "key": "1-5625d45472a83f63-7705a98f0de8646f-claude-haiku-4-5",
   "passes": 3,
   "graded": 3,
   "pass": true,
@@ -11,13 +11,13 @@
       "status": "pass",
       "turns": 4,
       "tokens": {
-        "input": 28,
-        "output": 658,
-        "cacheCreation": 11317,
-        "cacheRead": 55941
+        "input": 27,
+        "output": 563,
+        "cacheCreation": 10651,
+        "cacheRead": 55523
       },
-      "costUSD": 0.0315461,
-      "durationMs": 9036,
+      "costUSD": 0.0296963,
+      "durationMs": 8408,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -37,10 +37,10 @@
             "--paginate"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Here are the YouTrack issues matching the query 'project: APP timeout':\n\n| Issue ID | Summary |\n|----------|---------|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe REST API call retrieved 2 matching issues with their `idReadable` and `summary` fields as requested."
+      "answer": "Here are the YouTrack issues matching 'project: APP timeout':\n\n| idReadable | summary |\n|------------|---------|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe REST API query found 2 issues with timeout-related topics in the APP project."
     },
     {
       "run": 2,
@@ -48,16 +48,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 846,
-        "cacheCreation": 11492,
-        "cacheRead": 56103
+        "output": 757,
+        "cacheCreation": 10858,
+        "cacheRead": 55609
       },
-      "costUSD": 0.0328523,
-      "durationMs": 11142,
+      "costUSD": 0.031089900000000004,
+      "durationMs": 10260,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack api /issues -X GET -f query='project: APP timeout' --fields idReadable,summary --paginate"
+        "ytrack api /issues -X GET -f query='project: APP timeout' --fields idReadable,summary"
       ],
       "calls": [
         {
@@ -69,14 +69,13 @@
             "-f",
             "query=project: APP timeout",
             "--fields",
-            "idReadable,summary",
-            "--paginate"
+            "idReadable,summary"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Here are the YouTrack issues matching the query `project: APP timeout`:\n\n| idReadable | summary |\n|------------|---------|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe REST API query found 2 issues in the APP project with \"timeout\" in their content."
+      "answer": "Here are the YouTrack issues matching the query 'project: APP timeout':\n\n| ID | Summary |\n|---|---|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe REST API returned 2 issues from the APP project related to timeout."
     },
     {
       "run": 3,
@@ -84,16 +83,16 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 568,
-        "cacheCreation": 11266,
-        "cacheRead": 55984
+        "output": 1003,
+        "cacheCreation": 11113,
+        "cacheRead": 55597
       },
-      "costUSD": 0.030998400000000002,
-      "durationMs": 7623,
+      "costUSD": 0.0328287,
+      "durationMs": 13655,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
-        "ytrack api /issues -X GET -f query='project: APP timeout' --fields idReadable,summary --paginate"
+        "ytrack api /issues -X GET -f query='project: APP timeout' --fields idReadable,summary"
       ],
       "calls": [
         {
@@ -105,14 +104,13 @@
             "-f",
             "query=project: APP timeout",
             "--fields",
-            "idReadable,summary",
-            "--paginate"
+            "idReadable,summary"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "Here are the YouTrack issues matching the query 'project: APP timeout':\n\n| ID | Summary |\n|---|---|\n| **APP-401** | Upload times out after 30 s |\n| **APP-405** | Session timeout too short |"
+      "answer": "Here are the YouTrack issues matching the query 'project: APP timeout':\n\n| Issue ID | Summary |\n|----------|---------|\n| APP-401 | Upload times out after 30 s |\n| APP-405 | Session timeout too short |\n\nThe REST API returned 2 issues with the requested fields (idReadable and summary)."
     }
   ]
 }

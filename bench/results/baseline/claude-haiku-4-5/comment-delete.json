@@ -1,0 +1,148 @@
+{
+  "case": "comment-delete",
+  "model": "claude-haiku-4-5",
+  "key": "1-fe119641479f2068-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 850,
+        "cacheCreation": 11933,
+        "cacheRead": 79982
+      },
+      "costUSD": 0.0361502,
+      "durationMs": 12415,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --json id,author,text",
+        "ytrack issue comment delete APP-123 4-2 --yes"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--json",
+            "id,author,text"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "delete",
+            "APP-123",
+            "4-2",
+            "--yes"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done. Jane Doe's comment \"Cannot reproduce on Chrome.\" (ID 4-2) has been deleted from APP-123."
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 891,
+        "cacheCreation": 11967,
+        "cacheRead": 79985
+      },
+      "costUSD": 0.0364235,
+      "durationMs": 12565,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --json id,author,text",
+        "ytrack issue comment delete APP-123 4-2 --yes"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--json",
+            "id,author,text"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "delete",
+            "APP-123",
+            "4-2",
+            "--yes"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done. Jane Doe's comment \"Cannot reproduce on Chrome.\" has been deleted from APP-123."
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 5,
+      "tokens": {
+        "input": 36,
+        "output": 739,
+        "cacheCreation": 11787,
+        "cacheRead": 79804
+      },
+      "costUSD": 0.035285399999999995,
+      "durationMs": 10605,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue comment list APP-123 --json id,author,text",
+        "ytrack issue comment delete APP-123 4-2 --yes"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "list",
+            "APP-123",
+            "--json",
+            "id,author,text"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        },
+        {
+          "argv": [
+            "issue",
+            "comment",
+            "delete",
+            "APP-123",
+            "4-2",
+            "--yes"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Done. I've deleted Jane Doe's comment \"Cannot reproduce on Chrome.\" (comment ID 4-2) from APP-123."
+    }
+  ]
+}

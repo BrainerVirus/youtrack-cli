@@ -1,8 +1,8 @@
 {
   "case": "search-query",
   "model": "claude-haiku-4-5",
-  "key": "1-618b93a1905fddff-4c7c930f04322467-claude-haiku-4-5",
-  "passes": 2,
+  "key": "1-618b93a1905fddff-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 3,
   "graded": 3,
   "pass": true,
   "runs": [
@@ -12,12 +12,12 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 705,
-        "cacheCreation": 11387,
-        "cacheRead": 56012
+        "output": 580,
+        "cacheCreation": 10697,
+        "cacheRead": 55548
       },
-      "costUSD": 0.031928200000000004,
-      "durationMs": 9460,
+      "costUSD": 0.0298768,
+      "durationMs": 9966,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -34,7 +34,7 @@
             "idReadable"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
       "answer": "The unresolved YouTrack issues in project APP tagged with \"regression\" are:\n\n- **APP-201**\n- **APP-207**"
@@ -45,12 +45,45 @@
       "turns": 4,
       "tokens": {
         "input": 28,
-        "output": 782,
-        "cacheCreation": 11468,
-        "cacheRead": 55921
+        "output": 448,
+        "cacheCreation": 10565,
+        "cacheRead": 55565
       },
-      "costUSD": 0.0324661,
-      "durationMs": 10502,
+      "costUSD": 0.0289545,
+      "durationMs": 7720,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack issue list -q 'project: APP tag: regression State: Unresolved' --json idReadable"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "issue",
+            "list",
+            "-q",
+            "project: APP tag: regression State: Unresolved",
+            "--json",
+            "idReadable"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "The unresolved YouTrack issues in project APP tagged as \"regression\" are:\n\n- **APP-201**\n- **APP-207**"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 749,
+        "cacheCreation": 10857,
+        "cacheRead": 55705
+      },
+      "costUSD": 0.0310575,
+      "durationMs": 11695,
       "skillLoaded": true,
       "skillListed": true,
       "commands": [
@@ -67,38 +100,10 @@
             "idReadable"
           ],
           "exit": 0,
-          "day": "2026-11-21"
+          "day": "2026-11-25"
         }
       ],
-      "answer": "The unresolved YouTrack issues in project APP tagged with \"regression\" are:\n\n- **APP-201**\n- **APP-207**"
-    },
-    {
-      "run": 3,
-      "status": "fail",
-      "failed": "require: issue list with a tag query on APP",
-      "failures": [
-        "require: issue list with a tag query on APP",
-        "answer"
-      ],
-      "turns": 10,
-      "tokens": {
-        "input": 48,
-        "output": 2871,
-        "cacheCreation": 20426,
-        "cacheRead": 110226
-      },
-      "costUSD": 0.06627759999999999,
-      "durationMs": 35014,
-      "skillLoaded": true,
-      "skillListed": true,
-      "commands": [
-        "\u003cworld\u003e/project/.claude/skills/ytrack/ytrack issue list -q 'project: APP state: Unresolved tag: regression' --json idReadable"
-      ],
-      "calls": null,
-      "denials": [
-        "\u003cworld\u003e/project/.claude/skills/ytrack/ytrack issue list -q 'project: APP state: Unresolved tag: regression' --json idReadable"
-      ],
-      "answer": "I'm experiencing an issue with the ytrack skill invocations—they're being launched but not returning visible output in the results. This could indicate an authentication issue, or the skill may need additional configuration.\n\nBased on the ytrack documentation, here's what I attempted to do:\n\n1. **First attempt**: Search for unresolved regression issues using a query\n2. **Second attempt**: List all APP project issues and filter for those with the \"regression\" tag and \"Unresolved\" state\n3. **Third attempt**: Check authentication status\n\nTo help resolve this, could you:\n\n1. **Verify YouTrack authentication**: Run `ytrack auth status` in your terminal to check if you're logged in and see which host is active\n2. **Confirm YouTrack access**: If not authenticated, run `ytrack auth login --host \u003cyour-youtrack-host\u003e` to log in\n\nOnce authenticated, the command I would use to find unresolved regression issues in project APP is:\n\n```bash\nytrack issue list --project APP -q 'state: Unresolved tag: regression' --json idReadable\n```\n\nOr alternatively:\n```bash\nytrack issue list --project APP --all --json idReadable,summary --jq '.[] | select(.tags[]? | .name == \"regression\") | .idReadable'\n```\n\nCould you verify your YouTrack authentication status and let me know if you'd like me to try again?"
+      "answer": "Found 2 unresolved regression issues in project APP:\n\n- **APP-201**\n- **APP-207**"
     }
   ]
 }

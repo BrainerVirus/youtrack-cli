@@ -1,0 +1,85 @@
+{
+  "case": "create-field",
+  "model": "claude-haiku-4-5",
+  "key": "1-9639bbea4cfb3bff-none-claude-haiku-4-5",
+  "passes": 0,
+  "graded": 3,
+  "pass": false,
+  "runs": [
+    {
+      "run": 1,
+      "status": "fail",
+      "failed": "require: project fields before the create",
+      "failures": [
+        "require: project fields before the create",
+        "require: issue create with Severity=Show-stopper"
+      ],
+      "turns": 3,
+      "tokens": {
+        "input": 26,
+        "output": 840,
+        "cacheCreation": 8018,
+        "cacheRead": 52819
+      },
+      "costUSD": 0.0255439,
+      "durationMs": 11714,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": [
+        "which youtrack 2\u003e/dev/null || echo \"YouTrack CLI not found in PATH\"",
+        "env | grep -i youtrack || echo \"No YouTrack environment variables found\""
+      ],
+      "calls": null,
+      "denials": [
+        "env | grep -i youtrack || echo \"No YouTrack environment variables found\""
+      ],
+      "answer": "I need a few details to create the YouTrack issue. Could you provide:\n\n1. **YouTrack instance URL** (e.g., `https://youtrack.example.com` or `https://app.jetbrains.com/youtrack`)\n2. **Authentication method**: Either an API token or your username/password\n3. Do you know what the highest severity level is for the APP project? (e.g., Critical, Blocker, etc.)\n\nAlternatively, if you have a `.env` file or configuration file with YouTrack credentials already set up, let me know and I can read it to get the necessary details."
+    },
+    {
+      "run": 2,
+      "status": "fail",
+      "failed": "require: project fields before the create",
+      "failures": [
+        "require: project fields before the create",
+        "require: issue create with Severity=Show-stopper"
+      ],
+      "turns": 1,
+      "tokens": {
+        "input": 10,
+        "output": 495,
+        "cacheCreation": 7172,
+        "cacheRead": 12665
+      },
+      "costUSD": 0.0180955,
+      "durationMs": 6966,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I need to create a YouTrack issue in the APP project. To do this, I'll need a few details:\n\n1. **YouTrack instance URL** — Where is your YouTrack hosted? (e.g., `https://youtrack.yourcompany.com`)\n2. **Authentication token** — An API token or personal access token for YouTrack API access\n3. **Highest severity level** — What is the highest severity available in your APP project? (e.g., Critical, Blocker, etc.)\n\nOnce you provide these details, I can create the issue for you."
+    },
+    {
+      "run": 3,
+      "status": "fail",
+      "failed": "require: project fields before the create",
+      "failures": [
+        "require: project fields before the create",
+        "require: issue create with Severity=Show-stopper"
+      ],
+      "turns": 2,
+      "tokens": {
+        "input": 18,
+        "output": 442,
+        "cacheCreation": 7420,
+        "cacheRead": 32502
+      },
+      "costUSD": 0.0203182,
+      "durationMs": 6811,
+      "skillLoaded": false,
+      "skillListed": false,
+      "commands": null,
+      "calls": null,
+      "answer": "I don't have a dedicated YouTrack tool available, but I can help you create the issue using YouTrack's API via Bash. To do this, I'll need some information:\n\n1. **YouTrack base URL** — What's your YouTrack instance URL? (e.g., `https://company.youtrack.cloud`)\n2. **API token** — Do you have a YouTrack API token I can use for authentication?\n3. **Severity values** — What are the severity levels available in your APP project? (e.g., Critical, High, Medium, Low)\n\nOnce you provide these details, I can create the issue with the highest severity automatically."
+    }
+  ]
+}

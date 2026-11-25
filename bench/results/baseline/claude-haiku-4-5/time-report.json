@@ -1,0 +1,113 @@
+{
+  "case": "time-report",
+  "model": "claude-haiku-4-5",
+  "key": "1-669af3171135c449-7705a98f0de8646f-claude-haiku-4-5",
+  "passes": 3,
+  "graded": 3,
+  "pass": true,
+  "runs": [
+    {
+      "run": 1,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 799,
+        "cacheCreation": 10994,
+        "cacheRead": 55589
+      },
+      "costUSD": 0.0315699,
+      "durationMs": 10470,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item report --since 2026-11-23 --json minutes,issues,days"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "report",
+            "--since",
+            "2026-11-23",
+            "--json",
+            "minutes,issues,days"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "**Total time logged this week:** 9h 30m (since Monday 2026-11-23)\n\n**Time per issue:**\n- **APP-123:** 5h 30m\n- **APP-7:** 4h\n\n**Breakdown by day:**\n- Monday 2026-11-23: 4h 30m\n- Tuesday 2026-11-24: 5h"
+    },
+    {
+      "run": 2,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 845,
+        "cacheCreation": 11018,
+        "cacheRead": 55657
+      },
+      "costUSD": 0.0318547,
+      "durationMs": 10923,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item report --since 2026-11-23 --until 2026-11-25 --json minutes,issues,days"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "report",
+            "--since",
+            "2026-11-23",
+            "--until",
+            "2026-11-25",
+            "--json",
+            "minutes,issues,days"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Here's your time logged this week:\n\n**Total: 9h 30m**\n\n**Per issue:**\n- **APP-123**: 5h 30m\n- **APP-7**: 4h\n\n**Daily breakdown:**\n- Monday 2026-11-23: 4h 30m\n- Tuesday 2026-11-24: 5h\n- Wednesday 2026-11-25: 0h (so far)"
+    },
+    {
+      "run": 3,
+      "status": "pass",
+      "turns": 4,
+      "tokens": {
+        "input": 28,
+        "output": 604,
+        "cacheCreation": 10819,
+        "cacheRead": 55541
+      },
+      "costUSD": 0.0302401,
+      "durationMs": 8235,
+      "skillLoaded": true,
+      "skillListed": true,
+      "commands": [
+        "ytrack work-item report --since 2026-11-23 --until 2026-11-25 --json minutes,issues,days"
+      ],
+      "calls": [
+        {
+          "argv": [
+            "work-item",
+            "report",
+            "--since",
+            "2026-11-23",
+            "--until",
+            "2026-11-25",
+            "--json",
+            "minutes,issues,days"
+          ],
+          "exit": 0,
+          "day": "2026-11-25"
+        }
+      ],
+      "answer": "Here's your time logged in YouTrack this week (since Monday 2026-11-23):\n\n**Total: 9h 30m**\n\n**Time per issue:**\n- **APP-123**: 5h 30m\n- **APP-7**: 4h\n\n**Breakdown by day:**\n- Monday 2026-11-23: 4h 30m\n- Tuesday 2026-11-24: 5h"
+    }
+  ]
+}
