@@ -295,7 +295,7 @@ func (cmd Command) body(preview bool) map[string]any {
 	}
 	b := map[string]any{"query": cmd.Query, "issues": issues}
 	if preview {
-		b["caret"] = len(cmd.Query)
+		b["caret"] = caret(cmd.Query)
 		return b
 	}
 	if cmd.Comment != "" {

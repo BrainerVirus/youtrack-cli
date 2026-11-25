@@ -537,7 +537,16 @@ func (yt *FakeYouTrack) command(w http.ResponseWriter, r *http.Request, preview 
 			}
 		}
 	}
-	writeProjected(w, r, 200, map[string]any{"$type": "CommandList", "query": query, "commands": commands})
+	out := map[string]any{"$type": "CommandList", "query": query, "commands": commands}
+	if preview {
+		caret, _ := body["caret"].(float64)
+		words := []string{"for", "tag", "vote", "unvote"}
+		for _, d := range yt.fieldDefs(issues[0]) {
+			words = append(words, d["field"].(map[string]any)["name"].(string))
+		}
+		out["suggestions"] = suggest(query, int(caret), words)
+	}
+	writeProjected(w, r, 200, out)
 }
 
 type commandPart struct {
@@ -565,7 +574,7 @@ func (yt *FakeYouTrack) parseCommand(query string, defs []map[string]any) []comm
 	// keywordAt returns the field name or keyword starting at word i.
 	keywordAt := func(i int) string {
 		best := ""
-		for _, n := range append([]string{"for", "tag"}, names...) {
+		for _, n := range append([]string{"for", "tag", "vote", "unvote"}, names...) {
 			nw := strings.Fields(n)
 			if i+len(nw) <= len(words) && strings.EqualFold(strings.Join(words[i:i+len(nw)], " "), n) && len(n) > len(best) {
 				best = n
@@ -596,6 +605,25 @@ func (yt *FakeYouTrack) parseCommand(query string, defs []map[string]any) []comm
 func (yt *FakeYouTrack) commandPart(kw, value string, defs []map[string]any) commandPart {
 	bad := func(msg string) commandPart { return commandPart{description: msg, err: true} }
 	switch kw {
+	case "vote", "unvote":
+		if value != "" {
+			return bad(kw + " takes no value: " + value)
+		}
+		on := kw == "vote"
+		return commandPart{description: kw, html: boldHTML(kw, ""), apply: func(is map[string]any) {
+			voters, _ := is["voters"].(map[string]any)
+			if had, _ := voters["hasVote"].(bool); had == on {
+				return
+			}
+			votes, _ := is["votes"].(int)
+			if on {
+				votes++
+			} else {
+				votes--
+			}
+			is["votes"] = votes
+			is["voters"] = map[string]any{"$type": "IssueVoters", "hasVote": on}
+		}}
 	case "for":
 		login := value
 		if login == "me" {

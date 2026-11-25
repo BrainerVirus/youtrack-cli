@@ -1,5 +1,5 @@
 {
-  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return (empty when ytrack reads no body). Types list the attributes ytrack requests in fields= or writes in a request body ($type, the discriminator every entity has, is implied as an attribute; the $type values ytrack writes are listed under subtypes, by the type they specialize), each with the entity types it may hold (empty for a scalar). Writes list, by entity, the attributes ytrack sets at the top level of a JSON request body (nested objects there are references or values, named by their key attributes, not writes); an endpoint with body \"reference\" adds an existing entity to a collection, so its body names that entity and writes nothing. readOnlyWrites lists the written attributes the OpenAPI description marks readOnly but YouTrack accepts, each with its evidence. internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schemas and fails on a written attribute marked readOnly.",
+  "$comment": "The YouTrack REST API surface ytrack uses, written by hand from the public API docs (https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html). Endpoints list the query parameters ytrack sends and the entity they return (empty when ytrack reads no body). Types list the attributes ytrack requests in fields= or writes in a request body ($type, the discriminator every entity has, is implied as an attribute; the $type values ytrack writes are listed under subtypes, by the type they specialize), each with the entity types it may hold (empty for a scalar; an attribute the OpenAPI description types as a bare object, such as ActivityItem.added, lists the entities ytrack projects it as). Writes list, by entity, the attributes ytrack sets at the top level of a JSON request body (nested objects there are references or values, named by their key attributes, not writes); an endpoint with body \"reference\" adds an existing entity to a collection, so its body names that entity and writes nothing. readOnlyWrites lists the written attributes the OpenAPI description marks readOnly but YouTrack accepts, each with its evidence. internal/youtrack/adapter/contract_test.go checks every request against this file; the weekly openapi-contract workflow checks this file against the live schemas and fails on a written attribute marked readOnly.",
   "endpoints": [
     {"method": "GET", "path": "/users/me", "query": ["fields"], "response": "User"},
     {"method": "GET", "path": "/issues", "query": ["fields", "query", "customFields", "$skip", "$top"], "response": "Issue"},
@@ -34,7 +34,12 @@
     {"method": "GET", "path": "/issues/{id}/links", "query": ["fields", "$skip", "$top"], "response": "IssueLink"},
     {"method": "GET", "path": "/issues/{id}/links/{issueLinkId}/issues", "query": ["fields", "$skip", "$top"], "response": "Issue"},
     {"method": "POST", "path": "/issues/{id}/links/{issueLinkId}/issues", "query": ["fields"], "response": "Issue", "body": "reference"},
-    {"method": "DELETE", "path": "/issues/{id}/links/{issueLinkId}/issues/{issueId}", "query": [], "response": ""}
+    {"method": "DELETE", "path": "/issues/{id}/links/{issueLinkId}/issues/{issueId}", "query": [], "response": ""},
+    {"method": "GET", "path": "/workItems", "query": ["fields", "author", "startDate", "endDate", "query", "$skip", "$top"], "response": "IssueWorkItem"},
+    {"method": "GET", "path": "/issues/{id}/activities", "query": ["fields", "categories", "$skip", "$top"], "response": "ActivityItem"},
+    {"method": "GET", "path": "/savedQueries", "query": ["fields", "$skip", "$top"], "response": "SavedQuery"},
+    {"method": "POST", "path": "/issuesGetter/count", "query": ["fields"], "response": "IssueCountResponse"},
+    {"method": "POST", "path": "/search/assist", "query": ["fields"], "response": "SearchSuggestions"}
   ],
   "undocumented": [
     {"$comment": "Uploads files to a comment (multipart, like POST /issues/{id}/attachments). The comment's attachments collection is missing from /api/openapi.json, so the openapi-contract workflow does not check it; a GET of it answers the comment's files on YouTrack Cloud (an unknown sub-resource answers 'No subresource for path'), and YouTrack ignores the other ways to attach a file to a comment (files inside the create-comment JSON, attachment IDs in a comment update; issues #31 and #44).", "method": "POST", "path": "/issues/{id}/comments/{issueCommentId}/attachments", "query": ["fields"], "response": "IssueAttachment"}
@@ -47,7 +52,9 @@
     "IssueComment": ["text"],
     "Tag": ["name"],
     "IssueWorkItem": ["date", "duration", "type", "text"],
-    "CommandList": ["query", "issues", "comment", "silent", "caret"]
+    "CommandList": ["query", "issues", "comment", "silent", "caret"],
+    "IssueCountResponse": ["query"],
+    "SearchSuggestions": ["query", "caret"]
   },
   "readOnlyWrites": {
     "Issue": {
@@ -76,7 +83,10 @@
       "resolved": [],
       "tags": ["Tag"],
       "commentsCount": [],
-      "customFields": ["IssueCustomField"]
+      "customFields": ["IssueCustomField"],
+      "votes": [],
+      "voters": ["IssueVoters"],
+      "watchers": ["IssueWatchers"]
     },
     "IssueComment": {
       "id": [],
@@ -127,10 +137,28 @@
     "FieldType": {"id": []},
     "BundleElement": {"name": [], "archived": []},
     "Bundle": {"values": ["BundleElement"], "aggregatedUsers": ["User"], "groups": ["UserGroup"]},
-    "CommandList": {"query": [], "caret": [], "comment": [], "silent": [], "issues": ["Issue"], "commands": ["ParsedCommand"]},
+    "CommandList": {"query": [], "caret": [], "comment": [], "silent": [], "issues": ["Issue"], "commands": ["ParsedCommand"], "suggestions": ["Suggestion"]},
     "ParsedCommand": {"description": [], "error": [], "delete": []},
     "UserGroup": {"name": []},
     "PeriodValue": {"minutes": [], "presentation": []},
-    "TextFieldValue": {"text": []}
+    "TextFieldValue": {"text": []},
+    "IssueWatchers": {"hasStar": [], "issueWatchers": ["IssueWatcher"]},
+    "IssueWatcher": {"user": ["User"], "isStarred": []},
+    "IssueVoters": {"hasVote": []},
+    "SavedQuery": {"id": [], "name": [], "query": [], "owner": ["User"]},
+    "ActivityItem": {
+      "id": [],
+      "timestamp": [],
+      "author": ["User"],
+      "category": ["ActivityCategory"],
+      "field": ["FilterField"],
+      "added": ["BundleElement", "User", "Issue", "IssueComment", "Tag", "PeriodValue", "TextFieldValue"],
+      "removed": ["BundleElement", "User", "Issue", "IssueComment", "Tag", "PeriodValue", "TextFieldValue"]
+    },
+    "ActivityCategory": {"id": []},
+    "FilterField": {"name": []},
+    "IssueCountResponse": {"count": [], "query": []},
+    "SearchSuggestions": {"query": [], "caret": [], "suggestions": ["Suggestion"]},
+    "Suggestion": {"option": [], "description": [], "prefix": [], "suffix": [], "completionStart": [], "completionEnd": []}
   }
 }

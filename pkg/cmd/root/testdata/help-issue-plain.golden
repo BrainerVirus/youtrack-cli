@@ -5,10 +5,12 @@ Usage:
   ytrack issue [command]
 
 Available Commands:
+  activities  Show the history of an issue
   attach      Attach files to an issue
   attachments List the attachments of an issue
   command     Apply a YouTrack command to one or more issues
   comment     Add, list, edit or delete issue comments
+  count       Count the issues that match a query
   create      Create an issue
   delete      Delete an issue
   download    Download the attachments of an issue
@@ -16,7 +18,10 @@ Available Commands:
   link        Link issues, or list an issue's links or the link types
   list        List issues
   unlink      Remove links between issues
+  unvote      Remove your vote from an issue
   view        Show an issue
+  vote        Vote for an issue
+  watchers    List the users who watch an issue
 
 Flags:
   -h, --help[=true|false]   help for issue

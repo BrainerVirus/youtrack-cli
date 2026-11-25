@@ -12,11 +12,16 @@ import (
 
 	"github.com/BrainerVirus/youtrack-cli/internal/cmdtest"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter/customfields"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/activities"
 	commentedit "github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment/edit"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/link"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/vote"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/watchers"
 	projectfields "github.com/BrainerVirus/youtrack-cli/pkg/cmd/project/fields"
+	querylist "github.com/BrainerVirus/youtrack-cli/pkg/cmd/query/list"
 	tagshared "github.com/BrainerVirus/youtrack-cli/pkg/cmd/tag/shared"
+	workitemreport "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/report"
 	workitem "github.com/BrainerVirus/youtrack-cli/pkg/cmd/workitem/shared"
 )
 
@@ -246,6 +251,8 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	yt.SeedSampleWorkItems()
 	yt.SeedSampleProjects()
 	yt.SeedSampleAttachments()
+	yt.SeedSampleHistory()
+	yt.CountPending = 1
 	env.Login(yt)
 	shot := filepath.Join(t.TempDir(), "shot.png")
 	if err := os.WriteFile(shot, []byte("\x89PNG"), 0o600); err != nil {
@@ -288,6 +295,15 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"tag", "list", "--json", strings.Join(tagshared.Fields, ",")},
 		{"tag", "create", "nightly", "--json", strings.Join(tagshared.Fields, ",")},
 		{"project", "fields", "NSR", "--json", strings.Join(projectfields.Fields, ",")},
+		{"work-item", "report", "--since", "2026-09-01", "--until", "2026-10-31", "--project", "NSR", "--json", strings.Join(workitemreport.Fields, ",")},
+		{"issue", "watchers", "NSR-40", "--json", strings.Join(watchers.Fields, ",")},
+		{"issue", "vote", "NSR-40", "--json", strings.Join(vote.Fields, ",")},
+		{"issue", "unvote", "NSR-40"},
+		{"query", "list", "--json", strings.Join(querylist.Fields, ",")},
+		{"issue", "activities", "NSR-40", "--json", strings.Join(activities.Fields, ",")},
+		{"issue", "count", "project: NSR #Unresolved", "--json", "query,count"},
+		{"issue", "list", "-q", "State: ", "--query-assist"},
+		{"issue", "command", "NSR-40", "Priority Critical", "--assist", "--json", "commands,suggestions"},
 	}
 	for _, args := range runs {
 		if code := env.Run(args...); code != 0 {

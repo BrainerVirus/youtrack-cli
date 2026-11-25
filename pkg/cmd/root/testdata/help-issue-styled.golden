@@ -5,10 +5,12 @@ Work with YouTrack issues
   <accent>ytrack issue</> [command]
 
 <bold>Available Commands:</>
+  <accent>activities </> Show the history of an issue
   <accent>attach     </> Attach files to an issue
   <accent>attachments</> List the attachments of an issue
   <accent>command    </> Apply a YouTrack command to one or more issues
   <accent>comment    </> Add, list, edit or delete issue comments
+  <accent>count      </> Count the issues that match a query
   <accent>create     </> Create an issue
   <accent>delete     </> Delete an issue
   <accent>download   </> Download the attachments of an issue
@@ -16,7 +18,10 @@ Work with YouTrack issues
   <accent>link       </> Link issues, or list an issue's links or the link types
   <accent>list       </> List issues
   <accent>unlink     </> Remove links between issues
+  <accent>unvote     </> Remove your vote from an issue
   <accent>view       </> Show an issue
+  <accent>vote       </> Vote for an issue
+  <accent>watchers   </> List the users who watch an issue
 
 <bold>Flags:</>
   <accent>-h, --help</><dim>[=true|false]</>   help for issue

@@ -17,6 +17,7 @@ const openAPIEnv = "YTRACK_OPENAPI"
 
 type schema struct {
 	Ref           string             `json:"$ref"`
+	Type          string             `json:"type"`
 	ReadOnly      bool               `json:"readOnly"`
 	Items         *schema            `json:"items"`
 	Properties    map[string]*schema `json:"properties"`
@@ -152,6 +153,13 @@ func (s *spec) hasTarget(owner, attr, want string) bool {
 	return false
 }
 
+// untyped reports whether attr on owner is a bare object, which the
+// description leaves free to hold any entity (ActivityItem.added).
+func (s *spec) untyped(owner, attr string) bool {
+	p := s.writeProperty(owner, attr)
+	return p != nil && p.Ref == "" && p.Items == nil && len(p.AllOf) == 0 && p.Type == "object"
+}
+
 func (s *spec) hasAttr(owner, attr string) bool {
 	for _, ty := range s.family(owner) {
 		if s.property(ty, attr) != nil {
@@ -236,7 +244,9 @@ func checkContract(c *contract, s *spec) []string {
 				continue
 			}
 			for _, want := range holds {
-				if !s.hasTarget(ty, attr, want) {
+				if s.schemas[want] == nil {
+					errorf("%s.%s holds %s, which is gone", ty, attr, want)
+				} else if !s.untyped(ty, attr) && !s.hasTarget(ty, attr, want) {
 					errorf("%s.%s no longer holds %s", ty, attr, want)
 				}
 			}
@@ -306,5 +316,33 @@ func TestOpenAPICheckCatchesReadOnlyWrites(t *testing.T) {
 	delete(c.ReadOnlyWrites, "Issue")
 	if got := checkContract(c, loadSpec(t, path)); len(got) != 2 || !strings.HasPrefix(got[0], "Issue.customFields:") {
 		t.Errorf("without its readOnlyWrites entry: problems %q", got)
+	}
+}
+
+func TestOpenAPICheckAcceptsEntitiesInBareObjects(t *testing.T) {
+	// ActivityItem.added is a bare object in YouTrack's description: it may
+	// hold any entity, so listing User there passes, while a typed
+	// attribute (Issue.reporter) holding the wrong entity still fails, and
+	// so does a listed entity the description lost.
+	dir := t.TempDir()
+	doc := `{"paths":{},"components":{"schemas":{
+ "ActivityItem":{"properties":{"added":{"type":"object","readOnly":true}}},
+ "Issue":{"properties":{"reporter":{"$ref":"#/components/schemas/Project"}}},
+ "Project":{"properties":{"name":{"type":"string"}}},
+ "User":{"properties":{"login":{"type":"string"}}}}}}`
+	path := dir + "/openapi.json"
+	if err := os.WriteFile(path, []byte(doc), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := &contract{Types: map[string]map[string][]string{
+		"ActivityItem": {"added": {"User", "Tag"}},
+		"Issue":        {"reporter": {"User"}},
+		"User":         {"login": nil},
+	}}
+	got := checkContract(c, loadSpec(t, path))
+	sort.Strings(got)
+	want := []string{"ActivityItem.added holds Tag, which is gone", "Issue.reporter no longer holds User"}
+	if !slices.Equal(got, want) {
+		t.Errorf("problems %q, want %q", got, want)
 	}
 }

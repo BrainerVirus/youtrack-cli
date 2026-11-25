@@ -285,6 +285,22 @@
     "POST /users/{id}/profiles/timetracking"
   ],
   "types": {
+    "ActivityCategory": [
+      "$type",
+      "id"
+    ],
+    "ActivityItem": [
+      "$type",
+      "added",
+      "author",
+      "category",
+      "field",
+      "id",
+      "removed",
+      "target",
+      "targetMember",
+      "timestamp"
+    ],
     "Bundle": [
       "$type",
       "id",
@@ -338,6 +354,12 @@
     "FieldType": [
       "$type",
       "id"
+    ],
+    "FilterField": [
+      "$type",
+      "id",
+      "name",
+      "presentation"
     ],
     "Issue": [
       "$type",
@@ -406,6 +428,14 @@
       "updated",
       "visibility"
     ],
+    "IssueCountResponse": [
+      "$type",
+      "count",
+      "folder",
+      "id",
+      "query",
+      "unresolvedOnly"
+    ],
     "IssueCustomField": [
       "$type",
       "id",
@@ -433,6 +463,27 @@
       "readOnly",
       "sourceToTarget",
       "targetToSource"
+    ],
+    "IssueVoters": [
+      "$type",
+      "duplicate",
+      "hasVote",
+      "id",
+      "original"
+    ],
+    "IssueWatcher": [
+      "$type",
+      "id",
+      "isStarred",
+      "issue",
+      "user"
+    ],
+    "IssueWatchers": [
+      "$type",
+      "duplicateWatchers",
+      "hasStar",
+      "id",
+      "issueWatchers"
     ],
     "IssueWorkItem": [
       "$type",
@@ -501,6 +552,44 @@
       "project",
       "timeSpent",
       "workItemTypes"
+    ],
+    "SavedQuery": [
+      "$type",
+      "id",
+      "issues",
+      "name",
+      "owner",
+      "query",
+      "readSharingSettings",
+      "updateSharingSettings",
+      "updateableBy",
+      "visibleFor"
+    ],
+    "SearchSuggestions": [
+      "$type",
+      "caret",
+      "folders",
+      "id",
+      "ignoreUnresolvedSetting",
+      "query",
+      "suggestions"
+    ],
+    "Suggestion": [
+      "$type",
+      "auxiliaryIcon",
+      "caret",
+      "className",
+      "completionEnd",
+      "completionStart",
+      "description",
+      "group",
+      "icon",
+      "id",
+      "matchingEnd",
+      "matchingStart",
+      "option",
+      "prefix",
+      "suffix"
     ],
     "Tag": [
       "$type",

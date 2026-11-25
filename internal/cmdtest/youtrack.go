@@ -41,7 +41,8 @@ type Request struct {
 //	GET  /api/tags                  Tags, paged
 //	POST /api/tags                  appends {"name"} to Tags, owned by jdoe
 //	POST /api/commands[/assist]     applies or previews a small subset of the
-//	                                YouTrack command language (see command)
+//	                                YouTrack command language (see command);
+//	                                the preview also suggests completions
 //	GET  /api/issues/{id}           the issue in Issues with that idReadable or id,
 //	                                with commentsCount; 404 with a YouTrack body if none
 //	GET  /api/issues/{id}/comments  Comments[idReadable], paged with $skip/$top
@@ -77,6 +78,9 @@ type Request struct {
 //	GET  /api/issueLinkTypes, GET /api/issues/{id}/links, and GET|POST|DELETE
 //	                                /api/issues/{id}/links/{link}/issues[/{issue}]
 //	                                read and change Links (see linkRoutes)
+//	GET  /api/workItems, GET /api/issues/{id}/activities, GET /api/savedQueries,
+//	POST /api/issuesGetter/count and POST /api/search/assist serve reports
+//	                                and search help (see reportRoutes)
 //	GET  /api/plain                 a text/plain body
 //	GET  /users/me                  the web token page (no auth; 404 if HubTokenPage)
 //
@@ -160,6 +164,13 @@ type FakeYouTrack struct {
 	// CommandDescriptions, when set, replaces the description of each parsed
 	// command part, in order, exactly as given (for hostile previews).
 	CommandDescriptions []string
+	// Activities holds each issue's history by readable ID, oldest first.
+	Activities map[string][]map[string]any
+	// SavedQueries are the saved searches the user sees.
+	SavedQueries []map[string]any
+	// CountPending is the number of issue counts answered with -1, as
+	// YouTrack does while it is still counting, before the real count.
+	CountPending int
 
 	mu       sync.Mutex
 	requests []Request
@@ -247,6 +258,7 @@ func NewFakeYouTrack(t *testing.T, prefix string) *FakeYouTrack {
 	yt.issueWriteRoutes(mux)
 	yt.linkRoutes(mux)
 	yt.commentRoutes(mux)
+	yt.reportRoutes(mux)
 	mux.HandleFunc("GET /api/plain", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = io.WriteString(w, "plain text")

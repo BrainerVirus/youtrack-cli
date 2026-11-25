@@ -33,6 +33,7 @@ type options struct {
 	sort     string
 	all      bool
 	limit    int
+	assist   bool
 	exporter *output.Exporter
 }
 
@@ -58,12 +59,18 @@ Unless you pass --query or --state, only unresolved issues are listed
 
 --limit 0 lists every matching issue.
 
+--query-assist lists nothing: it prints YouTrack's completions for the end
+of --query, each as the full query it makes and a description, to find a
+field name, value or keyword. Quote the query with a trailing space to ask
+what may follow it.
+
 JSON fields:
 ` + shared.IssueFieldsHelp,
 		Example: `  $ ytrack issue list -q 'project: APP Assignee: me #Unresolved'
   $ ytrack issue list --project APP --assignee me --state Open --sort 'updated desc'
   $ ytrack issue list --project APP --all
-  $ ytrack issue list -q '#Unresolved' --json idReadable,summary,state --jq '.[].idReadable'`,
+  $ ytrack issue list -q '#Unresolved' --json idReadable,summary,state --jq '.[].idReadable'
+  $ ytrack issue list -q 'State: ' --query-assist`,
 		Args: cmdutil.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if opts.exporter != nil && looksLikeJQ(opts.query) {
@@ -71,6 +78,15 @@ JSON fields:
 			}
 			if opts.limit < 0 {
 				return clierr.FlagErrorf("invalid --limit %d: use a positive number, or 0 for all", opts.limit)
+			}
+			if opts.assist {
+				if opts.query == "" {
+					return clierr.FlagErrorf("`--query-assist` completes --query; pass the query to complete with -q")
+				}
+				if opts.exporter != nil {
+					return clierr.FlagErrorf("`--query-assist` prints completions, not issues, so --json does not apply")
+				}
+				return assist(cmd, f, opts.query)
 			}
 			if _, err := buildQuery(opts); err != nil {
 				return err
@@ -87,6 +103,7 @@ JSON fields:
 	fl.StringVar(&opts.sort, "sort", "", "Sort by an `attribute`, optionally followed by asc or desc")
 	fl.BoolVar(&opts.all, "all", false, "Include resolved issues (no implicit #Unresolved)")
 	fl.IntVarP(&opts.limit, "limit", "L", DefaultLimit, "Maximum number of issues to list (0 for all)")
+	fl.BoolVar(&opts.assist, "query-assist", false, "Print YouTrack's completions for --query instead of issues")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, shared.IssueFields, cmdutil.WithoutJQShorthand())
 	return cmd
 }
@@ -154,6 +171,29 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			output.Cell{Text: assignee},
 			output.Cell{Text: updated, Style: cs.Dim},
 		)
+	}
+	return tbl.Render()
+}
+
+// assist prints YouTrack's completions for the end of query.
+func assist(cmd *cobra.Command, f *cmdutil.Factory, query string) error {
+	client, _, err := f.APIClient()
+	if err != nil {
+		return err
+	}
+	suggestions, err := adapter.AssistSearch(cmd.Context(), client, query)
+	if err != nil {
+		return err
+	}
+	ios := f.IOStreams
+	if len(suggestions) == 0 {
+		fmt.Fprintf(ios.ErrOut, "YouTrack has no completions for %q\n", query)
+		return nil
+	}
+	tbl := output.NewTable(ios, "query", "description")
+	cs := ios.ColorScheme()
+	for _, s := range suggestions {
+		tbl.StyledRow(output.Cell{Text: s.Apply(query), Style: cs.Bold}, output.Cell{Text: s.Description, Style: cs.Dim})
 	}
 	return tbl.Render()
 }

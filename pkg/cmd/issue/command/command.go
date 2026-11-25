@@ -20,7 +20,7 @@ import (
 )
 
 // Fields lists the --json fields of issue command.
-var Fields = []string{"issue", "url", "issues", "command", "dryRun", "commands"}
+var Fields = []string{"issue", "url", "issues", "command", "dryRun", "commands", "suggestions"}
 
 type options struct {
 	refs     []shared.Ref
@@ -28,16 +28,18 @@ type options struct {
 	comment  string
 	silent   bool
 	dryRun   bool
+	assist   bool
 	exporter *output.Exporter
 }
 
 type target struct{ Issue, URL string }
 
 type result struct {
-	Issues   []target
-	Command  string
-	DryRun   bool
-	Commands []adapter.ParsedCommand
+	Issues      []target
+	Command     string
+	DryRun      bool
+	Commands    []adapter.ParsedCommand
+	Suggestions []adapter.Suggestion
 }
 
 func (r result) ExportData(fields []string) map[string]any {
@@ -48,11 +50,20 @@ func (r result) ExportData(fields []string) map[string]any {
 	all := map[string]any{
 		"issue": r.Issues[0].Issue, "url": r.Issues[0].URL, "issues": issues,
 		"command": r.Command, "dryRun": r.DryRun,
-		"commands": shared.ParsedCommands(r.Commands),
+		"commands": shared.ParsedCommands(r.Commands), "suggestions": r.suggestions(),
 	}
 	out := make(map[string]any, len(fields))
 	for _, f := range fields {
 		out[f] = all[f]
+	}
+	return out
+}
+
+// suggestions exports the completions with the command each one makes.
+func (r result) suggestions() []map[string]any {
+	out := make([]map[string]any, len(r.Suggestions))
+	for i, s := range r.Suggestions {
+		out[i] = map[string]any{"option": s.Option, "description": s.Description, "command": s.Apply(r.Command)}
 	}
 	return out
 }
@@ -72,7 +83,9 @@ https://www.jetbrains.com/help/youtrack/cloud/commands.html.
 
 --dry-run asks YouTrack how it parses the command for these issues and prints
 each part without changing anything; it exits 1 when a part is not
-understood. --comment adds a comment along with the change; the comment is
+understood. --assist does the same and also prints YouTrack's completions
+for the end of the command, each as the full command it makes (marked >),
+to find a field name or value. --comment adds a comment along with the change; the comment is
 visible to everyone who can see the issue. --silent applies the change
 without sending notifications; it needs the Apply Commands Silently
 permission in the project.
@@ -87,9 +100,12 @@ JSON fields:
   command   the command text
   dryRun    true when nothing was applied
   commands  [{description, error}]: the parts YouTrack parsed; description
-            is as YouTrack sent it, which may be HTML`,
+            is as YouTrack sent it, which may be HTML
+  suggestions  [{option, description, command}]: with --assist, YouTrack's
+            completions and the command each makes; [] otherwise`,
 		Example: `  $ ytrack issue command APP-123 'State In Progress for me'
   $ ytrack issue command APP-123 'Priority Critical' --dry-run
+  $ ytrack issue command APP-123 'State Fi' --assist
   $ ytrack issue command APP-123 'State Fixed' --comment 'Fixed in 2026.3' --silent
   $ ytrack issue command APP-123 APP-124 APP-130 'Assignee me' --dry-run`,
 		Args:              cmdutil.MinimumArgs(2, "expected one or more issue IDs or URLs and a command, e.g. APP-123 'State Fixed'"),
@@ -114,8 +130,11 @@ JSON fields:
 			if opts.query == "" {
 				return clierr.FlagErrorf("the command is empty")
 			}
+			if opts.assist {
+				opts.dryRun = true
+			}
 			if opts.dryRun && (opts.silent || cmd.Flags().Changed("comment")) {
-				return clierr.FlagErrorf("`--dry-run` applies nothing, so `--comment` and `--silent` do not apply")
+				return clierr.FlagErrorf("`--dry-run` and `--assist` apply nothing, so `--comment` and `--silent` do not apply")
 			}
 			if err := shared.UseRefHostForWrite(f, hostRef); err != nil {
 				return err
@@ -127,6 +146,7 @@ JSON fields:
 	fl.StringVarP(&opts.comment, "comment", "c", "", "Add a comment `text` with the change")
 	fl.BoolVar(&opts.silent, "silent", false, "Apply without sending notifications")
 	fl.BoolVarP(&opts.dryRun, "dry-run", "n", false, "Show how YouTrack parses the command without applying it")
+	fl.BoolVar(&opts.assist, "assist", false, "Like --dry-run, and also show YouTrack's completions")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, Fields)
 	return cmd
 }
@@ -158,7 +178,11 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	}
 	idList := strings.Join(ids, ", ")
 	c := adapter.Command{Query: opts.query, IssueIDs: ids, Comment: opts.comment, Silent: opts.silent}
-	if opts.dryRun {
+	if opts.assist {
+		if res.Commands, res.Suggestions, err = adapter.AssistCommand(ctx, client, c); err != nil {
+			return shared.NotFound(err, idList, host)
+		}
+	} else if opts.dryRun {
 		if res.Commands, err = adapter.PreviewCommand(ctx, client, c); err != nil {
 			return shared.NotFound(err, idList, host)
 		}
@@ -184,6 +208,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 				prefix = "! "
 			}
 			fmt.Fprintf(ios.Out, "%s%s\n", prefix, output.SanitizeCell(plainText(p.Description)))
+		}
+		for _, s := range res.Suggestions {
+			fmt.Fprintf(ios.Out, "> %s\t%s\n", output.SanitizeCell(s.Apply(res.Command)), output.SanitizeCell(plainText(s.Description)))
 		}
 	default:
 		for _, t := range res.Issues {

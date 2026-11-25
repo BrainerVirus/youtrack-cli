@@ -17,6 +17,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/auth"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/project"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/query"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/skill"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/tag"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/upgrade"
@@ -80,6 +81,7 @@ func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
 	cmd.AddCommand(workitem.NewCmdWorkItem(f))
 	cmd.AddCommand(tag.NewCmdTag(f))
 	cmd.AddCommand(project.NewCmdProject(f))
+	cmd.AddCommand(query.NewCmdQuery(f))
 	cmd.AddCommand(api.NewCmdAPI(f))
 	cmd.AddCommand(skill.NewCmdSkill(f))
 	cmd.AddCommand(version.NewCmdVersion(f))
