@@ -2,6 +2,7 @@ package tag_test
 
 import (
 	"encoding/json"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -22,7 +23,7 @@ func loggedIn(t *testing.T) (*cmdtest.Env, *cmdtest.FakeYouTrack) {
 func posts(yt *cmdtest.FakeYouTrack) []cmdtest.Request {
 	var out []cmdtest.Request
 	for _, r := range yt.Requests() {
-		if r.Method == "POST" && r.Path == "/api/tags" {
+		if r.Method == http.MethodPost && r.Path == "/api/tags" {
 			out = append(out, r)
 		}
 	}
