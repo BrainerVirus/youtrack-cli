@@ -58,46 +58,93 @@ variable or command to set.
 ## What it does
 
 Every call goes to the target host only (`auth status` is limited to it
-with `--host`, so other logged-in hosts are not contacted):
+with `--host`, so other logged-in hosts are not contacted). Steps 1-4 run
+in order and stop the run on the first failure, since everything after them
+works on the run's issue. The families in steps 5-12 are independent: all
+of them run, and the test reports every one that failed.
 
 1. `auth status`: the token works; the login is used below.
-2. `issue create` in the project, summary `ytrack-it <run id> create`.
-3. `issue view` and `issue list` find it.
-4. `issue edit` changes summary and description; `issue view` confirms.
-5. `issue comment` adds a comment; `issue view --json comments` shows it.
-   `issue comment --attach` posts a comment with a PNG, and `ytrack api`
-   reads the comment's `attachments(id,name)`: the file must be on the
-   comment itself.
-6. `issue command <id> 'Assignee me' --dry-run`, then applied with
-   `--silent`; the assignee becomes you. The command uses the field name, not
-   a keyword such as `for`: YouTrack localizes command keywords with the
-   instance's language (a Spanish instance answers "Comando desconocido:
-   for"), while field names work on every locale.
-7. `issue list --project <P> --assignee me` lists the issue. ytrack sends
-   `Assignee: <your login>`, never the `for: me` keyword, which a
-   non-English instance does not know (it matches nothing there).
-8. `issue view <P>-999999999` fails with a not-found that names the target
-   host and suggests no other host (`try --host` appears only when two or
-   more other logged-in hosts own the key's project, and never with
-   `--host`).
-9. `work-item add` (30m), `list`, `edit` (45m) and `delete`.
+2. `tag create` makes two tags, `ytrack-it-<run id>-a` and `-b`;
+   `tag list` finds both.
+3. `issue create --field Priority=Critical --tag <tag a>` in the project,
+   summary `ytrack-it <run id> create`; `issue view` reads the field and the
+   tag back, and `issue list` finds the issue. The project needs a Priority
+   field with the values Critical and Minor, as every new YouTrack project
+   has (value names are not localized).
+4. `issue edit` changes summary and description, then
+   `--field Priority=Minor --add-tag <tag b> --remove-tag <tag a>`;
+   `issue view` confirms each change.
+5. Comments: `issue comment` adds one and `issue view --json comments`
+   shows it; `issue comment list`, `edit` and `delete` each read back with
+   `comment list`. `issue comment --attach` then posts a comment with a PNG:
+   `ytrack api` reads the comment's `attachments(id,name)`, and
+   `issue attachments` shows the file with that comment's `commentId`, so
+   the file must be on the comment itself.
+6. Commands: `issue command <id> 'Assignee me'` with `--dry-run`, with
+   `--assist` (parsed with no error), then applied with `--silent`; the
+   assignee becomes you. The command uses the field name, not a keyword such
+   as `for`: YouTrack localizes command keywords with the instance's
+   language (a Spanish instance answers "Comando desconocido: for"), while
+   field names work on every locale. `issue list --project <P> --assignee me`
+   then lists the issue (ytrack sends `Assignee: <your login>`, never
+   `for: me`), and `issue view <P>-999999999` fails with a not-found that
+   names the target host and suggests no other host (`try --host` appears
+   only when two or more other logged-in hosts own the key's project, and
+   never with `--host`).
+7. Attachments: `issue attach` uploads two text files and
+   `issue attachments` lists them on the issue. `issue download <id> <name>`
+   saves only that file, with its content; a second download refuses to
+   overwrite it and names `--clobber`; `--clobber` overwrites a stale copy.
+8. Reads: `project fields <P>` lists Priority, `issue count 'project: <P>'`
+   counts at least the run's issue, `issue activities` shows its history,
+   `issue watchers` answers, `query list` lists saved searches, and
+   `issue list -q 'project: ' --query-assist` prints completions.
+9. Votes and stars: `issue vote` then `unvote`, and `issue watch`, then
+   `issue watchers` lists you, then `unwatch`, each read back with `--json`.
+   YouTrack refuses a vote on an issue you reported, which the run's issue
+   is: that refusal is the expected outcome, and `unvote` is then not run.
+10. `work-item add` (30m) and `list`; `work-item report --project <P>` from
+    yesterday to tomorrow (so the item's local day is inside whatever the
+    time zone) includes it; then `edit` (45m) and `delete`.
+11. A second issue, `ytrack-it <run id> delete`: `ytrack api
+    '/issues?$top=1' --paginate --jq '.[].idReadable'` pages through the
+    project one issue per request and must return both run issues, as many
+    as `issue count` counts; then `issue delete --yes` removes the second
+    issue and `issue view` reports it not found.
+12. Local commands: `skill print` prints the skill's front matter,
+    `skill list --json` answers, and `upgrade --check` reports the latest
+    release (it calls GitHub; the fake-server tests skip it).
 
 The run id is a UTC timestamp plus random hex, e.g. `20261104-153000-a1b2c3`.
 
+The binary runs with `YTRACK_NO_UPDATE_NOTIFIER=1`, so a release binary
+neither checks for nor installs a newer release during the run. When the
+suite builds ytrack itself (no `YTRACK_IT_BIN`), and in the fake-server
+tests, it builds with `-buildvcs=false`, which stamps version `dev`: a
+plain `go build` stamps a Go pseudo-version, which ytrack treats as a release
+and which would rewrite your installed agent skill copies. `make it` stamps
+a `git describe` version, which is not a release either.
+
 ## What it creates and cleans up
 
-One issue per run, with two comments (one with an attached file) and one
-work item on it. Cleanup runs
-whether the steps passed or failed:
+Per run: two issues (the second is deleted by step 11), two tags, three
+comments on the first issue (one deleted by step 5, one with an attached
+PNG), two attached text files and one work item (deleted by step 10).
+Cleanup runs whether the steps passed or failed:
 
-- it deletes each issue the run created (`ytrack api -X DELETE /issues/<id>`;
-  YouTrack deletes its comments and work items with it), then
+- it deletes each issue the run created and has not deleted yet
+  (`ytrack api -X DELETE /issues/<id>`; YouTrack deletes its comments,
+  attachments and work items with it), then
 - it sweeps the 50 newest issues of the project and deletes any whose summary
   starts with this run's `ytrack-it <run id>` prefix, which catches an issue
-  created by a step that failed before it reported the ID.
+  created by a step that failed before it reported the ID, then
+- it deletes each tag the run created (`ytrack api -X DELETE /tags/<id>`),
+  and sweeps `tag list` for any tag whose name starts with
+  `ytrack-it-<run id>`.
 
 If cleanup itself fails, the test fails with the prefix to search for, so you
-can delete leftovers by hand (search the project for `ytrack-it`).
+can delete leftovers by hand (search the project for `ytrack-it`, and
+`ytrack tag list` for tags named `ytrack-it-`).
 
 ## Tests of the suite
 
