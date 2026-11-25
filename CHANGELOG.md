@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-25
+
 ### Changed
 
 - The README is now a short start (install, login, a five-minute tour, the agent skill) and the reference lives in `docs/`: auth and hosts, issues, time tracking, the REST API, scripting (output, JSON, exit codes, environment, files), install and upgrades, and the agent skill. Every page covers the 0.6 and 0.7 features, and a test checks every `ytrack` command and flag quoted in the README and `docs/` against the command tree.
 - `ytrack --help` lists every environment variable ytrack reads (`YTRACK_CACHE_DIR`, `YTRACK_NO_AUTO_UPGRADE`, `CLICOLOR_FORCE`), and says `YTRACK_NO_UPDATE_NOTIFIER` also stops the release check and the background upgrade.
+
 ### Fixed
 
 - `work-item edit --help` no longer calls `--date auto` the default; an edit without `--date` keeps the day.
+
 ## [0.7.0] - 2026-11-21
 
 ### Added
