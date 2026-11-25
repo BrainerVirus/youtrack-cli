@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -35,6 +36,59 @@ type options struct {
 	limit    int
 	assist   bool
 	exporter *output.Exporter
+	// assistExporter is --json with --query-assist, over AssistFields.
+	assistExporter *output.Exporter
+}
+
+// AssistFields are the --json fields of a --query-assist completion.
+var AssistFields = []string{"query", "option", "description", "completionStart", "completionEnd"}
+
+type completion struct {
+	adapter.Suggestion
+	query string
+}
+
+func (c completion) ExportData(fields []string) map[string]any {
+	out := make(map[string]any, len(fields))
+	for _, f := range fields {
+		switch f {
+		case "query":
+			out[f] = c.Apply(c.query)
+		case "option":
+			out[f] = c.Option
+		case "description":
+			out[f] = c.Description
+		case "completionStart":
+			out[f] = c.CompletionStart
+		case "completionEnd":
+			out[f] = c.CompletionEnd
+		}
+	}
+	return out
+}
+
+// assistExporter reads --json, --jq and --template for --query-assist,
+// whose fields are AssistFields, not issue fields.
+func assistExporter(c *cobra.Command) (*output.Exporter, error) {
+	fl := c.Flags()
+	jq, _ := fl.GetString("jq")
+	tpl, _ := fl.GetString("template")
+	fields, _ := fl.GetStringSlice("json")
+	if jq != "" && tpl != "" {
+		return nil, clierr.FlagErrorf("cannot use `--jq` and `--template` together")
+	}
+	if !fl.Changed("json") {
+		if jq == "" && tpl == "" {
+			return nil, nil
+		}
+		fields = slices.Clone(AssistFields)
+	}
+	for _, name := range fields {
+		if !slices.Contains(AssistFields, name) {
+			return nil, clierr.FlagErrorf("unknown JSON field for --query-assist: %q\nAvailable fields:\n  %s", name, strings.Join(AssistFields, "\n  "))
+		}
+	}
+	return &output.Exporter{Fields: fields, Format: output.Format{JQ: jq, Template: tpl}}, nil
 }
 
 // NewCmdList returns the list command.
@@ -62,7 +116,12 @@ Unless you pass --query or --state, only unresolved issues are listed
 --query-assist lists nothing: it prints YouTrack's completions for the end
 of --query, each as the full query it makes and a description, to find a
 field name, value or keyword. Quote the query with a trailing space to ask
-what may follow it.
+what may follow it. With --query-assist, --json takes these fields instead:
+  query            the full query the completion makes
+  option           the completion itself
+  description      YouTrack's description of it
+  completionStart  where the replaced text starts (UTF-16 units)
+  completionEnd    where it ends
 
 JSON fields:
 ` + shared.IssueFieldsHelp,
@@ -83,10 +142,7 @@ JSON fields:
 				if opts.query == "" {
 					return clierr.FlagErrorf("`--query-assist` completes --query; pass the query to complete with -q")
 				}
-				if opts.exporter != nil {
-					return clierr.FlagErrorf("`--query-assist` prints completions, not issues, so --json does not apply")
-				}
-				return assist(cmd, f, opts.query)
+				return assist(cmd, f, opts.query, opts.assistExporter)
 			}
 			if _, err := buildQuery(opts); err != nil {
 				return err
@@ -105,6 +161,15 @@ JSON fields:
 	fl.IntVarP(&opts.limit, "limit", "L", DefaultLimit, "Maximum number of issues to list (0 for all)")
 	fl.BoolVar(&opts.assist, "query-assist", false, "Print YouTrack's completions for --query instead of issues")
 	cmdutil.AddJSONFlags(cmd, &opts.exporter, shared.IssueFields, cmdutil.WithoutJQShorthand())
+	issueFlags := cmd.PreRunE
+	cmd.PreRunE = func(c *cobra.Command, args []string) error {
+		if !opts.assist {
+			return issueFlags(c, args)
+		}
+		e, err := assistExporter(c)
+		opts.assistExporter = e
+		return err
+	}
 	return cmd
 }
 
@@ -176,7 +241,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 }
 
 // assist prints YouTrack's completions for the end of query.
-func assist(cmd *cobra.Command, f *cmdutil.Factory, query string) error {
+func assist(cmd *cobra.Command, f *cmdutil.Factory, query string, exporter *output.Exporter) error {
 	client, _, err := f.APIClient()
 	if err != nil {
 		return err
@@ -186,6 +251,13 @@ func assist(cmd *cobra.Command, f *cmdutil.Factory, query string) error {
 		return err
 	}
 	ios := f.IOStreams
+	if exporter != nil {
+		out := make([]completion, len(suggestions))
+		for i, s := range suggestions {
+			out[i] = completion{Suggestion: s, query: query}
+		}
+		return exporter.Write(ios, out)
+	}
 	if len(suggestions) == 0 {
 		fmt.Fprintf(ios.ErrOut, "YouTrack has no completions for %q\n", query)
 		return nil

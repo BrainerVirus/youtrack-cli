@@ -1,6 +1,6 @@
 ---
 name: ytrack
-description: Work with JetBrains YouTrack through the ytrack CLI - read, search, count, create, edit and delete issues, read issue history, watchers and votes, vote, list saved searches, add, list, edit and delete comments, apply YouTrack commands, list and create tags, list a project's custom fields, log, edit and report spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
+description: Work with JetBrains YouTrack through the ytrack CLI - read, search, count, create, edit and delete issues, read issue history, watchers and votes, vote and star issues, list saved searches, add, list, edit and delete comments, apply YouTrack commands, list and create tags, list a project's custom fields, log, edit and report spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
 metadata:
   version: "dev"
 ---
@@ -58,7 +58,9 @@ ytrack query list --json name,query                    # saved searches
   `--assignee me`), `project:` and `#Unresolved` work on every locale.
 - Unsure of a field name or value? `ytrack issue list -q 'State: ' --query-assist`
   prints YouTrack's completions instead of issues.
-- `ytrack issue vote APP-123` / `issue unvote` change your vote; ask first.
+- `ytrack issue vote APP-123` / `issue unvote` change your vote and
+  `issue watch` / `issue unwatch` your star; ask first. Exit 1 means nothing
+  changed (see the error).
 
 ## Create, edit, comment, attach
 

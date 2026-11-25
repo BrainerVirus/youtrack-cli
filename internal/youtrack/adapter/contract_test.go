@@ -16,7 +16,7 @@ import (
 	commentedit "github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/comment/edit"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/link"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
-	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/vote"
+	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/toggle"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/watchers"
 	projectfields "github.com/BrainerVirus/youtrack-cli/pkg/cmd/project/fields"
 	querylist "github.com/BrainerVirus/youtrack-cli/pkg/cmd/query/list"
@@ -297,8 +297,10 @@ func TestRequestsMatchTheContract(t *testing.T) {
 		{"project", "fields", "NSR", "--json", strings.Join(projectfields.Fields, ",")},
 		{"work-item", "report", "--since", "2026-09-01", "--until", "2026-10-31", "--project", "NSR", "--json", strings.Join(workitemreport.Fields, ",")},
 		{"issue", "watchers", "NSR-40", "--json", strings.Join(watchers.Fields, ",")},
-		{"issue", "vote", "NSR-40", "--json", strings.Join(vote.Fields, ",")},
+		{"issue", "vote", "NSR-40", "--json", strings.Join(toggle.VoteFields, ",")},
 		{"issue", "unvote", "NSR-40"},
+		{"issue", "unwatch", "NSR-40", "--json", strings.Join(toggle.WatchFields, ",")},
+		{"issue", "watch", "NSR-40"},
 		{"query", "list", "--json", strings.Join(querylist.Fields, ",")},
 		{"issue", "activities", "NSR-40", "--json", strings.Join(activities.Fields, ",")},
 		{"issue", "count", "project: NSR #Unresolved", "--json", "query,count"},

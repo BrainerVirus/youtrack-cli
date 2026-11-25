@@ -8,7 +8,8 @@ it contains spaces, `#` and braces.
   listing them.
 - `ytrack issue list -q '<query>' --query-assist` prints YouTrack's
   completions for the end of the query instead of issues; end the query with
-  a space (`-q 'State: '`) to see the values that may follow.
+  a space (`-q 'State: '`) to see the values that may follow. Add
+  `--json query,option,description` for JSON.
 - `ytrack query list --json name,query` lists the saved searches; their
   `query` runs as is with `-q`.
 

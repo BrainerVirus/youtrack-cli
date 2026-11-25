@@ -19,8 +19,10 @@ Available Commands:
   list        List issues
   unlink      Remove links between issues
   unvote      Remove your vote from an issue
+  unwatch     Remove your star from an issue
   view        Show an issue
   vote        Vote for an issue
+  watch       Star an issue to get its notifications
   watchers    List the users who watch an issue
 
 Flags:

@@ -19,8 +19,10 @@ Work with YouTrack issues
   <accent>list       </> List issues
   <accent>unlink     </> Remove links between issues
   <accent>unvote     </> Remove your vote from an issue
+  <accent>unwatch    </> Remove your star from an issue
   <accent>view       </> Show an issue
   <accent>vote       </> Vote for an issue
+  <accent>watch      </> Star an issue to get its notifications
   <accent>watchers   </> List the users who watch an issue
 
 <bold>Flags:</>

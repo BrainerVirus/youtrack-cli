@@ -72,9 +72,58 @@ func TestIssueVote(t *testing.T) {
 		}
 	})
 
+	t.Run("given YouTrack accepts the command but the vote does not change, it exits 1 naming the risk", func(t *testing.T) {
+		env, yt := withHistory(t)
+		ignoreCommands(yt)
+		code := env.Run("issue", "vote", "NSR-40")
+		if code != 1 || env.Stdout.Len() != 0 {
+			t.Fatalf("exit %d, stdout %q", code, env.Stdout)
+		}
+		for _, want := range []string{`accepted the "vote" command, but NSR-40 did not change`, "language", "issue command NSR-40 vote --assist"} {
+			if !strings.Contains(env.Stderr.String(), want) {
+				t.Errorf("stderr lacks %q: %s", want, env.Stderr)
+			}
+		}
+	})
+
 	t.Run("given an unknown issue, it exits 1 and changes nothing", func(t *testing.T) {
 		env, _ := withHistory(t)
 		if code := env.Run("issue", "vote", "NSR-99"); code != 1 || !strings.Contains(env.Stderr.String(), "NSR-99") {
+			t.Errorf("exit %d, stderr %q", code, env.Stderr)
+		}
+	})
+}
+
+func TestIssueWatch(t *testing.T) {
+	t.Run("given unwatch, it applies unstar and you leave the starred watchers", func(t *testing.T) {
+		env, yt := withHistory(t)
+		mustRun(t, env, "issue", "unwatch", "NSR-40", "--json", "issue,watching")
+		cmds := requests(yt, http.MethodPost, "/api/commands")
+		if len(cmds) != 1 || !strings.Contains(cmds[0].Body, `"query":"unstar"`) {
+			t.Fatalf("command requests = %+v", cmds)
+		}
+		if got := decodeJSON[map[string]any](t, env.Stdout.Bytes()); !reflect.DeepEqual(got, map[string]any{"issue": "NSR-40", "watching": false}) {
+			t.Errorf("got %v", got)
+		}
+		env.Reset()
+		mustRun(t, env, "issue", "watchers", "NSR-40", "--json", "login")
+		if got := decodeJSON[[]map[string]any](t, env.Stdout.Bytes()); !reflect.DeepEqual(got, []map[string]any{{"login": "jroe"}}) {
+			t.Errorf("watchers after unwatch = %v", got)
+		}
+	})
+
+	t.Run("given watch, it stars the issue and prints watching", func(t *testing.T) {
+		env, _ := withHistory(t)
+		mustRun(t, env, "issue", "watch", "NSR-41")
+		if env.Stdout.String() != "NSR-41\twatching\n" {
+			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given YouTrack accepts the command but the star does not change, it exits 1", func(t *testing.T) {
+		env, yt := withHistory(t)
+		ignoreCommands(yt)
+		if code := env.Run("issue", "watch", "NSR-41"); code != 1 || !strings.Contains(env.Stderr.String(), `accepted the "star" command, but NSR-41 did not change`) {
 			t.Errorf("exit %d, stderr %q", code, env.Stderr)
 		}
 	})
@@ -231,9 +280,31 @@ func TestIssueListQueryAssist(t *testing.T) {
 		}
 	})
 
-	t.Run("given --query-assist with --json, it is a usage error", func(t *testing.T) {
+	t.Run("given --query-assist --json, it prints the completions as JSON", func(t *testing.T) {
 		env, _ := withHistory(t)
-		if code := env.Run("issue", "list", "-q", "x", "--query-assist", "--json", "idReadable"); code != 1 || !strings.Contains(env.Stderr.String(), "--json") {
+		mustRun(t, env, "issue", "list", "-q", "project: NSR #Unr", "--query-assist", "--json", "query,option,description,completionStart,completionEnd")
+		got := decodeJSON[[]map[string]any](t, env.Stdout.Bytes())
+		want := []map[string]any{{
+			"query": "project: NSR #Unresolved ", "option": "#Unresolved", "description": "complete #Unresolved",
+			"completionStart": float64(13), "completionEnd": float64(17),
+		}}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("given --query-assist --jq alone, it filters every completion field", func(t *testing.T) {
+		env, _ := withHistory(t)
+		mustRun(t, env, "issue", "list", "-q", "#Unr", "--query-assist", "--jq", ".[].option")
+		if env.Stdout.String() != "#Unresolved\n" {
+			t.Errorf("stdout = %q", env.Stdout)
+		}
+	})
+
+	t.Run("given --query-assist with an issue field in --json, it names the completion fields", func(t *testing.T) {
+		env, _ := withHistory(t)
+		code := env.Run("issue", "list", "-q", "x", "--query-assist", "--json", "idReadable")
+		if code != 1 || !strings.Contains(env.Stderr.String(), `unknown JSON field for --query-assist: "idReadable"`) || !strings.Contains(env.Stderr.String(), "completionStart") {
 			t.Errorf("exit %d, stderr %q", code, env.Stderr)
 		}
 	})

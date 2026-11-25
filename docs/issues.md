@@ -42,7 +42,9 @@ APP-118  Export to CSV          Open         Normal              about 3 days ag
 - `--query-assist` lists no issues: it prints YouTrack's completions for the
   end of `--query`, each as the full query it makes and a description
   (`ytrack issue list -q 'State: ' --query-assist`). End the query with a
-  space to ask what may follow it. It prints text only.
+  space to ask what may follow it. With `--json` (fields `query`, `option`,
+  `description`, `completionStart`, `completionEnd`) or `--jq`, it prints
+  the completions as JSON instead.
 
 ## Count, history, watchers and votes
 
@@ -54,6 +56,8 @@ ytrack issue activities APP-123 --category fields,comments --json timestamp,auth
 ytrack issue watchers APP-123 --json login,starred
 ytrack issue vote APP-123                               # prints APP-123<TAB><votes>
 ytrack issue unvote APP-123
+ytrack issue watch APP-123                              # star it: prints APP-123<TAB>watching
+ytrack issue unwatch APP-123 --json watching
 ytrack query list                                       # saved searches: id, name, owner, query
 ```
 
@@ -72,9 +76,18 @@ ytrack query list                                       # saved searches: id, na
   true for those who starred it (the others watch through a tag or a saved
   search).
 - `issue vote` and `issue unvote` apply YouTrack's `vote` and `unvote`
-  commands (the REST API has no vote write) and print the new vote count;
-  YouTrack does not let you vote for an issue you reported. `--json`
-  fields: `issue`, `url`, `votes`, `voted`.
+  commands and print the new vote count; YouTrack does not let you vote for
+  an issue you reported. `--json` fields: `issue`, `url`, `votes`, `voted`.
+- `issue watch` and `issue unwatch` star and unstar the issue (the `star`
+  and `unstar` commands). Unstarring does not stop notifications that come
+  through a tag or a saved search. `--json` fields: `issue`, `url`,
+  `watching`.
+- The REST API marks votes and stars read-only, so these four apply a
+  YouTrack command, then read the issue back. When the vote or star is not
+  what was asked, they exit 1 instead of reporting success: the command word
+  may differ on an instance in another language (and a vote on an issue you
+  reported is refused). The error names the `issue command ... --assist`
+  line that shows how YouTrack parses the word there.
 - `query list` lists the saved searches you can see; pass a `query` to
   `issue list -q` or `issue count`. `--json` fields: `id`, `name`, `query`,
   `owner`.

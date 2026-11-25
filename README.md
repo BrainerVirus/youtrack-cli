@@ -127,7 +127,7 @@ their package manager. See [docs/install.md](docs/install.md#upgrades).
 | Topic | |
 | --- | --- |
 | Login, tokens, several hosts, folder rules, CI | [docs/auth.md](docs/auth.md) |
-| Issues: list, view, count, history, watchers, votes, saved searches, create, edit, delete, comments, attachments, commands, links, tags, project fields | [docs/issues.md](docs/issues.md) |
+| Issues: list, view, count, history, watchers, stars, votes, saved searches, create, edit, delete, comments, attachments, commands, links, tags, project fields | [docs/issues.md](docs/issues.md) |
 | Time tracking (work items, time reports) | [docs/time-tracking.md](docs/time-tracking.md) |
 | Raw REST API (`ytrack api`) | [docs/api.md](docs/api.md) |
 | Output, JSON, exit codes, environment, config files, completion | [docs/scripting.md](docs/scripting.md) |
