@@ -16,10 +16,13 @@ Spec: `docs/YT_CLI_SPEC.md` (its Decisions section wins over the body).
 - `internal/youtrack/adapter/customfields` the only decoder and encoder of custom field `$type`s
   (writes go through the REST API, except period fields, which use a YouTrack command)
 - `internal/youtrack/transport.Paginate` the shared `$skip/$top` pager
-- `api/contract/youtrack-contract.json` hand-written list of the endpoints, query params and
-  `fields=` attributes ytrack uses; `adapter/contract_test.go` checks requests against it and the
-  weekly `openapi-contract` workflow checks it against the live `/api/openapi.json` (never committed).
-  Update it when the adapter requests something new.
+- `api/contract/youtrack-contract.json` hand-written list of the endpoints, query params,
+  `fields=` attributes read and body attributes written (`writes`; `readOnlyWrites` lists the
+  accepted writes the spec marks readOnly) ytrack uses; `adapter/contract_test.go` checks requests
+  against it, and the weekly `openapi-contract` workflow checks it against each listed live
+  `/api/openapi.json` (never committed; a readOnly write fails) and summarizes upstream changes
+  against `api/contract/openapi-snapshot.json`. Update it when the adapter requests something new
+  (CONTRIBUTING.md, "The REST contract").
 - `internal/{config,hosts,auth}` YAML config, URL normalization, keyring store
 - `internal/worktime` work item durations and dates (mirrors workit's parser and work date)
 - `internal/{iostreams,output,prompter,browser,editor,clierr,build}`

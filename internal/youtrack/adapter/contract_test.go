@@ -25,6 +25,9 @@ type endpoint struct {
 	Path     string   `json:"path"`
 	Query    []string `json:"query"`
 	Response string   `json:"response"`
+	// Body is "reference" when the request body names an existing entity
+	// to add to a collection rather than writing attributes.
+	Body string `json:"body"`
 }
 
 type contract struct {
@@ -39,6 +42,12 @@ type contract struct {
 	Types map[string]map[string][]string `json:"types"`
 	// Subtypes lists, by entity, the $type values ytrack writes for it.
 	Subtypes map[string][]string `json:"subtypes"`
+	// Writes lists, by entity, the attributes ytrack sets at the top level
+	// of a JSON request body.
+	Writes map[string][]string `json:"writes"`
+	// ReadOnlyWrites are written attributes the OpenAPI description marks
+	// readOnly although YouTrack accepts them, each with its evidence.
+	ReadOnlyWrites map[string]map[string]string `json:"readOnlyWrites"`
 }
 
 func loadContract(t *testing.T) *contract {
@@ -127,6 +136,28 @@ func (c *contract) checkBody(e endpoint, body string) []string {
 		return []string{"unexpected body"}
 	}
 	return append(c.checkProjection([]string{e.Response}, bodyProjection(m), ""), c.checkTypes([]string{e.Response}, m, "")...)
+}
+
+// checkWrites returns the attributes a JSON request body sets, as
+// "Entity.attribute", and those the contract does not list under writes.
+// A reference body writes nothing.
+func (c *contract) checkWrites(e endpoint, body string) (written, problems []string) {
+	var m map[string]any
+	if e.Body == "reference" || json.Unmarshal([]byte(body), &m) != nil {
+		return nil, nil
+	}
+	for k := range m {
+		if k == "$type" {
+			continue
+		}
+		attr := e.Response + "." + k
+		written = append(written, attr)
+		if !slices.Contains(c.Writes[e.Response], k) {
+			problems = append(problems, "writes "+attr+", which the contract does not list under writes")
+		}
+	}
+	sort.Strings(problems)
+	return written, problems
 }
 
 // checkTypes reports $type values in a request body that the contract does
@@ -261,6 +292,7 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	}
 
 	covered := map[string]bool{}
+	written := map[string]bool{}
 	for _, r := range yt.Requests() {
 		e, ok := c.endpoint(r.Method, r.Path)
 		if !ok {
@@ -282,6 +314,13 @@ func TestRequestsMatchTheContract(t *testing.T) {
 			for _, p := range c.checkBody(e, r.Body) {
 				t.Errorf("%s %s body %s: %s", e.Method, e.Path, r.Body, p)
 			}
+			attrs, problems := c.checkWrites(e, r.Body)
+			for _, a := range attrs {
+				written[a] = true
+			}
+			for _, p := range problems {
+				t.Errorf("%s %s body %s: %s", e.Method, e.Path, r.Body, p)
+			}
 		}
 		if fields := q.Get("fields"); fields != "" {
 			proj, err := cmdtest.ParseProjection(fields)
@@ -297,6 +336,34 @@ func TestRequestsMatchTheContract(t *testing.T) {
 	for _, e := range slices.Concat(c.Endpoints, c.Undocumented, c.Files) {
 		if !covered[e.Method+" "+e.Path] {
 			t.Errorf("no request exercised %s %s; drop it from the contract or test it", e.Method, e.Path)
+		}
+	}
+	for ty, attrs := range c.Writes {
+		for _, a := range attrs {
+			if !written[ty+"."+a] {
+				t.Errorf("no request body wrote %s.%s; drop it from writes or test it", ty, a)
+			}
+		}
+	}
+}
+
+func TestContractWritesAreRecordedAttributes(t *testing.T) {
+	c := loadContract(t)
+	for ty, attrs := range c.Writes {
+		for _, a := range attrs {
+			if _, ok := c.Types[ty][a]; !ok {
+				t.Errorf("writes lists %s.%s, which types does not", ty, a)
+			}
+		}
+	}
+	for ty, attrs := range c.ReadOnlyWrites {
+		for a, why := range attrs {
+			if !slices.Contains(c.Writes[ty], a) {
+				t.Errorf("readOnlyWrites lists %s.%s, which writes does not", ty, a)
+			}
+			if strings.TrimSpace(why) == "" {
+				t.Errorf("readOnlyWrites %s.%s has no evidence", ty, a)
+			}
 		}
 	}
 }
@@ -335,6 +402,12 @@ func TestContractCheckerCatchesMistakes(t *testing.T) {
 	}
 	if got := c.checkBody(endpoint{Response: "Issue"}, `{"customFields":[{"name":"A","$type":"HologramIssueCustomField","value":null}]}`); len(got) != 1 || !strings.Contains(got[0], "customFields.$type HologramIssueCustomField is not a listed subtype") {
 		t.Errorf("a body with an unlisted $type: problems %q", got)
+	}
+	if attrs, got := c.checkWrites(endpoint{Response: "IssueAttachment"}, `{"name":"a.png","comment":{"id":"4-1"}}`); len(attrs) != 2 || len(got) != 2 || !strings.Contains(got[0], "writes IssueAttachment.comment, which the contract does not list") {
+		t.Errorf("a body writing unlisted attributes: written %q, problems %q", attrs, got)
+	}
+	if attrs, got := c.checkWrites(endpoint{Response: "Tag", Body: "reference"}, `{"id":"6-3"}`); attrs != nil || got != nil {
+		t.Errorf("a reference body: written %q, problems %q", attrs, got)
 	}
 	if _, ok := c.endpoint("DELETE", "/api/issues/NSR-1"); ok {
 		t.Error("an unlisted method matched")

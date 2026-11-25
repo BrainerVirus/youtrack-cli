@@ -1,7 +1,13 @@
 name: OpenAPI contract
 
-# Checks api/contract/youtrack-contract.json against YouTrack's live REST API
-# description. The schema is downloaded at run time and never committed.
+# Checks api/contract/youtrack-contract.json against the live REST API
+# descriptions of the YouTrack versions users run: youtrack.jetbrains.com
+# (JetBrains' own instance, ahead of Cloud) and a YouTrack Cloud instance.
+# YouTrack Server has no public instance to download a description from, so
+# it is not checked here. The schemas are downloaded at run time and never
+# committed; api/contract/openapi-snapshot.json keeps a digest, and what
+# changed against it upstream (new, removed or deprecated operations and
+# attributes) goes to the run summary without failing the check.
 # Drift opens (or comments on) one `api-drift` issue with the mismatch, so a
 # change on JetBrains' side reaches the maintainer as a normal notification;
 # the next clean run closes it.
@@ -27,15 +33,35 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - name: Download the live OpenAPI description
-        run: curl --fail --silent --show-error --location --retry 3 -o "$RUNNER_TEMP/openapi.json" https://youtrack.jetbrains.com/api/openapi.json
-      - name: Check the contract against it
+      - name: Check the contract against each description
         id: check
         env:
-          YTRACK_OPENAPI: ${{ runner.temp }}/openapi.json
+          # One "name url" per line; every listed description is checked.
+          SPECS: |
+            youtrack.jetbrains.com https://youtrack.jetbrains.com/api/openapi.json
+            youtrack-cloud https://cristhoferpincetti.youtrack.cloud/api/openapi.json
         run: |
           set -o pipefail
-          go test ./internal/youtrack/adapter/ -run 'TestContractMatchesOpenAPI|TestOpenAPICheckCatchesDrift' -count=1 -v 2>&1 | tee "$RUNNER_TEMP/contract.log"
+          status=0
+          : > "$RUNNER_TEMP/contract.log"
+          while read -r name url; do
+            [ -n "$name" ] || continue
+            echo "::group::$name ($url)"
+            spec="$RUNNER_TEMP/$name.json"
+            if ! curl --fail --silent --show-error --location --retry 3 -o "$spec" "$url"; then
+              echo "[$name] contract check: could not download $url" | tee -a "$RUNNER_TEMP/contract.log"
+              status=1
+              echo "::endgroup::"
+              continue
+            fi
+            YTRACK_OPENAPI="$spec" go test ./internal/youtrack/adapter/ -run 'TestContractMatchesOpenAPI|TestOpenAPICheckCatchesDrift|TestOpenAPICheckCatchesReadOnlyWrites' -count=1 -v 2>&1 |
+              sed "s/^/[$name] /" | tee -a "$RUNNER_TEMP/contract.log" || status=1
+            # Informational: never changes the outcome.
+            YTRACK_OPENAPI="$spec" YTRACK_OPENAPI_NAME="$name" YTRACK_OPENAPI_SUMMARY="$GITHUB_STEP_SUMMARY" \
+              go test ./internal/youtrack/contract/ -run '^TestUpstreamChanges$' -count=1 -v || true
+            echo "::endgroup::"
+          done <<< "$SPECS"
+          exit "$status"
       - name: Open or update the api-drift issue
         if: failure() && steps.check.outcome == 'failure'
         env:
@@ -46,11 +72,11 @@ jobs:
           gh label create api-drift --force --color B60205 \
             --description "YouTrack's REST API no longer matches ytrack's contract" >/dev/null
           {
-            printf "The weekly contract check found that YouTrack's live OpenAPI description no longer matches \`api/contract/youtrack-contract.json\`.\n\n"
+            printf "The weekly contract check found that a live YouTrack OpenAPI description no longer matches \`api/contract/youtrack-contract.json\` (each line names the description in brackets).\n\n"
             printf 'Run: %s\n\n' "$RUN_URL"
             printf 'Mismatch (from the test output):\n\n```text\n'
-            grep -E 'contract|missing|mismatch|drift|FAIL|_test.go:[0-9]+' "$RUNNER_TEMP/contract.log" | head -80
-            printf '```\n\nNext step: decide per item whether ytrack must change (a rename, a new required field, a removed endpoint) or the contract entry is stale, then fix it and rerun this workflow; a clean run closes this issue.\n'
+            grep -E 'contract|missing|mismatch|drift|readOnly|FAIL|_test.go:[0-9]+' "$RUNNER_TEMP/contract.log" | head -80
+            printf '```\n\nNext step: decide per item whether ytrack must change (a rename, a new required field, a removed endpoint, an attribute it writes turned readOnly) or the contract entry is stale, then fix it and rerun this workflow; a clean run closes this issue.\n'
           } > "$RUNNER_TEMP/body.md"
           open=$(gh issue list --label api-drift --state open --json number --jq '.[0].number // empty')
           if [ -n "$open" ]; then
