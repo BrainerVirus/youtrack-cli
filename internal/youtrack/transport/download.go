@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,8 @@ var ErrStalled = errors.New("download stalled")
 // returning the number of bytes written. ref is a URL the server returned:
 // absolute, or a path from the server root such as an attachment's signed
 // url, which already includes the service path (/youtrack/api/files/...).
+// An absolute ref must have the service URL's origin (scheme, host and
+// port) and hold no user info: a file URL elsewhere is refused, not fetched.
 //
 // The client's timeout bounds the wait for the response and each pause in
 // the body, not the whole transfer, so a large file on a slow link
@@ -33,6 +36,12 @@ func (c *Client) Download(ctx context.Context, ref string, w io.Writer) (int64, 
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return 0, fmt.Errorf("refusing to download from %s: not http(s)", redactURL(u))
+	}
+	if u.User != nil {
+		return 0, fmt.Errorf("refusing to download from %s: the URL holds credentials", redactURL(u))
+	}
+	if !strings.EqualFold(u.Scheme, base.Scheme) || !strings.EqualFold(u.Host, base.Host) {
+		return 0, fmt.Errorf("refusing to download from %s: outside %s", redactURL(u), base.Redacted())
 	}
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)

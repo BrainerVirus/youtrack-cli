@@ -34,18 +34,89 @@ func TestDownload(t *testing.T) {
 		}
 	})
 
-	t.Run("given an absolute URL on another host, it sends no token", func(t *testing.T) {
-		var auth string
+	t.Run("given an absolute URL with another origin, it refuses it without contacting either host", func(t *testing.T) {
+		var hits int
+		srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { hits++ }))
+		defer srv.Close()
+		// Same server under another host name, then another scheme, then another port.
+		otherHost := strings.Replace(srv.URL, "127.0.0.1", "localhost", 1)
+		otherScheme := strings.Replace(srv.URL, "http://", "https://", 1)
+		for _, ref := range []string{otherHost + "/api/files/8-1", otherScheme + "/api/files/8-1", "http://127.0.0.1:1/api/files/8-1"} {
+			c := New(Options{BaseURL: srv.URL + "/youtrack", Token: secret})
+			_, err := c.Download(context.Background(), ref, &bytes.Buffer{})
+			if err == nil || !strings.Contains(err.Error(), "refusing to download from") || !strings.Contains(err.Error(), "outside "+srv.URL+"/youtrack") {
+				t.Errorf("%s: err = %v, want a refused origin", ref, err)
+			}
+		}
+		if hits != 0 {
+			t.Errorf("the server was contacted %d times", hits)
+		}
+	})
+
+	t.Run("given an absolute URL on the service origin, it fetches it", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte("ok"))
+		}))
+		defer srv.Close()
+		var buf bytes.Buffer
+		if _, err := New(Options{BaseURL: srv.URL, Token: secret}).Download(context.Background(), srv.URL+"/api/files/8-1", &buf); err != nil || buf.String() != "ok" {
+			t.Errorf("err = %v, body %q", err, buf.String())
+		}
+	})
+
+	t.Run("given a URL with user info, it refuses it and never prints the password", func(t *testing.T) {
+		var hits int
+		srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { hits++ }))
+		defer srv.Close()
+		ref := strings.Replace(srv.URL, "http://", "http://mallory:hunter2@", 1) + "/api/files/8-1"
+		_, err := New(Options{BaseURL: srv.URL, Token: secret}).Download(context.Background(), ref, &bytes.Buffer{})
+		if err == nil || !strings.Contains(err.Error(), "the URL holds credentials") || strings.Contains(err.Error(), "hunter2") {
+			t.Errorf("err = %v", err)
+		}
+		if hits != 0 {
+			t.Errorf("the server was contacted %d times", hits)
+		}
+	})
+
+	t.Run("given a 302 to another host, it refuses the redirect and the token never leaves", func(t *testing.T) {
+		var gotAuth []string
 		other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			auth = r.Header.Get("Authorization")
+			gotAuth = append(gotAuth, r.Header.Get("Authorization"))
+			_, _ = w.Write([]byte("stolen"))
 		}))
 		defer other.Close()
-		c := New(Options{BaseURL: "http://youtrack.invalid", Token: secret})
-		if _, err := c.Download(context.Background(), other.URL+"/api/files/8-1", &bytes.Buffer{}); err != nil {
-			t.Fatal(err)
+		otherURL := strings.Replace(other.URL, "127.0.0.1", "localhost", 1)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, otherURL+"/steal", http.StatusFound)
+		}))
+		defer srv.Close()
+		var buf bytes.Buffer
+		_, err := New(Options{BaseURL: srv.URL, Token: secret}).Download(context.Background(), "/api/files/8-1", &buf)
+		if err == nil || !strings.Contains(err.Error(), "refusing redirect") || buf.Len() != 0 {
+			t.Errorf("err = %v, wrote %q", err, buf.String())
 		}
-		if auth != "" {
-			t.Errorf("the token went to another host: %q", auth)
+		if len(gotAuth) != 0 {
+			t.Errorf("the other host was contacted: %q", gotAuth)
+		}
+	})
+
+	t.Run("given an https file that redirects to http, it refuses the downgrade", func(t *testing.T) {
+		var plainHits int
+		plain := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { plainHits++ }))
+		defer plain.Close()
+		tlsSrv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, plain.URL+r.URL.Path, http.StatusFound)
+		}))
+		defer tlsSrv.Close()
+		for _, token := range []string{secret, ""} {
+			c := New(Options{BaseURL: tlsSrv.URL, Token: token, RoundTripper: tlsSrv.Client().Transport})
+			_, err := c.Download(context.Background(), "/api/files/8-1", &bytes.Buffer{})
+			if err == nil || !strings.Contains(err.Error(), "refusing redirect from https") {
+				t.Errorf("token %q: err = %v, want a refused downgrade", token, err)
+			}
+		}
+		if plainHits != 0 {
+			t.Errorf("the plain-http server was contacted %d times", plainHits)
 		}
 	})
 
