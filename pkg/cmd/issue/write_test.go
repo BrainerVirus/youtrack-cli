@@ -143,7 +143,7 @@ func TestIssueCreate(t *testing.T) {
 			t.Fatalf("exit %d", code)
 		}
 		errText := env.Stderr.String()
-		if !strings.Contains(errText, `project NSR has no custom field "Severity"`) || !strings.Contains(errText, "\n  Priority\n") || !strings.Contains(errText, "\n  Root cause") {
+		if !strings.Contains(errText, "project NSR has no custom field \"Severity\" (`ytrack project fields NSR` shows their types and values)") || !strings.Contains(errText, "\n  Priority\n") || !strings.Contains(errText, "\n  Root cause") {
 			t.Errorf("stderr = %q", errText)
 		}
 		if len(requests(yt, "POST", "/api/issues")) != 0 {
@@ -204,7 +204,11 @@ func TestIssueCreate(t *testing.T) {
 
 	t.Run("given an unknown tag, it says how to create it and creates nothing", func(t *testing.T) {
 		env, yt := writable(t)
-		if code := env.Run("issue", "create", "-p", "NSR", "-s", "x", "--tag", "nightly"); code != 1 || !strings.Contains(env.Stderr.String(), `unknown tag "nightly"`) {
+		if code := env.Run("issue", "create", "-p", "NSR", "-s", "x", "--tag", "nightly"); code != 1 || !strings.Contains(env.Stderr.String(), "unknown tag \"nightly\" (`ytrack tag create nightly` creates it)") {
+			t.Errorf("exit %d, stderr = %q", code, env.Stderr)
+		}
+		// A name with spaces comes quoted, ready to paste.
+		if code := env.Run("issue", "create", "-p", "NSR", "-s", "x", "--tag", "needs review"); code != 1 || !strings.Contains(env.Stderr.String(), "`ytrack tag create 'needs review'`") {
 			t.Errorf("exit %d, stderr = %q", code, env.Stderr)
 		}
 		if len(requests(yt, "POST", "/api/issues")) != 0 {

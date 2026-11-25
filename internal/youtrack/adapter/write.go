@@ -74,6 +74,18 @@ func ProjectFields(ctx context.Context, c *transport.Client, projectID string) (
 	})
 }
 
+// ProjectFieldSettings returns the custom field definitions of a project,
+// by database ID, with their default values (see
+// customfields.SettingsProjection).
+func ProjectFieldSettings(ctx context.Context, c *transport.Client, projectID string) ([]customfields.Definition, error) {
+	return transport.Paginate(0, PageSize, 0, func(skip, top int) ([]customfields.Definition, error) {
+		var page []customfields.Definition
+		err := c.GetJSON(ctx, fmt.Sprintf("/api/admin/projects/%s/customFields?fields=%s&$skip=%d&$top=%d",
+			url.PathEscape(projectID), customfields.SettingsProjection, skip, top), &page)
+		return page, err
+	})
+}
+
 // issueDefinitionsFields is the fields= projection that reads a project's
 // custom field definitions through an issue's own custom fields.
 const issueDefinitionsFields = "customFields(projectCustomField(" + customfields.DefinitionProjection + "))"
@@ -138,17 +150,50 @@ func ProjectFieldUsers(ctx context.Context, c *transport.Client, projectID, fiel
 
 // Tag is an issue tag.
 type Tag struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID   string
+	Name string
+	// Owner is the login of the user who owns the tag; "" when unknown.
+	Owner string
+}
+
+// tagFields is the fields= projection Tag decodes.
+const tagFields = "id,name,owner(login)"
+
+type wireTag struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Owner *struct {
+		Login string `json:"login"`
+	} `json:"owner"`
+}
+
+func (w wireTag) tag() Tag {
+	t := Tag{ID: w.ID, Name: w.Name}
+	if w.Owner != nil {
+		t.Owner = w.Owner.Login
+	}
+	return t
 }
 
 // ListTags returns the tags the user can see.
 func ListTags(ctx context.Context, c *transport.Client) ([]Tag, error) {
-	return transport.Paginate(0, PageSize, 0, func(skip, top int) ([]Tag, error) {
-		var page []Tag
-		err := c.GetJSON(ctx, fmt.Sprintf("/api/tags?fields=id,name&$skip=%d&$top=%d", skip, top), &page)
+	ws, err := transport.Paginate(0, PageSize, 0, func(skip, top int) ([]wireTag, error) {
+		var page []wireTag
+		err := c.GetJSON(ctx, fmt.Sprintf("/api/tags?fields=%s&$skip=%d&$top=%d", tagFields, skip, top), &page)
 		return page, err
 	})
+	out := make([]Tag, len(ws))
+	for i, w := range ws {
+		out[i] = w.tag()
+	}
+	return out, err
+}
+
+// CreateTag creates a tag called name, owned by the user.
+func CreateTag(ctx context.Context, c *transport.Client, name string) (Tag, error) {
+	var w wireTag
+	err := c.SendJSON(ctx, http.MethodPost, "/api/tags?fields="+tagFields, map[string]string{"name": name}, &w)
+	return w.tag(), err
 }
 
 // AddIssueTag tags an issue.

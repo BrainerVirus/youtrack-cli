@@ -24,6 +24,7 @@
     {"method": "POST", "path": "/issues/{id}/tags", "query": ["fields"], "response": "Tag", "body": "reference"},
     {"method": "DELETE", "path": "/issues/{id}/tags/{tagId}", "query": [], "response": ""},
     {"method": "GET", "path": "/tags", "query": ["fields", "$skip", "$top"], "response": "Tag"},
+    {"method": "POST", "path": "/tags", "query": ["fields"], "response": "Tag"},
     {"method": "GET", "path": "/admin/projects", "query": ["fields", "$skip", "$top"], "response": "Project"},
     {"method": "GET", "path": "/admin/projects/{id}/customFields", "query": ["fields", "$skip", "$top"], "response": "ProjectCustomField"},
     {"method": "GET", "path": "/admin/projects/{id}/customFields/{projectCustomFieldId}", "query": ["fields"], "response": "ProjectCustomField"},
@@ -44,6 +45,7 @@
   "writes": {
     "Issue": ["summary", "description", "project", "tags", "customFields"],
     "IssueComment": ["text"],
+    "Tag": ["name"],
     "IssueWorkItem": ["date", "duration", "type", "text"],
     "CommandList": ["query", "issues", "comment", "silent", "caret"]
   },
@@ -114,13 +116,13 @@
     "WorkTimeSettings": {"minutesADay": [], "daysAWeek": []},
     "Project": {"id": [], "shortName": [], "name": [], "archived": []},
     "User": {"login": [], "fullName": []},
-    "Tag": {"id": [], "name": []},
+    "Tag": {"id": [], "name": [], "owner": ["User"]},
     "IssueCustomField": {
       "name": [],
       "projectCustomField": ["ProjectCustomField"],
       "value": ["BundleElement", "User", "UserGroup", "PeriodValue", "TextFieldValue"]
     },
-    "ProjectCustomField": {"id": [], "field": ["CustomField"], "canBeEmpty": [], "bundle": ["Bundle"]},
+    "ProjectCustomField": {"id": [], "field": ["CustomField"], "canBeEmpty": [], "bundle": ["Bundle"], "defaultValues": ["BundleElement", "User"]},
     "CustomField": {"name": [], "fieldType": ["FieldType"]},
     "FieldType": {"id": []},
     "BundleElement": {"name": [], "archived": []},

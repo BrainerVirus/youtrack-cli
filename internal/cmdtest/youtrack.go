@@ -39,6 +39,7 @@ type Request struct {
 //	                                (empty when HideFieldSettings)
 //	GET  /api/admin/projects/{id}/customFields/{field}  one of them
 //	GET  /api/tags                  Tags, paged
+//	POST /api/tags                  appends {"name"} to Tags, owned by jdoe
 //	POST /api/commands[/assist]     applies or previews a small subset of the
 //	                                YouTrack command language (see command)
 //	GET  /api/issues/{id}           the issue in Issues with that idReadable or id,

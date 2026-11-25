@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -260,11 +261,22 @@ func ResolveTags(ctx context.Context, c *transport.Client, names []string) ([]ad
 			for i, t := range all {
 				known[i] = t.Name
 			}
-			return nil, fmt.Errorf("unknown tag %q (`ytrack issue command <id> 'tag %s'` creates it); tags you can use:\n  %s", n, n, strings.Join(known, "\n  "))
+			return nil, fmt.Errorf("unknown tag %q (`ytrack tag create %s` creates it); tags you can use:\n  %s", n, ShellArg(n), strings.Join(known, "\n  "))
 		}
 		out = append(out, t)
 	}
 	return out, nil
+}
+
+var plainArg = regexp.MustCompile(`^[A-Za-z0-9._/@+-]+$`)
+
+// ShellArg is s as one shell word for a copyable command line: as is when
+// it needs no quoting, else single-quoted.
+func ShellArg(s string) string {
+	if plainArg.MatchString(s) {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 func findTag(all []adapter.Tag, name string) (adapter.Tag, bool) {

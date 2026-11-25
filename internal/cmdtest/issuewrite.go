@@ -25,6 +25,7 @@ const sampleProjects = `[
 // when the field is written, independently of ytrack's own mapping.
 const sampleProjectFields = `[
   {"$type": "EnumProjectCustomField", "id": "93-10", "canBeEmpty": false, "issueType": "SingleEnumIssueCustomField",
+   "defaultValues": [{"$type": "EnumBundleElement", "id": "67-3", "name": "Normal"}],
    "field": {"$type": "CustomField", "id": "58-1", "name": "Priority", "fieldType": {"$type": "FieldType", "id": "enum[1]", "isMultiValue": false}},
    "bundle": {"$type": "EnumBundle", "id": "68-1", "values": [
      {"$type": "EnumBundleElement", "id": "67-0", "name": "Show-stopper", "archived": true},
@@ -45,6 +46,7 @@ const sampleProjectFields = `[
      {"$type": "StateBundleElement", "id": "69-2", "name": "In Progress", "archived": false, "isResolved": false},
      {"$type": "StateBundleElement", "id": "69-4", "name": "Fixed", "archived": false, "isResolved": true}]}},
   {"$type": "UserProjectCustomField", "id": "93-13", "canBeEmpty": true, "issueType": "SingleUserIssueCustomField",
+   "defaultValues": [{"$type": "User", "id": "1-7", "login": "jroe", "fullName": "Jane Roe"}],
    "field": {"$type": "CustomField", "id": "58-4", "name": "Assignee", "fieldType": {"$type": "FieldType", "id": "user[1]"}},
    "bundle": {"$type": "UserBundle", "id": "68-4", "aggregatedUsers": [
      {"$type": "User", "id": "1-3", "login": "jdoe", "fullName": "John Doe"},
@@ -172,6 +174,21 @@ func (yt *FakeYouTrack) issueWriteRoutes(mux *http.ServeMux) {
 		ts := slices.Clone(yt.Tags)
 		yt.mu.Unlock()
 		writeProjected(w, r, 200, page(r, ts))
+	})
+	mux.HandleFunc("POST /api/tags", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Name string `json:"name"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Name) == "" {
+			writeJSON(w, 400, map[string]any{"error": "bad_request", "error_description": "a tag needs a name"})
+			return
+		}
+		yt.mu.Lock()
+		tag := map[string]any{"$type": "Tag", "id": fmt.Sprintf("6-%d", 100+len(yt.Tags)), "name": body.Name, "owner": map[string]any{"$type": "User", "login": "jdoe"}}
+		yt.Tags = append(yt.Tags, tag)
+		out := maps.Clone(tag)
+		yt.mu.Unlock()
+		writeProjected(w, r, 200, out)
 	})
 	mux.HandleFunc("POST /api/issues", yt.createIssue)
 	mux.HandleFunc("POST /api/issues/{id}", func(w http.ResponseWriter, r *http.Request) {
