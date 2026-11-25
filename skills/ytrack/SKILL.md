@@ -1,6 +1,6 @@
 ---
 name: ytrack
-description: Work with JetBrains YouTrack through the ytrack CLI - read, search, create and edit issues, add comments, apply YouTrack commands, log and edit spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
+description: Work with JetBrains YouTrack through the ytrack CLI - read, search, create, edit and delete issues, add, list, edit and delete comments, apply YouTrack commands, log and edit spent time (work items, time tracking), and call the YouTrack REST API. Use for any YouTrack issue ID (APP-123), a youtrack.cloud or YouTrack Server URL, YouTrack queries, or YouTrack time tracking, instead of scraping the web UI or calling the API with curl.
 metadata:
   version: "dev"
 ---
@@ -62,6 +62,10 @@ ytrack issue edit APP-123 --field 'Estimation=2d'     # period field: a duration
 ytrack issue edit APP-123 --assignee ''               # unassign
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 ytrack issue comment APP-123 --body-file reply.md     # long text
+ytrack issue comment list APP-123 --json id,author,text   # comment IDs
+ytrack issue comment edit APP-123 4-17 --body 'Reproduced on 2026.3'
+ytrack issue comment delete APP-123 4-17 --yes
+ytrack issue delete APP-123 --yes
 cmd | ytrack issue create -p APP -s 'Title' --description-file -   # - reads stdin (also --body-file -)
 ytrack issue attach APP-123 dump.sql repro.sh
 ytrack issue attachments APP-123                    # files on the issue and its comments
@@ -75,7 +79,9 @@ ytrack issue attachments APP-123                    # files on the issue and its
   exits 1 naming a field YouTrack did not change; then use `issue command`.
 - `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tags.
 - Once a comment is posted, never run the command again, even after a
-  warning or exit 1: a rerun posts a duplicate.
+  warning or exit 1: a rerun posts a duplicate. Fix it with `comment edit`.
+- `issue delete` and `comment delete` cannot be undone: confirm with the
+  user first. Without a terminal they need `--yes`.
 - Files go up with `issue attach` (issue) or `issue comment --attach`
   (comment) and come down with `issue download`, never through `ytrack api`
   or curl: [references/attachments.md](references/attachments.md).

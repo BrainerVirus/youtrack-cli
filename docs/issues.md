@@ -87,13 +87,31 @@ duration in weeks read back in days) counts as set.
 `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tag
 names.
 
-## Comment
+## Delete
+
+```sh
+ytrack issue delete APP-123          # asks first on a terminal
+ytrack issue delete APP-123 --yes    # required without a terminal
+```
+
+`issue delete` deletes the issue with its comments, attachments and work
+items; YouTrack cannot undo it. On a terminal it shows the issue's ID and
+summary and asks; answering no exits 2. Without a terminal it refuses, and
+sends nothing, unless `--yes` is given.
+
+## Comments
 
 ```sh
 ytrack issue comment APP-123 --body 'Reproduced on 2026.2'
 git log -1 --format=%B | ytrack issue comment APP-123 --body-file -
 ytrack issue comment APP-123 --body 'Fixed: ![](after.png)' --attach after.png --attach report.html
+ytrack issue comment list APP-123                          # id, author, created, text
+ytrack issue comment list APP-123 --limit 0 --json id,author,text,url
+ytrack issue comment edit APP-123 4-17 --body 'Reproduced on 2026.3'
+ytrack issue comment delete APP-123 4-17 --yes
 ```
+
+`issue comment <id>` adds a comment; `issue comment add <id>` is the same.
 
 With no `--body`, `--body-file` or `--editor`, the editor opens on a
 terminal. The editor is `$YTRACK_EDITOR`, `$GIT_EDITOR`, `$VISUAL` or
@@ -110,6 +128,20 @@ comment and the uploads exist: check with `issue attachments` and add a
 missing file with `issue attach`. `--json attachments` reports each file's
 `state`: `comment`, `issue` or `failed`. A missing file stops the command
 before anything is posted.
+
+`issue comment list` lists the latest `--limit` comments (30 by default, `0`
+for all), oldest first, one line each; deleted comments are left out.
+`--json` reports `id`, `text`, `author`, `created`, `updated` (null when never
+edited), `url` and `attachments`.
+
+`issue comment edit <id> <comment-id>` replaces a comment's text from
+`--body`, `--body-file` or `--editor` (which opens on the current text; it is
+the default on a terminal) and prints the comment's URL. An empty text is
+refused and an unchanged one sends nothing. `--json` reports `id`, `text`,
+`author`, `created`, `updated` and `url`.
+
+`issue comment delete <id> <comment-id>` deletes a comment and its files. On
+a terminal it shows the comment and asks; without one it needs `--yes`.
 
 ## Attachments
 
