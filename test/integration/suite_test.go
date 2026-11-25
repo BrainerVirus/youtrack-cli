@@ -28,7 +28,11 @@ type suite struct {
 
 	issues  []string // issue IDs this run created, in order
 	deleted map[string]bool
+	tags    []tag // tags this run created, in order
 }
+
+// tag is one tag the run created.
+type tag struct{ ID, Name string }
 
 // assignToMe is the command the suite applies. It names the field rather
 // than using the "for" keyword, which YouTrack localizes (a Spanish
@@ -51,7 +55,9 @@ func newSuite(cfg itConfig, baseEnv []string, logf func(string, ...any)) *suite 
 		}
 		env = append(env, kv)
 	}
-	env = append(env, "YTRACK_HOST="+cfg.Host.URL, "NO_COLOR=1")
+	// YTRACK_NO_UPDATE_NOTIFIER keeps a release binary from checking for,
+	// or installing, a newer release in the background while it is tested.
+	env = append(env, "YTRACK_HOST="+cfg.Host.URL, "NO_COLOR=1", "YTRACK_NO_UPDATE_NOTIFIER=1")
 	if cfg.Token != "" {
 		env = append(env, "YTRACK_TOKEN="+cfg.Token)
 	}
@@ -67,6 +73,9 @@ func newRunID() string {
 // prefix starts the summary of every issue the run creates.
 func (s *suite) prefix() string { return "ytrack-it " + s.runID }
 
+// tagPrefix starts the name of every tag the run creates.
+func (s *suite) tagPrefix() string { return "ytrack-it-" + s.runID }
+
 // run executes every step, then deletes what the run created, whether the
 // steps passed or not. It returns the first step error joined with any
 // cleanup error.
@@ -81,6 +90,10 @@ func (s *suite) run() (err error) {
 	return s.steps()
 }
 
+// steps runs the suite. Issue create and edit come first, as every later
+// step works on that issue; the families after them are independent, so
+// all of them run and their errors are joined: one failing family does not
+// hide the others.
 func (s *suite) steps() error {
 	// auth status: --host limits the check to the target, so other
 	// logged-in hosts are never contacted.
@@ -93,43 +106,75 @@ func (s *suite) steps() error {
 	}
 	login := status[0].Login
 
-	// issue create
+	tagA, tagB, err := s.tagSteps()
+	if err != nil {
+		return err
+	}
+	id, err := s.createSteps(tagA)
+	if err != nil {
+		return err
+	}
+	if err := s.editSteps(id, tagA, tagB); err != nil {
+		return err
+	}
+	return errors.Join(
+		s.commentSteps(id),
+		s.commandSteps(id, login),
+		s.attachmentSteps(id),
+		s.readSteps(id),
+		s.voteWatchSteps(id, login),
+		s.workItemSteps(id),
+		s.deleteSteps(id),
+		s.toolSteps(),
+	)
+}
+
+// createSteps creates the run's issue with a custom field and a tag, and
+// finds it with issue view and issue list.
+func (s *suite) createSteps(tagName string) (string, error) {
 	var created struct{ IDReadable, Summary string }
 	if err := s.ytrackJSON(&created, "issue", "create", "--project", s.cfg.Project,
 		"--summary", s.prefix()+" create", "--description", "Created by ytrack's real-instance suite.",
+		"--field", itField+"="+itFieldCreate, "--tag", tagName,
 		"--json", "idReadable,summary"); err != nil {
-		return fmt.Errorf("issue create: %w", err)
+		return "", fmt.Errorf("issue create: %w", err)
 	}
 	if created.IDReadable == "" {
-		return errors.New("issue create: no idReadable in the output")
+		return "", errors.New("issue create: no idReadable in the output")
 	}
 	id := created.IDReadable
 	s.issues = append(s.issues, id)
 
-	// issue view
-	var viewed struct{ IDReadable, Summary, Description string }
-	if err := s.ytrackJSON(&viewed, "issue", "view", id, "--json", "idReadable,summary,description"); err != nil {
-		return fmt.Errorf("issue view: %w", err)
+	var viewed fieldsAndTags
+	if err := s.ytrackJSON(&viewed, "issue", "view", id, "--json", "idReadable,summary,customFields,tags"); err != nil {
+		return id, fmt.Errorf("issue view: %w", err)
 	}
 	if viewed.Summary != s.prefix()+" create" {
-		return fmt.Errorf("issue view %s: summary %q, want %q", id, viewed.Summary, s.prefix()+" create")
+		return id, fmt.Errorf("issue view %s: summary %q, want %q", id, viewed.Summary, s.prefix()+" create")
+	}
+	if got := viewed.field(itField); got != itFieldCreate || !slices.Equal(viewed.Tags, []string{tagName}) {
+		return id, fmt.Errorf("issue create --field --tag: %s is %q and tags %v, want %q and [%s]", itField, got, viewed.Tags, itFieldCreate, tagName)
 	}
 
-	// issue list
 	var listed []struct{ IDReadable string }
 	if err := s.ytrackJSON(&listed, "issue", "list", "--project", s.cfg.Project, "--all",
 		"--sort", "created desc", "--limit", "50", "--json", "idReadable"); err != nil {
-		return fmt.Errorf("issue list: %w", err)
+		return id, fmt.Errorf("issue list: %w", err)
 	}
 	if !slices.ContainsFunc(listed, func(i struct{ IDReadable string }) bool { return i.IDReadable == id }) {
-		return fmt.Errorf("issue list: %s missing from the 50 newest issues of %s", id, s.cfg.Project)
+		return id, fmt.Errorf("issue list: %s missing from the 50 newest issues of %s", id, s.cfg.Project)
 	}
+	return id, nil
+}
 
-	// issue edit
+// editSteps changes summary and description, then a custom field and the
+// tags (add one, remove the other), and reads each change back.
+func (s *suite) editSteps(id, tagA, tagB string) error {
 	edited := s.prefix() + " edited"
 	if _, err := s.ytrack("issue", "edit", id, "--summary", edited, "--description", "Edited by ytrack's real-instance suite."); err != nil {
 		return fmt.Errorf("issue edit: %w", err)
 	}
+	var viewed struct{ Summary, Description string }
 	if err := s.ytrackJSON(&viewed, "issue", "view", id, "--json", "summary,description"); err != nil {
 		return fmt.Errorf("issue view after edit: %w", err)
 	}
@@ -137,30 +182,44 @@ func (s *suite) steps() error {
 		return fmt.Errorf("issue edit %s: got summary %q, description %q", id, viewed.Summary, viewed.Description)
 	}
 
-	// issue comment
-	commentText := s.prefix() + " comment"
-	var comment struct{ ID string }
-	if err := s.ytrackJSON(&comment, "issue", "comment", id, "--body", commentText, "--json", "id"); err != nil {
-		return fmt.Errorf("issue comment: %w", err)
+	if _, err := s.ytrack("issue", "edit", id, "--field", itField+"="+itFieldEdit,
+		"--add-tag", tagB, "--remove-tag", tagA); err != nil {
+		return fmt.Errorf("issue edit --field --add-tag --remove-tag: %w", err)
 	}
-	if comment.ID == "" {
-		return errors.New("issue comment: no comment id in the output")
+	var after fieldsAndTags
+	if err := s.ytrackJSON(&after, "issue", "view", id, "--json", "customFields,tags"); err != nil {
+		return fmt.Errorf("issue view after edit --field: %w", err)
 	}
-	var withComments struct{ Comments []struct{ Text string } }
-	if err := s.ytrackJSON(&withComments, "issue", "view", id, "--json", "comments"); err != nil {
-		return fmt.Errorf("issue view comments: %w", err)
+	if got := after.field(itField); got != itFieldEdit || !slices.Equal(after.Tags, []string{tagB}) {
+		return fmt.Errorf("issue edit --field --add-tag --remove-tag: %s is %q and tags %v, want %q and [%s]", itField, got, after.Tags, itFieldEdit, tagB)
 	}
-	if !slices.ContainsFunc(withComments.Comments, func(c struct{ Text string }) bool { return c.Text == commentText }) {
-		return fmt.Errorf("issue comment: %q not among the comments of %s", commentText, id)
-	}
-	if err := s.commentAttachStep(id); err != nil {
-		return err
-	}
+	return nil
+}
 
-	// issue command: preview, then apply. Command keywords such as "for"
-	// are localized with the instance's language; a field name is not.
+// commandSteps previews and applies a command, previews it with --assist,
+// then lists the issue as yours and checks a not-found.
+func (s *suite) commandSteps(id, login string) error {
+	// Command keywords such as "for" are localized with the instance's
+	// language; a field name is not.
 	if _, err := s.ytrack("issue", "command", id, assignToMe, "--dry-run"); err != nil {
 		return fmt.Errorf("issue command --dry-run: %w", err)
+	}
+	var assist struct {
+		Commands []struct {
+			Description string
+			Error       bool
+		}
+		Suggestions []struct{ Option string }
+	}
+	if err := s.ytrackJSON(&assist, "issue", "command", id, assignToMe, "--assist", "--json", "commands,suggestions"); err != nil {
+		return fmt.Errorf("issue command --assist: %w", err)
+	}
+	failed := len(assist.Commands) == 0
+	for _, c := range assist.Commands {
+		failed = failed || c.Error
+	}
+	if failed {
+		return fmt.Errorf("issue command %q --assist: commands %+v, want parsed with no error", assignToMe, assist.Commands)
 	}
 	if _, err := s.ytrack("issue", "command", id, assignToMe, "--silent"); err != nil {
 		return fmt.Errorf("issue command: %w", err)
@@ -175,11 +234,7 @@ func (s *suite) steps() error {
 	if err := s.listMineStep(id); err != nil {
 		return err
 	}
-	if err := s.notFoundStep(); err != nil {
-		return err
-	}
-
-	return s.workItemSteps(id)
+	return s.notFoundStep()
 }
 
 // listMineStep lists the project's issues assigned to you: --assignee me
@@ -241,6 +296,16 @@ func (s *suite) commentAttachStep(id string) (err error) {
 	if len(posted.Attachments) != 1 || posted.Attachments[0].State != "comment" {
 		return fmt.Errorf("issue comment --attach: attachments %+v, want %s on the comment", posted.Attachments, name)
 	}
+	// issue attachments links the file to the comment it was posted with.
+	listed, err := s.attachments(id)
+	if err != nil {
+		return err
+	}
+	if !slices.ContainsFunc(listed, func(a attachment) bool {
+		return a.Name == name && a.CommentID != nil && *a.CommentID == posted.ID
+	}) {
+		return fmt.Errorf("issue attachments: %s not linked to comment %s in %+v", name, posted.ID, listed)
+	}
 	var comment struct{ Attachments []struct{ ID, Name string } }
 	if err := s.ytrackJSON(&comment, "api", "/issues/"+id+"/comments/"+posted.ID, "-X", "GET", "--fields", "attachments(id,name)"); err != nil {
 		return fmt.Errorf("reading the comment's attachments: %w", err)
@@ -273,6 +338,9 @@ func (s *suite) workItemSteps(id string) error {
 	}
 	if !slices.ContainsFunc(listed, func(w workItem) bool { return w.ID == added.ID }) {
 		return fmt.Errorf("work-item list: %s missing on %s", added.ID, id)
+	}
+	if err := s.workItemReportStep(added.ID); err != nil {
+		return err
 	}
 
 	var edited workItem
@@ -325,9 +393,12 @@ func (s *suite) cleanup() error {
 		}
 	}
 	if err := errors.Join(errs...); err != nil {
-		return fmt.Errorf("cleanup (delete leftovers by hand; their summaries start with %q): %w", s.prefix(), err)
+		errs = []error{fmt.Errorf("cleanup (delete leftovers by hand; their summaries start with %q): %w", s.prefix(), err)}
 	}
-	return nil
+	if err := s.cleanupTags(); err != nil {
+		errs = append(errs, fmt.Errorf("cleanup (delete leftover tags by hand; their names start with %q): %w", s.tagPrefix(), err))
+	}
+	return errors.Join(errs...)
 }
 
 func (s *suite) deleteIssue(id string) error {

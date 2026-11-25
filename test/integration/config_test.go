@@ -39,6 +39,9 @@ type itConfig struct {
 	Bin     string // "" means build ytrack from this module
 	// AllowHost is the key of the host YTRACK_IT_ALLOW_HOST names, or "".
 	AllowHost string
+	// Offline skips the steps that reach a server other than the host
+	// (upgrade --check calls GitHub); the fake-server tests set it.
+	Offline bool
 }
 
 // loadConfig resolves the suite's target from the environment. The host is
