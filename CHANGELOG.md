@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- the OpenAPI contract records the attributes ytrack writes, and the weekly check fails when the spec marks one readOnly; it also runs against a YouTrack Cloud instance and summarizes upstream changes against a recorded snapshot without failing (#52).
 ## [0.7.2] - 2026-11-25
 
 ### Fixed
