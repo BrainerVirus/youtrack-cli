@@ -76,8 +76,11 @@ to add or remove one value, use `issue command` with `add` or `remove`.
 enum or owned field whose value set is still empty is refused before
 anything is sent, naming the field. Without access to the project settings,
 the definitions come from the issue (edit) or from an issue in the project
-(create). `issue edit` sends only what you pass, reads the issue back, and
-exits 1 naming any field YouTrack did not change.
+(create). `issue edit` sends only what you pass. Both read the issue back and
+exit 1 naming any field YouTrack did not change, a period field set by
+command included (`issue create` first prints the new issue's ID and URL).
+A period is compared by its minutes; when the instance's work schedule
+leaves that open (a duration in weeks read back in days), it counts as set.
 
 `--tag` (create) and `--add-tag`/`--remove-tag` (edit) take existing tag
 names.

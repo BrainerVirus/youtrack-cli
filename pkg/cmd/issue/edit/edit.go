@@ -10,6 +10,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/clierr"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter/customfields"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -107,7 +108,7 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 
 	var changed []string
 	ch := adapter.IssueChange{}
-	var commands []string
+	var commands []customfields.Write
 	if len(opts.assigns) > 0 {
 		p, err := adapter.GetIssueProject(ctx, client, id)
 		if err != nil {
@@ -181,12 +182,12 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 		changed, fresh = append(changed, "-"+t.Name), false
 	}
 	for _, c := range commands {
-		if _, err := adapter.ApplyCommand(ctx, client, adapter.Command{Query: c, IssueIDs: []string{id}}); err != nil {
-			return fmt.Errorf("`%s` failed on %s: %w", c, id, err)
+		if _, err := adapter.ApplyCommand(ctx, client, adapter.Command{Query: c.Command, IssueIDs: []string{id}}); err != nil {
+			return fmt.Errorf("`%s` failed on %s: %w", c.Command, id, err)
 		}
 		fresh = false
 	}
-	if err := shared.CheckFieldsApplied(ctx, client, id, ch.CustomFields); err != nil {
+	if err := shared.CheckFieldsApplied(ctx, client, id, ch.CustomFields, commands); err != nil {
 		return err
 	}
 	if !fresh {
