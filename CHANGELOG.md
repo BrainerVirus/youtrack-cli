@@ -7,21 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- the OpenAPI contract records the attributes ytrack writes, and the weekly check fails when the spec marks one readOnly; it also runs against a YouTrack Cloud instance and summarizes upstream changes against a recorded snapshot without failing (#52).
+## [0.8.0] - 2026-11-25
 
 ### Added
 
-- `work-item report` sums your (or `--author`'s) time across issues per issue, per day and in total, with `--since`, `--until`, `--project` and `--json`. New issue reads: `issue count <query>` (waits while YouTrack is still counting), `issue activities` (history, `--category`), `issue watchers`, and `query list` (saved searches). `issue vote`/`unvote` and `issue watch`/`unwatch` (star) apply YouTrack's commands, then read the issue back and exit 1 when the state did not change. `issue command --assist` and `issue list --query-assist` (text or `--json`) show YouTrack's completions (#49).
-- `tag list`, `tag create <name>` and `project fields <project>` (name, type, required, default, values; --json); a missing `--tag` now points at `ytrack tag create` and an unknown `--field` at `ytrack project fields` (#49).
-- `issue delete` and `issue comment list|edit|delete` (with `issue comment add` as an explicit form of `issue comment`); deletes ask on a terminal and need `--yes` in scripts, comment edit takes --body, --body-file or the editor and sends nothing for unchanged text (#49).
+- `work-item report` sums your (or `--author`'s) time across issues per issue, per day and in total, with `--since`, `--until`, `--project` and `--json`. New issue reads: `issue count <query>` (waits while YouTrack is still counting), `issue activities` (history, `--category`), `issue watchers`, and `query list` (saved searches). `issue vote`/`unvote` apply YouTrack's commands and `issue watch`/`unwatch` set the star through the REST API (`watchers.hasStar`, so they work in any UI language); all four read the issue back and exit 1 when the state did not change. `issue command --assist` and `issue list --query-assist` (text or `--json`) show YouTrack's completions (#49).
+- `tag list`, `tag create <name>` and `project fields <project>` (name, type, required, default, values; `--json`); a missing `--tag` now points at `ytrack tag create` and an unknown `--field` at `ytrack project fields` (#49).
+- `issue delete` and `issue comment list|edit|delete` (with `issue comment add` as an explicit form of `issue comment`); deletes ask on a terminal and need `--yes` in scripts; comment edit takes `--body`, `--body-file` or the editor and sends nothing for unchanged text (#49).
 - `auth paths add <glob>...` and `auth paths remove <glob>...` (with `--host`) take globs as arguments; `--add`/`--remove` still work (#39).
 - `issue view --json comments` lists each comment's attachments (`attachments: [{name, id, size, mimeType}]`) (#39).
 
+### Changed
+
+- The OpenAPI contract records the attributes ytrack writes, and the weekly check fails when the spec marks one readOnly; it also runs against a YouTrack Cloud instance and summarizes upstream changes against a recorded snapshot without failing (#52).
+
 ### Fixed
 
-- `issue watch` and `issue unwatch` work on instances in any UI language: they set the star through the REST API (`watchers.hasStar`) instead of the English `star`/`unstar` command words, which a Spanish instance rejects; a Go pseudo-version or `+dirty` build (a plain `go build` or `go install` at a commit) no longer counts as a release, so it never rewrites the installed agent skill copies.
+- A Go pseudo-version or `+dirty` build (a plain `go build` or `go install` at a commit) no longer counts as a release, so it never rewrites the installed agent skill copies.
 - `issue download` saves names Windows cannot hold under a safe name (`NUL.txt` as `_NUL.txt`, `a. ` as `a__`, `a?b` as `a_b`) (#39).
 - Ctrl-C during `issue download` removes the partly written file and exits 2 (#39).
 - `issue download` refuses an attachment URL outside the service URL's origin or with a user name or password, and a redirect to another host or from https to http (#39).
