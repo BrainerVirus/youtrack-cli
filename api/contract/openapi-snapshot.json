@@ -1,5 +1,5 @@
 {
-  "$comment": "A digest of youtrack.jetbrains.com/api/openapi.json: every operation it lists and the attributes of the entities api/contract/youtrack-contract.json uses. The weekly openapi-contract workflow reports what changed against it without failing; refresh it with YTRACK_OPENAPI=\u003copenapi.json\u003e YTRACK_OPENAPI_SNAPSHOT_UPDATE=1 go test ./internal/youtrack/contract -run TestUpstreamChanges.",
+  "$comment": "A digest of youtrack.jetbrains.com/api/openapi.json: every operation it lists and the attributes of the entities api/contract/youtrack-contract.json uses. The weekly openapi-contract workflow reports what changed against it without failing; refresh it with YTRACK_OPENAPI=\u003copenapi.json\u003e YTRACK_OPENAPI_SNAPSHOT_UPDATE=1 go test ./internal/youtrack/contract -run '^TestUpstreamChanges$'.",
   "version": "2026.4",
   "operations": [
     "DELETE /admin/customFieldSettings/bundles/build/{id}",

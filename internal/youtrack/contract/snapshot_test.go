@@ -27,7 +27,7 @@ var (
 	snapshotFile = filepath.Join("..", "..", "..", "api", "contract", "openapi-snapshot.json")
 )
 
-const snapshotComment = "A digest of youtrack.jetbrains.com/api/openapi.json: every operation it lists and the attributes of the entities api/contract/youtrack-contract.json uses. The weekly openapi-contract workflow reports what changed against it without failing; refresh it with YTRACK_OPENAPI=<openapi.json> YTRACK_OPENAPI_SNAPSHOT_UPDATE=1 go test ./internal/youtrack/contract -run TestUpstreamChanges."
+const snapshotComment = "A digest of youtrack.jetbrains.com/api/openapi.json: every operation it lists and the attributes of the entities api/contract/youtrack-contract.json uses. The weekly openapi-contract workflow reports what changed against it without failing; refresh it with YTRACK_OPENAPI=<openapi.json> YTRACK_OPENAPI_SNAPSHOT_UPDATE=1 go test ./internal/youtrack/contract -run '^TestUpstreamChanges$'."
 
 // contractTypes lists the entities the contract file records.
 func contractTypes(t *testing.T) []string {

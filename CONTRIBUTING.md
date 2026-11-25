@@ -83,7 +83,26 @@ The REST surface ytrack relies on is listed by hand in
 `api/contract/youtrack-contract.json`, derived from JetBrains' public
 [YouTrack REST API docs](https://www.jetbrains.com/help/youtrack/devportal/youtrack-rest-api.html).
 Tests check every request against it, and the weekly `openapi-contract`
-workflow checks it against the live API description.
+workflow checks it against the live API descriptions of youtrack.jetbrains.com
+and a YouTrack Cloud instance (YouTrack Server has no public instance to
+download one from).
+
+- `types` lists the attributes ytrack reads or writes; `writes` lists, by
+  entity, the attributes ytrack sets at the top level of a JSON request body.
+  A request that writes an attribute missing from `writes` fails the tests,
+  and the weekly check fails when the description marks a written attribute
+  `readOnly`. An endpoint with `"body": "reference"` adds an existing entity
+  to a collection (a tag, a link), so its body writes nothing. A write that
+  YouTrack accepts although the description marks it `readOnly` goes in
+  `readOnlyWrites` with its evidence.
+- `api/contract/openapi-snapshot.json` is a digest of the
+  youtrack.jetbrains.com description (its operations and the attributes of
+  the contract's entities). The weekly run lists what changed upstream
+  against it (new, removed or deprecated) in the run summary without
+  failing. Refresh it with
+  `YTRACK_OPENAPI=<openapi.json> YTRACK_OPENAPI_SNAPSHOT_UPDATE=1 go test ./internal/youtrack/contract -run '^TestUpstreamChanges$'`.
+- Run the weekly check locally against a downloaded description with
+  `YTRACK_OPENAPI=<openapi.json> go test ./internal/youtrack/adapter/ -run OpenAPI`.
 
 ## Releases
 
