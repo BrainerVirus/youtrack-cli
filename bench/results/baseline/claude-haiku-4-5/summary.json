@@ -60,21 +60,16 @@
     },
     {
       "case": "comment",
-      "pass": false,
-      "passes": 0,
+      "pass": true,
+      "passes": 3,
       "graded": 3,
       "skillLoaded": 3,
-      "failed": [
-        "require: issue comment with the text",
-        "require: issue comment with the text",
-        "require: issue comment with the text"
-      ],
-      "meanTurns": 7.7,
-      "meanTotalInput": 155073.3,
-      "sdTotalInput": 37221.4,
-      "meanOutput": 1203.3,
-      "meanDurationMs": 16540.7,
-      "costUSD": 0.1342
+      "meanTurns": 4,
+      "meanTotalInput": 66347.7,
+      "sdTotalInput": 137.7,
+      "meanOutput": 602,
+      "meanDurationMs": 8479.3,
+      "costUSD": 0.09
     },
     {
       "case": "count-open",
@@ -254,19 +249,19 @@
   ],
   "totals": {
     "cases": 18,
-    "casesPassed": 17,
+    "casesPassed": 18,
     "runs": 54,
     "graded": 54,
-    "passes": 48,
-    "passRate": 0.8889,
+    "passes": 51,
+    "passRate": 0.9444,
     "tokens": {
-      "input": 1894,
-      "output": 44989,
-      "cacheCreation": 601276,
-      "cacheRead": 4118965
+      "input": 1806,
+      "output": 43185,
+      "cacheCreation": 596792,
+      "cacheRead": 3857360
     },
-    "totalInput": 4722135,
-    "meanTotalInputPerRun": 87446.9,
-    "costUSD": 1.8413
+    "totalInput": 4455958,
+    "meanTotalInputPerRun": 82517.7,
+    "costUSD": 1.7971
   }
 }
