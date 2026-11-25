@@ -178,6 +178,9 @@ type Issue struct {
 	adapter.Issue
 	Host     hosts.Host
 	Comments []adapter.Comment
+	// CommentFiles holds each comment's attachments by comment ID; the
+	// comments field lists them (an empty list for a comment without any).
+	CommentFiles map[string][]adapter.Attachment
 }
 
 func (i Issue) ExportData(fields []string) map[string]any {
@@ -236,12 +239,21 @@ func (i Issue) field(name string) any {
 			cs[n] = map[string]any{
 				"id": c.ID, "text": c.Text, "author": exportUser(c.Author),
 				"created": exportTime(c.Created), "updated": exportTime(c.Updated),
-				"url": CommentURL(i.Host, i.IDReadable, c.ID),
+				"url":         CommentURL(i.Host, i.IDReadable, c.ID),
+				"attachments": exportAttachments(i.CommentFiles[c.ID]),
 			}
 		}
 		return cs
 	}
 	return nil
+}
+
+func exportAttachments(list []adapter.Attachment) []map[string]any {
+	out := make([]map[string]any, len(list))
+	for n, a := range list {
+		out[n] = map[string]any{"name": a.Name, "id": a.ID, "size": a.Size, "mimeType": a.MimeType}
+	}
+	return out
 }
 
 func exportUser(u *adapter.User) any {

@@ -125,6 +125,9 @@ that changes size during the upload fails it. A pipe such as `<(cmd)` is read
 into memory first. A missing file, a directory or a device stops it before
 anything is sent.
 
+`issue view --json comments` gives each comment an `attachments` list
+(`[{name, id, size, mimeType}]`, empty when it has none).
+
 `issue attachments` lists the files on the issue and on its comments
 (`--json name,id,size,mimeType,created,author,commentId`). `issue download`
 saves all of them, or those named by name or attachment ID, or with

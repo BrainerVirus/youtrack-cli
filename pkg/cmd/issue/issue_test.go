@@ -561,10 +561,52 @@ John Doe (jdoe) • 2026-10-07T08:00:00Z
 			"id": "4-2", "text": "The return URL is lost\nin the SAML relay state.",
 			"author":  map[string]any{"login": "jdoe", "fullName": "John Doe"},
 			"created": "2026-10-06T15:20:00Z", "updated": "2026-10-07T05:13:20Z",
-			"url": yt.URL() + "/issue/NSR-40#focus=Comments-4-2.0-0",
+			"url":         yt.URL() + "/issue/NSR-40#focus=Comments-4-2.0-0",
+			"attachments": []any{},
 		}
 		if !reflect.DeepEqual(comments[1], want) {
 			t.Errorf("comment = %v\nwant      %v", comments[1], want)
+		}
+	})
+
+	t.Run("given --json with comments that have files, each comment lists its own attachments", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		yt.SeedSampleAttachments()
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "comments")
+		listings := 0
+		for _, r := range requests(yt, "GET", "/api/issues/NSR-40/attachments") {
+			if query(t, r).Get("$skip") == "0" {
+				listings++
+			}
+		}
+		if listings != 1 {
+			t.Errorf("attachment listings = %d, want 1", listings)
+		}
+		got := decodeJSON[map[string]any](t, env.Stdout.Bytes())
+		comments, _ := got["comments"].([]any)
+		if len(comments) != 3 {
+			t.Fatalf("got %v", got)
+		}
+		files := map[string]any{}
+		for _, c := range comments {
+			c := c.(map[string]any)
+			files[c["id"].(string)] = c["attachments"]
+		}
+		want := map[string]any{
+			"4-1": []any{},
+			"4-2": []any{map[string]any{"name": "shot.png", "id": "8-2", "size": float64(len("\u0089PNG-bytes")), "mimeType": "image/png"}},
+			"4-3": []any{},
+		}
+		if !reflect.DeepEqual(files, want) {
+			t.Errorf("attachments = %v\nwant          %v", files, want)
+		}
+	})
+
+	t.Run("given --json without comments, it does not list attachments", func(t *testing.T) {
+		env, yt := loggedIn(t, "")
+		mustRun(t, env, "issue", "view", "NSR-40", "--json", "summary")
+		if n := len(requests(yt, "GET", "/api/issues/NSR-40/attachments")); n != 0 {
+			t.Errorf("attachment listings = %d, want 0", n)
 		}
 	})
 

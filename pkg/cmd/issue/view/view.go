@@ -2,6 +2,7 @@
 package view
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"github.com/BrainerVirus/youtrack-cli/internal/iostreams"
 	"github.com/BrainerVirus/youtrack-cli/internal/output"
 	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/adapter"
+	"github.com/BrainerVirus/youtrack-cli/internal/youtrack/transport"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmd/issue/shared"
 	"github.com/BrainerVirus/youtrack-cli/pkg/cmdutil"
 )
@@ -52,8 +54,9 @@ the issue in the browser instead. Deleted comments are not shown.
 
 JSON fields:
 ` + shared.IssueFieldsHelp + `
-  comments      [{id, text, author, created, updated, url}]: all comments,
-                or the latest --comments-limit when that flag is given`,
+  comments      [{id, text, author, created, updated, url, attachments}]:
+                all comments, or the latest --comments-limit when that flag
+                is given; attachments is [{name, id, size, mimeType}]`,
 		Example: `  $ ytrack issue view APP-123
   $ ytrack issue view https://acme.youtrack.cloud/issue/APP-123 --comments
   $ ytrack issue view APP-123 --json summary,state,comments --jq '.comments | length'`,
@@ -135,6 +138,9 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 			if out.Comments, err = adapter.ListComments(ctx, client, id, skip, limit); err != nil {
 				return err
 			}
+			if out.CommentFiles, err = commentFiles(ctx, client, id); err != nil {
+				return err
+			}
 		}
 		return opts.exporter.Write(f.IOStreams, out)
 	}
@@ -153,6 +159,22 @@ func run(cmd *cobra.Command, f *cmdutil.Factory, opts *options) error {
 	p := printer{w: f.IOStreams.Out, tty: f.IOStreams.IsStdoutTTY(), cs: f.IOStreams.ColorScheme(), now: f.Clock()}
 	p.issue(shared.Issue{Issue: issue, Host: host}, opts.comments, comments)
 	return nil
+}
+
+// commentFiles returns the issue's comment attachments by comment ID, from
+// one listing of all its attachments.
+func commentFiles(ctx context.Context, client *transport.Client, id string) (map[string][]adapter.Attachment, error) {
+	all, err := adapter.ListAttachments(ctx, client, id)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string][]adapter.Attachment{}
+	for _, a := range all {
+		if a.CommentID != "" {
+			out[a.CommentID] = append(out[a.CommentID], a.Attachment)
+		}
+	}
+	return out, nil
 }
 
 type printer struct {
