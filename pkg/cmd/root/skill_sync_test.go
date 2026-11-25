@@ -146,11 +146,16 @@ func TestSkillRefresh(t *testing.T) {
 	})
 
 	for name, c := range map[string]struct{ build, synced string }{
-		"an equal stamp":             {"0.5.4", "0.5.4"},
-		"a newer stamp":              {"0.5.4", "0.6.0"},
-		"a development build":        {"dev", "0.4.0"},
-		"a git describe build":       {"0.5.4-3-gabc1234", "0.4.0"},
-		"a dirty git describe build": {"0.5.4-dirty", "0.4.0"},
+		"an equal stamp":                         {"0.5.4", "0.5.4"},
+		"a newer stamp":                          {"0.5.4", "0.6.0"},
+		"a development build":                    {"dev", "0.4.0"},
+		"a git describe build":                   {"0.5.4-3-gabc1234", "0.4.0"},
+		"a dirty git describe build":             {"0.5.4-dirty", "0.4.0"},
+		"a Go pseudo-version":                    {"0.5.5-0.20261125120000-de37268abcd1", "0.4.0"},
+		"a dirty Go pseudo-version":              {"0.5.5-0.20261125120000-de37268abcd1+dirty", "0.4.0"},
+		"a Go pseudo-version before any tag":     {"0.0.0-20261125120000-de37268abcd1", "0.4.0"},
+		"a Go pseudo-version after a prerelease": {"0.6.0-rc.1.0.20261125120000-de37268abcd1", "0.4.0"},
+		"a dirty build of a tagged commit":       {"0.5.4+dirty", "0.4.0"},
 	} {
 		t.Run("given "+name+", it writes nothing", func(t *testing.T) {
 			e, home := syncEnv(t, c.build)
